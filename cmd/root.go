@@ -7,11 +7,13 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/go-kivik/kouch/log"
 )
 
 var rootCmd *cobra.Command
 
-type cmdInitFunc func(conf *viper.Viper) *cobra.Command
+type cmdInitFunc func(log log.Logger, conf *viper.Viper) *cobra.Command
 
 var initFuncs []cmdInitFunc
 
@@ -26,6 +28,7 @@ func Run(version string, conf *viper.Viper) {
 		verbose bool
 		server  string
 	)
+	log := log.New()
 
 	rootCmd = &cobra.Command{
 		Use:     "kouch",
@@ -33,7 +36,7 @@ func Run(version string, conf *viper.Viper) {
 		Version: version,
 	}
 	cobra.OnInitialize(func() {
-		initConfig(conf, cfgFile)
+		initConfig(log, conf, cfgFile)
 	})
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kouch.yaml)")
@@ -44,7 +47,7 @@ func Run(version string, conf *viper.Viper) {
 	conf.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
 
 	for _, fn := range initFuncs {
-		rootCmd.AddCommand(fn(conf))
+		rootCmd.AddCommand(fn(log, conf))
 	}
 
 	if err := rootCmd.Execute(); err != nil {
@@ -54,29 +57,35 @@ func Run(version string, conf *viper.Viper) {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig(conf *viper.Viper, cfgFile string) {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		conf.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		fmt.Printf("Trying to read from %s\n", home)
-
-		// Search config in home directory with name ".kouch" (without extension).
-		conf.AddConfigPath(home)
-		conf.SetConfigName(".kouch")
-	}
-
+func initConfig(log log.Logger, conf *viper.Viper, cfgFile string) {
 	conf.SetEnvPrefix("KIVIK")
 	conf.AutomaticEnv() // read environment variables that match
 
 	// If a config file is found, read it.
-	if err := conf.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", conf.ConfigFileUsed())
+	if err := readConfigFile(conf, cfgFile); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
+	log.SetVerbose(conf.GetBool("verbose"))
+	log.Println("Using config file:", conf.ConfigFileUsed())
+}
+
+func readConfigFile(conf *viper.Viper, cfgFile string) error {
+	if cfgFile == "" {
+		home, err := homedir.Dir()
+		if err != nil {
+			return err
+		}
+
+		// Search config in home directory with name ".kouch" (without extension).
+		conf.AddConfigPath(home)
+		conf.SetConfigName(".kouch")
+		err = conf.ReadInConfig()
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			err = nil
+		}
+		return err
+	}
+	conf.SetConfigFile(cfgFile)
+	return conf.ReadInConfig()
 }
