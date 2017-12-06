@@ -31,10 +31,10 @@ func Run(version string, conf *viper.Viper) {
 		Use:     "kouch",
 		Short:   "kouch is a command-line tool for interacting with CouchDB",
 		Version: version,
-		PreRun: func(_ *cobra.Command, _ []string) {
-			initConfig(conf, cfgFile)
-		},
 	}
+	cobra.OnInitialize(func() {
+		initConfig(conf, cfgFile)
+	})
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kouch.yaml)")
 
@@ -65,6 +65,7 @@ func initConfig(conf *viper.Viper, cfgFile string) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+		fmt.Printf("Trying to read from %s\n", home)
 
 		// Search config in home directory with name ".kouch" (without extension).
 		conf.AddConfigPath(home)
