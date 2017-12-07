@@ -38,6 +38,10 @@ func Run(version string, conf *viper.Viper) {
 	}
 	cobra.OnInitialize(func() {
 		initConfig(l, conf, cfgFile)
+		if err := ValidateConfig(conf); err != nil {
+			l.Errorln(err)
+			os.Exit(ExitFailedToInitialize)
+		}
 		if stdout != "" {
 			out, err := log.OpenLogFile(stdout, clobber)
 			if err != nil {
