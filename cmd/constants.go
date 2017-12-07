@@ -2,11 +2,14 @@ package cmd
 
 // Exit statuses, borrowed from Curl. Not all Curl statuses are represented here.
 const (
+	// Exited with an unknown failure.
+	ExitUnknownFailure = 1
+	// Failed to initialize.
+	ExitFailedToInitialize = 2
 	// Write error. Kouch couldn't write data to a local filesystem or similar.
 	ExitWriteError = 23
 
 /*
-2      Failed to initialize.
 3      URL malformed. The syntax was not correct.
 4      A feature or option that was needed to perform the desired request was not enabled or was explicitly disabled at build-time. To make curl  able  to do this, you probably need another build of libcurl!
 5      Couldn't resolve proxy. The given proxy host could not be resolved.

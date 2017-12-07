@@ -74,7 +74,7 @@ func Run(version string, conf *viper.Viper) {
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		os.Exit(ExitUnknownFailure)
 	}
 }
 
@@ -86,7 +86,7 @@ func initConfig(log log.Logger, conf *viper.Viper, cfgFile string) {
 	// If a config file is found, read it.
 	if err := readConfigFile(conf, cfgFile); err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		os.Exit(ExitFailedToInitialize)
 	}
 	log.SetVerbose(conf.GetBool("verbose"))
 	log.Debugln("Using config file:", conf.ConfigFileUsed())
