@@ -1,0 +1,63 @@
+- --stderr redirect all writes to stderr to the specified file instead
+- Exit statuses should follow Curl's conventions.
+- By default, output to stdout, with option to redirect to a file with -o/--output
+
+- Output can be formatted as:  raw (unparsed), or JSON (with indentation)
+- By default, read from stdin, with option to read from a file with -i/--input
+- It should be possible to specify a cookie jar
+- Cookies could also be dumped to the terminal, and read from the environment, -c/--cookie-jar
+- --quiet/-q mode silences all but the actual data output
+- -i/--include includes HTTP headers in the output
+
+kouch
+
+verb:
+    GET
+    HEAD
+    PUT
+    POST
+    DELETE
+    COPY
+    replicate
+    restart
+
+
+targets:
+    active_tasks
+    all_dbs
+    db_updates
+    stats
+    uuids
+    membership
+    session
+    config
+    {db}
+    {db}/all_docs
+    {db}/bulk_docs
+    {db}/find
+    {db}/index
+    {db}/explain
+    {db}/security
+    {db}/{docid}
+    {db}/{docid}/{attname}
+    _info
+    _view
+    _list
+    _update
+    _rewrite
+
+
+DSN:
+    Fully qualified DSN:  credentials, db, document, etc
+    set host from environment
+    set db from environment (??)
+    dsn begins with /
+    set creds from environment
+    set db from option (-d|--dbname)
+
+export KOUCHDBNAME=http://foo.com/foo
+kouch dbexists || kouch createdb
+kouch dump > file.kdb
+kouch restore < file.kdb
+kouch get /{docid}
+kouch put /{docid} -rev=1-xxx < file.json
