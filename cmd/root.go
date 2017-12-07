@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	_ "github.com/go-kivik/couchdb" // The CouchDB driver
 	"github.com/go-kivik/kouch/log"
 )
 
@@ -24,11 +25,11 @@ func registerCommand(fn cmdInitFunc) {
 // Run initializes the root command, adds subordinate commands, then executes.
 func Run(version string, conf *viper.Viper) {
 	var (
-		cfgFile string
-		verbose bool
-		server  string
+		cfgFile        string
+		stdout, stderr string
+		clobber        bool
 	)
-	log := log.New()
+	l := log.New()
 
 	rootCmd = &cobra.Command{
 		Use:     "kouch",
@@ -36,18 +37,39 @@ func Run(version string, conf *viper.Viper) {
 		Version: version,
 	}
 	cobra.OnInitialize(func() {
-		initConfig(log, conf, cfgFile)
+		initConfig(l, conf, cfgFile)
+		if stdout != "" {
+			out, err := log.OpenLogFile(stdout, clobber)
+			if err != nil {
+				l.Errorln(err)
+				os.Exit(ExitWriteError)
+			}
+			l.SetStdout(out)
+		}
+		if stderr != "" {
+			out, err := log.OpenLogFile(stderr, clobber)
+			if err != nil {
+				l.Errorln(err)
+				os.Exit(ExitWriteError)
+			}
+			l.SetStderr(out)
+		}
 	})
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kouch.yaml)")
 
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	conf.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "", "server address, optionally with schema, port, and auth credentials")
+	rootCmd.PersistentFlags().StringP("server", "s", "", "server address, optionally with schema, port, and auth credentials")
 	conf.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
+	rootCmd.PersistentFlags().StringVarP(&stdout, "output", "o", "", "output file to use instead of stdout")
+	rootCmd.PersistentFlags().StringVarP(&stderr, "stderr", "", "", "redirect output to stderr to the specified file instead")
+	rootCmd.PersistentFlags().BoolVarP(&clobber, "force", "F", false, "overwrite output files specified by --output and --stderr, if they exist")
+	rootCmd.PersistentFlags().StringP("format", "f", "raw", "output format: 'raw' or pretty-formatted 'json'")
+	conf.BindPFlag("format", rootCmd.PersistentFlags().Lookup("format"))
 
 	for _, fn := range initFuncs {
-		rootCmd.AddCommand(fn(log, conf))
+		rootCmd.AddCommand(fn(l, conf))
 	}
 
 	if err := rootCmd.Execute(); err != nil {
@@ -67,7 +89,7 @@ func initConfig(log log.Logger, conf *viper.Viper, cfgFile string) {
 		os.Exit(1)
 	}
 	log.SetVerbose(conf.GetBool("verbose"))
-	log.Println("Using config file:", conf.ConfigFileUsed())
+	log.Debugln("Using config file:", conf.ConfigFileUsed())
 }
 
 func readConfigFile(conf *viper.Viper, cfgFile string) error {

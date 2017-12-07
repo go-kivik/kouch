@@ -9,6 +9,9 @@ import (
 // Logger handles logging.
 type Logger interface {
 	SetVerbose(bool)
+	SetStdout(io.Writer)
+	SetStderr(io.Writer)
+
 	Printf(format string, a ...interface{})
 	Println(...interface{})
 	Debugln(...interface{})
