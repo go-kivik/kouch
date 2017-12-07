@@ -11,13 +11,12 @@ const (
 
 /*
 3      URL malformed. The syntax was not correct.
-4      A feature or option that was needed to perform the desired request was not enabled or was explicitly disabled at build-time. To make curl  able  to do this, you probably need another build of libcurl!
 5      Couldn't resolve proxy. The given proxy host could not be resolved.
 6      Couldn't resolve host. The given remote host was not resolved.
 7      Failed to connect to host.
 8      Weird server reply. The server sent data curl couldn't parse.
 18     Partial file. Only a part of the file was transferred.
-22     HTTP page not retrieved. The requested url was not found or returned another error with the HTTP error code being 400 or above.  This  return  code only appears if -f, --fail is used.
+22     HTTP page not retrieved. The requested url was not found or returned another error with the HTTP error code being 400 or above. This return code only appears if -f, --fail is used.
 26     Read error. Various reading problems.
 27     Out of memory. A memory allocation request failed.
 28     Operation timeout. The specified time-out period was reached according to the conditions.
@@ -25,11 +24,9 @@ const (
 34     HTTP post error. Internal post-request generation error.
 35     SSL connect error. The SSL handshaking failed.
 37     FILE couldn't read file. Failed to open the file. Permissions?
-42     Aborted by callback. An application told curl to abort the operation.
 43     Internal error. A function was called with a bad parameter.
 45     Interface error. A specified outgoing interface could not be used.
 47     Too many redirects. When following redirects, curl hit the maximum amount.
-48     Unknown  option  specified to libcurl. This indicates that you passed a weird option to curl that was passed on to libcurl and rejected. Read up in the manual!
 51     The peer's SSL certificate or SSH MD5 fingerprint was not OK.
 52     The server didn't reply anything, which here is considered an error.
 53     SSL crypto engine not found.
