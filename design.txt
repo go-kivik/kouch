@@ -8,6 +8,11 @@
 - Cookies could also be dumped to the terminal, and read from the environment, -c/--cookie-jar
 - --quiet/-q mode silences all but the actual data output
 - -i/--include includes HTTP headers in the output
+- --timeout/-t with a reasonable default
+- --keepalive ?
+- Proxy support
+- TLS support
+
 
 kouch
 
