@@ -10,6 +10,5 @@ const version = "0.0.1"
 
 func main() {
 	conf := viper.New()
-	conf.SetDefault("server", "http://localhost:5984/")
 	cmd.Run(version, conf)
 }
