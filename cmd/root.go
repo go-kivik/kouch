@@ -11,16 +11,6 @@ import (
 	"github.com/go-kivik/kouch/log"
 )
 
-var rootCmd *cobra.Command
-
-type cmdInitFunc func(log log.Logger, conf *viper.Viper) *cobra.Command
-
-var initFuncs []cmdInitFunc
-
-func registerCommand(fn cmdInitFunc) {
-	initFuncs = append(initFuncs, fn)
-}
-
 // Run initializes the root command, adds subordinate commands, then executes.
 func Run(version string, conf *viper.Viper) {
 	l := log.New()
