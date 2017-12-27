@@ -7,38 +7,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestIsValidFormat(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected bool
-	}{
-		{
-			name:     "Raw",
-			input:    "raw",
-			expected: true,
-		},
-		{
-			name:     "JSON",
-			input:    "json",
-			expected: true,
-		},
-		{
-			name:     "Foo",
-			input:    "foo",
-			expected: false,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result := IsValidFormat(test.input)
-			if test.expected != result {
-				t.Errorf("Unexpected result: %v", result)
-			}
-		})
-	}
-}
-
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name string
@@ -47,32 +15,8 @@ func TestValidateConfig(t *testing.T) {
 	}{
 		{
 			name: "defaults",
-			conf: func() *viper.Viper {
-				v := viper.New()
-				v.SetDefault("format", "raw")
-				return v
-			}(),
-			err: "",
-		},
-		{
-			name: "format=json",
-			conf: func() *viper.Viper {
-				v := viper.New()
-				v.SetDefault("format", "raw")
-				v.Set("format", "json")
-				return v
-			}(),
-			err: "",
-		},
-		{
-			name: "format=foo",
-			conf: func() *viper.Viper {
-				v := viper.New()
-				v.SetDefault("format", "raw")
-				v.Set("format", "foo")
-				return v
-			}(),
-			err: "Invalid output format 'foo'",
+			conf: viper.New(),
+			err:  "",
 		},
 	}
 	for _, test := range tests {
