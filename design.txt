@@ -1,10 +1,34 @@
+Configuration options, all may be specified by the environment, from a config file, or from command-line options.
+* URL schema
+* db hostname, port
+* root path (optional--for non-standard configs mounted below the URL root)
+* auth info
+    - Basic auth username/password
+    - Auth cookie/token (should be easy to set with a command that does cookie auth, or manually)
+    - Server secret? (To generate tokens witout a call to the db)
+    - Other (Custom auth header data?)
+* Cookie jar (file, or serialized data?)
+* default database name
+* Session/request parameters
+    - Timeout
+    - Keepalive
+
+Schema, hostname, port, root path, basic auth, and default database can all be specified as a single "context" in URL form. Examples:
+    KOUCH_CONTEXT=https://admin:abc123@localhost:5684/somepath/db [How to distinguish between a default database, and a non-standard root path?]
+
+
 - --stderr redirect all writes to stderr to the specified file instead
 - Exit statuses should follow Curl's conventions.
 - By default, output to stdout, with option to redirect to a file with -o/--output
 
-- Output can be formatted as:  raw (unparsed), or JSON (with indentation)
+- Config to be stored in ~/.kouch/config, or as specified by -c/--config
+- Output can be formatted as:
+  raw (unparsed)
+  JSON (with indentation)
+  YAML
+  Other?
 - By default, read from stdin, with option to read from a file with -i/--input
-- It should be possible to specify a cookie jar
+- It should be possible to specify a cookie jar file
 - Cookies could also be dumped to the terminal, and read from the environment, -c/--cookie-jar
 - --quiet/-q mode silences all but the actual data output
 - -i/--include includes HTTP headers in the output
@@ -44,7 +68,7 @@ targets:
     {db}/explain
     {db}/security
     {db}/{docid}
-    {db}/{docid}/{attname}
+    {db}/{docid}/{attname}  [ What about docs or attachments with slashes in their names? Maybe just an alternate way to specify the docid and attid independently?]
     _info
     _view
     _list
@@ -60,9 +84,122 @@ DSN:
     set creds from environment
     set db from option (-d|--dbname)
 
+
+How to batch commands in a single file?
+- json/yaml, with array of commands & arguments
+- Kubernetes-style yaml
+- Custom language, commands and heredocs
+- Rely on bash, and don't natively support batch commands?  <-- probably the easiests. Maybe start here, and consider expanding later
+
+
 export KOUCHDBNAME=http://foo.com/foo
 kouch dbexists || kouch createdb
 kouch dump > file.kdb
 kouch restore < file.kdb
 kouch get /{docid}
 kouch put /{docid} -rev=1-xxx < file.json
+
+
+Example commands:
+
+kouch get http://foo.com/                       # Get server metadata
+kouch get http://foo.com/db                     # get DB metadata
+kouch get http://foo.com/db/docid               # get doc
+kouch get http://foo.com/db/docid/attid         # get attachment
+kouch get http://foo.com/db/_all_docs           # get all docs
+KOUCH_CONTEXT=http://foo.com && kouch get /db   # get db metadata
+kouch put http://foo.com/db                     # Create DB
+kouch put http://foo.com/db/docid               # Create Doc
+kouch put http://foo.com/db/docid --rev revid   # Update doc
+kouch create http://foo.com/db                  # Create doc
+kouch create http://foo.com/db/docid/attid -rev id      # Create attachment (Is this really valid?)
+kouch edit http://foo.com/db/docid              # Fetch, edit, then update doc
+kouch delete http://foo.com/db                  # Delete database
+kouch purge http://foo.com/db/docid             # Purge doc (2.2.x+)
+
+config file contains server contexts, similar to kubectl:
+
+contexts:
+- context:
+    root: http://foo.com/
+    database: db # Optional
+  name: foo
+- context:
+    root: https://bar.com:6984/
+    username: admin # Optional
+    password: abc123 # Optional
+  name: bar
+
+# Create a DB
+KOUCH_ROOT=http://foo.com/ && kouch create db _users
+KOUCH_ROOT=http://foo.com/ && kouch create database _users
+kouch create database _users --root http://admin:abc123@localhost:5984/
+kouch create database _users --context=bar
+kouch create database http://foo.com/_users
+
+# Get/Describe a database
+KOUCH_ROOT=http://foo.com && kouch describe database _users
+KOUCH_ROOT=http://foo.com && kouch get database _users
+
+# Create a document
+kouch create doc http://foo.com/db/docid
+kouch create doc /db/docid --root http://foo.com/
+KOUCH_ROOT=http://foo.com/ && kouch create doc /db/docid
+KOUCH_ROOT=http://foo.com/ KOUCH_DATABASE=db && kouch create document docid
+
+Target parsing rules:
+- If target is a full URL, with schema (i.e. http://foo.com/, http://foo.com/db, http://foo.com/db/docid, http://foo.com/db/docid/attid), it is used as-is, and the configured context and environment are ignored.
+- If the target begins with a forward slash, it is interpreted as beginning with the name of a database. (i.e. /db, /db/docid, /db/docid/attid). Any default db, via context or environment, is ignored.
+- If the target begins with any other character, it is interpreted as a the document id, optionally followed by attachment id.
+
+The root URL may be provided:
+- In the configured context
+- In the environment (KOUCH_ROOT, KOUCH_USER, KOUCH_PASSWORD)
+- With the command line options: --root, --user, --password, etc
+- In the target URL
+
+The last one that has provides _any_ of the root context, is the only one that takes effect. This is to avoid confusing situations where auth might be set by config or in the environment, and a non-matching the url in the environment or command line.
+
+The default database may be configured by any of these means, as well. The difference is that the lowest priority scope for the default database is the same as the last scope where the root URL was defined.  This may be best explained with some examples.
+
+1.
+    Config: root: http://foo.com/, database: foo
+    Environment: KOUCH_ROOT: http://bar.com/, KOUCH_DATABASE: bar
+    Result: root: http://bar.com/, db: bar
+
+2.
+    Config: root: http://foo.com/, database: foo
+    Environment: KOUCH_ROOT: http://bar.com/
+    Result: root: http://bar.com/, db: <none>
+
+3.
+    Config: root: http://foo.com/, database: foo
+    Environment: KOUCH_ROOT: http://bar.com/, database: bar
+    Command line: --database=baz
+    Result: root: http://bar.com/, db: baz
+
+4.
+    Config: root: http://foo.com/, database: foo
+    Environment: KOUCH_ROOT: http://bar.com/, database: bar
+    Command line: --user=admin --password=abc123 --database=baz
+    Result: root: <no scheme>://admin:abc123@<nohost>/, db: baz  # So this will be an error, for no/incomplete root URL
+
+Config is read from the file specified by the -c/--config option, if present. If not present, the following paths are attempted:
+- $KOUCH_HOME/config
+- $HOME/.kouch/config
+
+The config file is expected to be in toml, yaml, or json format. When created from scratch, a toml file will be created. When updating an existing file, the existing format will be used (but ordering, indenting, and comments may be altered).
+
+The config file should have the following top-level keys:
+- contexts: A list of one or more contexts
+- default-context: The name of one of the previously defined contexts, which shall be the default.
+
+Once the config file is loaded, any of the contexts may be used for the kouch commands. Most commands use only a single context--the current context. The exception being replication commands, which use two.
+
+# TODO, more advanced features for later
+kouch describe .... # Show metadata -- probalby part of 'kouch get'?
+kouch patch .... # Advanced; fetch doc, apply patch, update doc
+replication
+config manipulation
+node manipulation
+shell completion
