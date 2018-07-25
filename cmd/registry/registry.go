@@ -16,7 +16,7 @@ var initMU sync.Mutex
 var initFuncs []CommandInitFunc
 
 // Register registers a sub-command.
-func Register(fn CommandInitFunc) {
+func Register(parent []string, fn CommandInitFunc) {
 	initMU.Lock()
 	defer initMU.Unlock()
 	initFuncs = append(initFuncs, fn)

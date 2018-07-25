@@ -24,15 +24,15 @@ func lockRegistry() func() {
 func TestAddSubcommands(t *testing.T) {
 	defer lockRegistry()()
 	initCount := 0
-	Register(func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register(nil, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
 		initCount++
 		return &cobra.Command{}
 	})
-	Register(func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register(nil, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
 		initCount++
 		return &cobra.Command{}
 	})
-	Register(func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register(nil, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
 		initCount++
 		return &cobra.Command{}
 	})
@@ -45,6 +45,7 @@ func TestAddSubcommands(t *testing.T) {
 func TestRegister(t *testing.T) {
 	type regTest struct {
 		name      string
+		parent    []string
 		fn        CommandInitFunc
 		expected  interface{}
 		recovered interface{}
@@ -66,7 +67,7 @@ func TestRegister(t *testing.T) {
 			defer lockRegistry()()
 			recovered := func() (r interface{}) {
 				defer func() { r = recover() }()
-				Register(test.fn)
+				Register(test.parent, test.fn)
 				return nil
 			}()
 			if d := diff.Interface(test.recovered, recovered); d != nil {
