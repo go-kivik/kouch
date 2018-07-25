@@ -21,18 +21,6 @@ func lockRegistry() func() {
 	}
 }
 
-func TestRegister(t *testing.T) {
-	defer lockRegistry()()
-	fn := func(_ log.Logger, _ *viper.Viper) *cobra.Command {
-		return nil
-	}
-	Register(fn)
-	expected := []CommandInitFunc{fn}
-	if d := diff.Interface(expected, initFuncs); d != nil {
-		t.Error(d)
-	}
-}
-
 func TestAddSubcommands(t *testing.T) {
 	defer lockRegistry()()
 	initCount := 0
@@ -51,5 +39,42 @@ func TestAddSubcommands(t *testing.T) {
 	AddSubcommands(&cobra.Command{}, nil, nil)
 	if initCount != 3 {
 		t.Errorf("Expected 3 initializations, got %d", initCount)
+	}
+}
+
+func TestRegister(t *testing.T) {
+	type regTest struct {
+		name      string
+		fn        CommandInitFunc
+		expected  interface{}
+		recovered interface{}
+	}
+	tests := []regTest{
+		func() regTest {
+			fn := func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+				return nil
+			}
+			return regTest{
+				name:     "simple",
+				fn:       fn,
+				expected: []CommandInitFunc{fn},
+			}
+		}(),
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			defer lockRegistry()()
+			recovered := func() (r interface{}) {
+				defer func() { r = recover() }()
+				Register(test.fn)
+				return nil
+			}()
+			if d := diff.Interface(test.recovered, recovered); d != nil {
+				t.Error(d)
+			}
+			if d := diff.Interface(test.expected, initFuncs); d != nil {
+				t.Error(d)
+			}
+		})
 	}
 }
