@@ -56,7 +56,11 @@ func addSubcommands(cmd *cobra.Command, l log.Logger, conf *viper.Viper, path []
 	children := make(map[string]*cobra.Command)
 	for _, fn := range cmdMap.initFuncs {
 		subCmd := fn(l, conf)
-		children[subCmd.Use] = subCmd
+		var cmdName string
+		if u := subCmd.Use; u != "" {
+			cmdName = strings.Fields(subCmd.Use)[0]
+		}
+		children[cmdName] = subCmd
 		cmd.AddCommand(subCmd)
 	}
 	for name, childCmd := range cmdMap.children {
