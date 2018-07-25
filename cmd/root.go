@@ -47,6 +47,8 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 		Version: version,
 	}
 
+	rootCmd.PersistentFlags().StringP("url", "u", "", "The server's root URL")
+
 	registry.AddSubcommands(rootCmd, l, conf)
 	return rootCmd
 }
