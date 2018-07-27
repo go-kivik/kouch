@@ -1,11 +1,14 @@
-package get
+package uuids
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/cmd/registry"
 	"github.com/go-kivik/kouch/log"
 )
@@ -34,4 +37,14 @@ func uuidsCmd(cmd *cobra.Command, _ []string) {
 		panic(err.Error())
 	}
 	fmt.Printf("%d UUIDs coming right up, from %s\n", count, url)
+}
+
+func getUUIDs(url string, count int) (interface{}, error) {
+	c, err := chttp.New(context.TODO(), url)
+	if err != nil {
+		return nil, err
+	}
+	var result interface{}
+	_, err = c.DoJSON(context.TODO(), http.MethodGet, fmt.Sprintf("/_uuids?count=%d", count), nil, &result)
+	return result, err
 }
