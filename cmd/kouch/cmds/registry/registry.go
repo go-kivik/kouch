@@ -6,13 +6,12 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
-	"github.com/go-kivik/kouch/log"
+	"github.com/go-kivik/kouch"
 )
 
 // CommandInitFunc returns a cobra sub command.
-type CommandInitFunc func(log log.Logger, conf *viper.Viper) *cobra.Command
+type CommandInitFunc func(cx *kouch.Context) *cobra.Command
 
 type subCommand struct {
 	children  map[string]*subCommand
@@ -44,18 +43,18 @@ func Register(parent []string, fn CommandInitFunc) {
 }
 
 // AddSubcommands initializes and adds all registered subcommands to cmd.
-func AddSubcommands(cmd *cobra.Command, l log.Logger, conf *viper.Viper) {
+func AddSubcommands(cx *kouch.Context, cmd *cobra.Command) {
 	initMU.Lock()
 	defer initMU.Unlock()
-	if err := addSubcommands(cmd, l, conf, nil, rootCommand); err != nil {
+	if err := addSubcommands(cx, cmd, nil, rootCommand); err != nil {
 		panic(err.Error())
 	}
 }
 
-func addSubcommands(cmd *cobra.Command, l log.Logger, conf *viper.Viper, path []string, cmdMap *subCommand) error {
+func addSubcommands(cx *kouch.Context, cmd *cobra.Command, path []string, cmdMap *subCommand) error {
 	children := make(map[string]*cobra.Command)
 	for _, fn := range cmdMap.initFuncs {
-		subCmd := fn(l, conf)
+		subCmd := fn(cx)
 		var cmdName string
 		if u := subCmd.Use; u != "" {
 			cmdName = strings.Fields(subCmd.Use)[0]
@@ -68,7 +67,7 @@ func addSubcommands(cmd *cobra.Command, l log.Logger, conf *viper.Viper, path []
 		if !ok {
 			return fmt.Errorf("Subcommand '%s %s' not registered", strings.Join(path, " "), name)
 		}
-		if err := addSubcommands(child, l, conf, append(path, name), childCmd); err != nil {
+		if err := addSubcommands(cx, child, append(path, name), childCmd); err != nil {
 			return err
 		}
 	}

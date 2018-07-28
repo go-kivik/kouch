@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/cmds/registry"
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
@@ -42,6 +43,11 @@ func onInit(l log.Logger, conf *viper.Viper) func() {
 func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 	cobra.OnInitialize(onInit(l, conf))
 
+	cx := &kouch.Context{
+		Logger: l,
+		Conf:   conf,
+	}
+
 	rootCmd := &cobra.Command{
 		Use:     "kouch",
 		Short:   "kouch is a command-line tool for interacting with CouchDB",
@@ -51,6 +57,6 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 	rootCmd.PersistentFlags().StringP("url", "u", "", "The server's root URL")
 	io.AddFlags(rootCmd)
 
-	registry.AddSubcommands(rootCmd, l, conf)
+	registry.AddSubcommands(cx, rootCmd)
 	return rootCmd
 }

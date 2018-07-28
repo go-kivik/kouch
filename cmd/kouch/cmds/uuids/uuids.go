@@ -6,15 +6,14 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/cmds/registry"
-	"github.com/go-kivik/kouch/log"
 )
 
 func init() {
-	registry.Register([]string{"get"}, func(log log.Logger, conf *viper.Viper) *cobra.Command {
+	registry.Register([]string{"get"}, func(cx *kouch.Context) *cobra.Command {
 		cmd := &cobra.Command{
 			Use:   "uuids",
 			Short: "Returns one or more server-generated UUIDs",
