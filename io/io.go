@@ -22,6 +22,11 @@ func Output(cmd *cobra.Command, result []byte, err error) {
 
 }
 
+type outputMode interface {
+	config(*cobra.Command)
+	new(*cobra.Command) processor
+}
+
 type processor interface {
 	Output(io.Writer, []byte) error
 }

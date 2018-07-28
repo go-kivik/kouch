@@ -6,7 +6,16 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/spf13/cobra"
 )
+
+func TestTmplModeConfig(t *testing.T) {
+	cmd := &cobra.Command{}
+	mode := &tmplMode{}
+	mode.config(cmd)
+
+	testOptions(t, []string{"template", "template-file"}, cmd)
+}
 
 func TestTmplOutput(t *testing.T) {
 	tests := []struct {
