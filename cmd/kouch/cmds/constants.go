@@ -1,4 +1,4 @@
-package cmd
+package cmds
 
 // Exit statuses, borrowed from Curl. Not all Curl statuses are represented here.
 const (
