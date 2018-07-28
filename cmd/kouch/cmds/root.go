@@ -13,6 +13,7 @@ import (
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 
+	// The individual sub-commands
 	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/get"
 	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/uuids"
 )
@@ -52,6 +53,13 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 		Use:     "kouch",
 		Short:   "kouch is a command-line tool for interacting with CouchDB",
 		Version: version,
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+			outputer, err := io.SelectOutputProcessor(cmd)
+			if err != nil {
+				panic(err.Error())
+			}
+			cx.Outputer = outputer
+		},
 	}
 
 	rootCmd.PersistentFlags().StringP("url", "u", "", "The server's root URL")
