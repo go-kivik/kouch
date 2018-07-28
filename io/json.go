@@ -29,7 +29,7 @@ func (m *jsonMode) config(cmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
-func (m *jsonMode) new(cmd *cobra.Command) (processor, error) {
+func (m *jsonMode) new(cmd *cobra.Command) (OutputProcessor, error) {
 	prefix, err := cmd.Flags().GetString(optJSONPrefix)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ type jsonProcessor struct {
 	escapeHTML bool
 }
 
-var _ processor = &jsonProcessor{}
+var _ OutputProcessor = &jsonProcessor{}
 
 func (p *jsonProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()

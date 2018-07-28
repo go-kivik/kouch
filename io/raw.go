@@ -18,13 +18,13 @@ var _ outputMode = &rawMode{}
 
 func (m *rawMode) config(cmd *cobra.Command) {}
 
-func (m *rawMode) new(cmd *cobra.Command) (processor, error) {
+func (m *rawMode) new(cmd *cobra.Command) (OutputProcessor, error) {
 	return &rawProcessor{}, nil
 }
 
 type rawProcessor struct{}
 
-var _ processor = &rawProcessor{}
+var _ OutputProcessor = &rawProcessor{}
 
 func (p *rawProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()

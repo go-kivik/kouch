@@ -29,7 +29,7 @@ func (m *tmplMode) config(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
-func (m *tmplMode) new(cmd *cobra.Command) (processor, error) {
+func (m *tmplMode) new(cmd *cobra.Command) (OutputProcessor, error) {
 	templateString, err := cmd.Flags().GetString(optTemplate)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ type tmplProcessor struct {
 	template *template.Template
 }
 
-var _ processor = &tmplProcessor{}
+var _ OutputProcessor = &tmplProcessor{}
 
 func (p *tmplProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()

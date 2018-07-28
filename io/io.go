@@ -53,9 +53,10 @@ type outputMode interface {
 	isDefault() bool
 	// new takes cmd, after command line options have been parsed, and returns
 	// a new output processor.
-	new(*cobra.Command) (processor, error)
+	new(*cobra.Command) (OutputProcessor, error)
 }
 
-type processor interface {
+// OutputProcessor processes a command's output for display to a user.
+type OutputProcessor interface {
 	Output(io.Writer, io.ReadCloser) error
 }

@@ -20,14 +20,14 @@ var _ outputMode = &yamlMode{}
 
 func (m *yamlMode) config(cmd *cobra.Command) {}
 
-func (m *yamlMode) new(cmd *cobra.Command) (processor, error) {
+func (m *yamlMode) new(cmd *cobra.Command) (OutputProcessor, error) {
 	return &yamlProcessor{}, nil
 }
 
 type yamlProcessor struct {
 }
 
-var _ processor = &yamlProcessor{}
+var _ OutputProcessor = &yamlProcessor{}
 
 func (p *yamlProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()
