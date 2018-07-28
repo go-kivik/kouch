@@ -6,7 +6,16 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/spf13/cobra"
 )
+
+func TestYamlModeConfig(t *testing.T) {
+	cmd := &cobra.Command{}
+	mode := &yamlMode{}
+	mode.config(cmd)
+
+	testOptions(t, []string{}, cmd)
+}
 
 func TestYAMLOutput(t *testing.T) {
 	tests := []struct {

@@ -4,8 +4,19 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
+
+type yamlMode struct{}
+
+var _ outputMode = &yamlMode{}
+
+func (m *yamlMode) config(cmd *cobra.Command) {}
+
+func (m *yamlMode) new(cmd *cobra.Command) processor {
+	return &yamlProcessor{}
+}
 
 type yamlProcessor struct {
 }
