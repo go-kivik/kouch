@@ -2,6 +2,8 @@ package io
 
 import (
 	"bytes"
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/flimzy/diff"
@@ -124,7 +126,7 @@ func TestJSONOutput(t *testing.T) {
 				escapeHTML: test.escapeHTML,
 			}
 			buf := &bytes.Buffer{}
-			err := p.Output(buf, []byte(test.input))
+			err := p.Output(buf, ioutil.NopCloser(strings.NewReader(test.input)))
 			testy.Error(t, test.err, err)
 			if d := diff.Text(test.expected, buf.String()); d != nil {
 				t.Error(d)

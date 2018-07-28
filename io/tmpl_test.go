@@ -3,6 +3,8 @@ package io
 import (
 	"bytes"
 	"html/template"
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/flimzy/diff"
@@ -104,7 +106,7 @@ func TestTmplOutput(t *testing.T) {
 			}
 			p := &tmplProcessor{template: tmpl}
 			buf := &bytes.Buffer{}
-			err = p.Output(buf, []byte(test.input))
+			err = p.Output(buf, ioutil.NopCloser(strings.NewReader(test.input)))
 			testy.Error(t, test.err, err)
 			if d := diff.Text(test.expected, buf.String()); d != nil {
 				t.Error(d)

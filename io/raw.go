@@ -1,7 +1,6 @@
 package io
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -27,7 +26,8 @@ type rawProcessor struct{}
 
 var _ processor = &rawProcessor{}
 
-func (p *rawProcessor) Output(o io.Writer, input []byte) error {
-	_, err := io.Copy(o, bytes.NewReader(input))
+func (p *rawProcessor) Output(o io.Writer, input io.ReadCloser) error {
+	defer input.Close()
+	_, err := io.Copy(o, input)
 	return err
 }

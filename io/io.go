@@ -57,5 +57,5 @@ type outputMode interface {
 }
 
 type processor interface {
-	Output(io.Writer, []byte) error
+	Output(io.Writer, io.ReadCloser) error
 }

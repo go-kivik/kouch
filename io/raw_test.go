@@ -2,6 +2,8 @@ package io
 
 import (
 	"bytes"
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/flimzy/diff"
@@ -59,14 +61,14 @@ func TestRawOutput(t *testing.T) {
 	p := &rawProcessor{}
 	t.Run("happy path", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		err := p.Output(buf, []byte(input))
+		err := p.Output(buf, ioutil.NopCloser(strings.NewReader(input)))
 		testy.Error(t, "", err)
 		if d := diff.Text(input, buf.String()); d != nil {
 			t.Error(d)
 		}
 	})
 	t.Run("write error", func(t *testing.T) {
-		err := p.Output(&errWriter{}, []byte(input))
+		err := p.Output(&errWriter{}, ioutil.NopCloser(strings.NewReader(input)))
 		testy.Error(t, "errWriter: write error", err)
 	})
 }

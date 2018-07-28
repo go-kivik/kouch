@@ -57,9 +57,10 @@ type jsonProcessor struct {
 
 var _ processor = &jsonProcessor{}
 
-func (p *jsonProcessor) Output(o io.Writer, input []byte) error {
+func (p *jsonProcessor) Output(o io.Writer, input io.ReadCloser) error {
+	defer input.Close()
 	var unmarshaled interface{}
-	if err := json.Unmarshal(input, &unmarshaled); err != nil {
+	if err := json.NewDecoder(input).Decode(&unmarshaled); err != nil {
 		return err
 	}
 	enc := json.NewEncoder(o)

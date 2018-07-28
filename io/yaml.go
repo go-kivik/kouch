@@ -29,9 +29,10 @@ type yamlProcessor struct {
 
 var _ processor = &yamlProcessor{}
 
-func (p *yamlProcessor) Output(o io.Writer, input []byte) error {
+func (p *yamlProcessor) Output(o io.Writer, input io.ReadCloser) error {
+	defer input.Close()
 	var unmarshaled interface{}
-	if err := json.Unmarshal(input, &unmarshaled); err != nil {
+	if err := json.NewDecoder(input).Decode(&unmarshaled); err != nil {
 		return err
 	}
 	enc := yaml.NewEncoder(o)

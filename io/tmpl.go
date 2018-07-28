@@ -58,9 +58,10 @@ type tmplProcessor struct {
 
 var _ processor = &tmplProcessor{}
 
-func (p *tmplProcessor) Output(o io.Writer, input []byte) error {
+func (p *tmplProcessor) Output(o io.Writer, input io.ReadCloser) error {
+	defer input.Close()
 	var unmarshaled interface{}
-	if err := json.Unmarshal(input, &unmarshaled); err != nil {
+	if err := json.NewDecoder(input).Decode(&unmarshaled); err != nil {
 		return err
 	}
 	return p.template.Execute(o, unmarshaled)
