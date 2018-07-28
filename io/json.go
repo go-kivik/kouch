@@ -7,10 +7,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	registerOutputMode("json", &jsonMode{})
+}
+
 const (
-	optJsonPrefix     = "json-prefix"
-	optJsonIndent     = "json-indent"
-	optJsonEscapeHTML = "json-escape-html"
+	optJSONPrefix     = "json-prefix"
+	optJSONIndent     = "json-indent"
+	optJSONEscapeHTML = "json-escape-html"
 )
 
 type jsonMode struct{}
@@ -18,21 +22,21 @@ type jsonMode struct{}
 var _ outputMode = &jsonMode{}
 
 func (m *jsonMode) config(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(optJsonPrefix, "", "Prefix to begin each line of the JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
-	cmd.PersistentFlags().String(optJsonIndent, "", "Indentation string for JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
-	cmd.PersistentFlags().Bool(optJsonEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
+	cmd.PersistentFlags().String(optJSONPrefix, "", "Prefix to begin each line of the JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
+	cmd.PersistentFlags().String(optJSONIndent, "", "Indentation string for JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
+	cmd.PersistentFlags().Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
 func (m *jsonMode) new(cmd *cobra.Command) (processor, error) {
-	prefix, err := cmd.Flags().GetString(optJsonPrefix)
+	prefix, err := cmd.Flags().GetString(optJSONPrefix)
 	if err != nil {
 		return nil, err
 	}
-	indent, err := cmd.Flags().GetString(optJsonIndent)
+	indent, err := cmd.Flags().GetString(optJSONIndent)
 	if err != nil {
 		return nil, err
 	}
-	escapeHTML, err := cmd.Flags().GetBool(optJsonEscapeHTML)
+	escapeHTML, err := cmd.Flags().GetBool(optJSONEscapeHTML)
 	if err != nil {
 		return nil, err
 	}

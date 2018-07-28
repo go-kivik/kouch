@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	registerOutputMode("template", &tmplMode{})
+}
+
 const (
 	optTemplate     = "template"
 	optTemplateFile = "template-file"

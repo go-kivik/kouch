@@ -7,6 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	registerOutputMode("raw", &rawMode{})
+}
+
 type rawMode struct{}
 
 var _ outputMode = &rawMode{}
