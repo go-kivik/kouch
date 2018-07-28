@@ -12,7 +12,9 @@ func init() {
 	registerOutputMode("yaml", &yamlMode{})
 }
 
-type yamlMode struct{}
+type yamlMode struct {
+	defaultMode
+}
 
 var _ outputMode = &yamlMode{}
 

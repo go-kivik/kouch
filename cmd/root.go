@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
 	"github.com/go-kivik/kouch/cmd/registry"
+	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 
 	_ "github.com/go-kivik/kouch/cmd/get"
@@ -48,6 +49,7 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().StringP("url", "u", "", "The server's root URL")
+	io.AddFlags(rootCmd)
 
 	registry.AddSubcommands(rootCmd, l, conf)
 	return rootCmd

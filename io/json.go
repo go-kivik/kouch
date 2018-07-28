@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	registerOutputMode("json", &jsonMode{})
+	registerOutputMode("json", &jsonMode{defaultMode: true})
 }
 
 const (
@@ -17,7 +17,9 @@ const (
 	optJSONEscapeHTML = "json-escape-html"
 )
 
-type jsonMode struct{}
+type jsonMode struct {
+	defaultMode
+}
 
 var _ outputMode = &jsonMode{}
 

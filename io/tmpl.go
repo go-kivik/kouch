@@ -18,7 +18,9 @@ const (
 	optTemplateFile = "template-file"
 )
 
-type tmplMode struct{}
+type tmplMode struct {
+	defaultMode
+}
 
 var _ outputMode = &tmplMode{}
 

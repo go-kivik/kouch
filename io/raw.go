@@ -11,7 +11,9 @@ func init() {
 	registerOutputMode("raw", &rawMode{})
 }
 
-type rawMode struct{}
+type rawMode struct {
+	defaultMode
+}
 
 var _ outputMode = &rawMode{}
 
