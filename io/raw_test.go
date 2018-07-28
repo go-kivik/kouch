@@ -2,20 +2,19 @@ package io
 
 import (
 	"bytes"
-	"errors"
-	"io"
 	"testing"
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/spf13/cobra"
 )
 
-type errWriter struct{}
+func TestRawModeConfig(t *testing.T) {
+	cmd := &cobra.Command{}
+	mode := &rawMode{}
+	mode.config(cmd)
 
-var _ io.Writer = &errWriter{}
-
-func (w *errWriter) Write(_ []byte) (int, error) {
-	return 0, errors.New("errWriter: write error")
+	testOptions(t, []string{}, cmd)
 }
 
 func TestRawOutput(t *testing.T) {

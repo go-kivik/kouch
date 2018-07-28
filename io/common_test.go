@@ -1,12 +1,22 @@
 package io
 
 import (
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/flimzy/diff"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
+
+type errWriter struct{}
+
+var _ io.Writer = &errWriter{}
+
+func (w *errWriter) Write(_ []byte) (int, error) {
+	return 0, errors.New("errWriter: write error")
+}
 
 func testOptions(t *testing.T, expected []string, cmd *cobra.Command) {
 	found := make([]string, 0)

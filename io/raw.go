@@ -3,7 +3,19 @@ package io
 import (
 	"bytes"
 	"io"
+
+	"github.com/spf13/cobra"
 )
+
+type rawMode struct{}
+
+var _ outputMode = &rawMode{}
+
+func (m *rawMode) config(cmd *cobra.Command) {}
+
+func (m *rawMode) new(cmd *cobra.Command) processor {
+	return &rawProcessor{}
+}
 
 type rawProcessor struct{}
 
