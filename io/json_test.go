@@ -6,7 +6,16 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/spf13/cobra"
 )
+
+func TestJsonModeConfig(t *testing.T) {
+	cmd := &cobra.Command{}
+	mode := &jsonMode{}
+	mode.config(cmd)
+
+	testOptions(t, []string{"json-escape-html", "json-indent", "json-prefix"}, cmd)
+}
 
 func TestJSONOutput(t *testing.T) {
 	tests := []struct {
