@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/go-kivik/kouch/cmd"
+	"github.com/go-kivik/kouch/cmd/kouch/cmds"
 )
 
 func main() {
-	cmd.Run()
+	cmds.Run()
 }

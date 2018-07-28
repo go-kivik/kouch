@@ -1,4 +1,4 @@
-package cmd
+package cmds
 
 import (
 	"fmt"
@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/viper"
 
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
-	"github.com/go-kivik/kouch/cmd/registry"
+	"github.com/go-kivik/kouch/cmd/kouch/cmds/registry"
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 
-	_ "github.com/go-kivik/kouch/cmd/get"
-	_ "github.com/go-kivik/kouch/cmd/uuids"
+	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/get"
+	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/uuids"
 )
 
 const version = "0.0.1"
