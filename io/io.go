@@ -24,7 +24,7 @@ func Output(cmd *cobra.Command, result []byte, err error) {
 
 type outputMode interface {
 	config(*cobra.Command)
-	new(*cobra.Command) processor
+	new(*cobra.Command) (processor, error)
 }
 
 type processor interface {

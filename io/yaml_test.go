@@ -17,6 +17,43 @@ func TestYamlModeConfig(t *testing.T) {
 	testOptions(t, []string{}, cmd)
 }
 
+func TestYamlNew(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		parseErr string
+		expected *yamlProcessor
+		err      string
+	}{
+		{
+			name:     "happy path",
+			args:     nil,
+			expected: &yamlProcessor{},
+		},
+		{
+			name:     "invalid args",
+			args:     []string{"--foo"},
+			parseErr: "unknown flag: --foo",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			mode := &yamlMode{}
+			mode.config(cmd)
+
+			err := cmd.ParseFlags(test.args)
+			testy.Error(t, test.parseErr, err)
+
+			result, err := mode.new(cmd)
+			testy.Error(t, test.err, err)
+			if d := diff.Interface(test.expected, result); d != nil {
+				t.Error(d)
+			}
+		})
+	}
+}
+
 func TestYAMLOutput(t *testing.T) {
 	tests := []struct {
 		name     string

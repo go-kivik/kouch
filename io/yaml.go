@@ -14,8 +14,8 @@ var _ outputMode = &yamlMode{}
 
 func (m *yamlMode) config(cmd *cobra.Command) {}
 
-func (m *yamlMode) new(cmd *cobra.Command) processor {
-	return &yamlProcessor{}
+func (m *yamlMode) new(cmd *cobra.Command) (processor, error) {
+	return &yamlProcessor{}, nil
 }
 
 type yamlProcessor struct {
