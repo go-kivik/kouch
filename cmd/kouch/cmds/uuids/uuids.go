@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -20,23 +21,29 @@ func init() {
 			Short: "Returns one or more server-generated UUIDs",
 			Long: `Returns one or more Universally Unique Identifiers (UUIDs) from the
 CouchDB server.`,
-			Run: uuidsCmd,
+			Run: uuidsCmd(cx),
 		}
 		cmd.Flags().IntP("count", "C", 1, "Number of UUIDs to return")
 		return cmd
 	})
 }
 
-func uuidsCmd(cmd *cobra.Command, _ []string) {
-	count, err := cmd.Flags().GetInt("count")
-	if err != nil {
-		panic(err.Error())
+func uuidsCmd(cx *kouch.Context) func(*cobra.Command, []string) {
+	return func(cmd *cobra.Command, _ []string) {
+		count, err := cmd.Flags().GetInt("count")
+		if err != nil {
+			panic(err.Error())
+		}
+		url, err := cmd.Flags().GetString("url")
+		if err != nil {
+			panic(err.Error())
+		}
+		result, err := getUUIDs(url, count)
+		if err != nil {
+			panic(err.Error())
+		}
+		cx.Outputer.Output(os.Stdout, result)
 	}
-	url, err := cmd.Flags().GetString("url")
-	if err != nil {
-		panic(err.Error())
-	}
-	fmt.Printf("%d UUIDs coming right up, from %s\n", count, url)
 }
 
 func getUUIDs(url string, count int) (io.ReadCloser, error) {
