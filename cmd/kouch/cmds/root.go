@@ -27,7 +27,7 @@ func Run() {
 	cmd := rootCmd(l, viper.New(), version)
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
-		os.Exit(ExitUnknownFailure)
+		os.Exit(kouch.ExitUnknownFailure)
 	}
 }
 
@@ -35,7 +35,7 @@ func onInit(l log.Logger, conf *viper.Viper) func() {
 	return func() {
 		if err := ValidateConfig(conf); err != nil {
 			l.Errorln(err)
-			os.Exit(ExitFailedToInitialize)
+			os.Exit(kouch.ExitFailedToInitialize)
 		}
 	}
 }
