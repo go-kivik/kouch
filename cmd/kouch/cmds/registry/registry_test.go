@@ -6,9 +6,8 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
-	"github.com/go-kivik/kouch/log"
+	"github.com/go-kivik/kouch"
 )
 
 var registryLock sync.Mutex
@@ -24,23 +23,23 @@ func lockRegistry() func() {
 func TestAddSubcommands(t *testing.T) {
 	defer lockRegistry()()
 	initCount := 0
-	Register(nil, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register(nil, func(_ *kouch.Context) *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "foo"}
 	})
-	Register(nil, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register(nil, func(_ *kouch.Context) *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "bar"}
 	})
-	Register(nil, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register(nil, func(_ *kouch.Context) *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "baz"}
 	})
-	Register([]string{"foo"}, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register([]string{"foo"}, func(_ *kouch.Context) *cobra.Command {
 		initCount++
 		return &cobra.Command{}
 	})
-	AddSubcommands(&cobra.Command{}, nil, nil)
+	AddSubcommands(nil, &cobra.Command{})
 	if expected := 4; initCount != expected {
 		t.Errorf("Expected %d initializations, got %d", expected, initCount)
 	}
@@ -48,15 +47,15 @@ func TestAddSubcommands(t *testing.T) {
 
 func TestAddSubcommandsPanic(t *testing.T) {
 	defer lockRegistry()()
-	Register(nil, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register(nil, func(_ *kouch.Context) *cobra.Command {
 		return &cobra.Command{Use: "foo"}
 	})
-	Register([]string{"foo", "bar", "baz"}, func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	Register([]string{"foo", "bar", "baz"}, func(_ *kouch.Context) *cobra.Command {
 		return &cobra.Command{Use: "bar"}
 	})
 	recovered := func() (r interface{}) {
 		defer func() { r = recover() }()
-		AddSubcommands(&cobra.Command{}, nil, nil)
+		AddSubcommands(nil, &cobra.Command{})
 		return nil
 	}()
 	expected := "Subcommand 'foo bar' not registered"
@@ -66,7 +65,7 @@ func TestAddSubcommandsPanic(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	nilFn := func(_ log.Logger, _ *viper.Viper) *cobra.Command {
+	nilFn := func(_ *kouch.Context) *cobra.Command {
 		return nil
 	}
 	type regTest struct {

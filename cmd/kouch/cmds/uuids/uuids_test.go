@@ -3,6 +3,7 @@ package uuids
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -57,35 +58,34 @@ func uuidServer(r *uuidResponse) (url string, close func()) {
 
 func TestGetUUIDs(t *testing.T) {
 	type guTest struct {
-		name    string
-		count   int
-		url     string
-		result  interface{}
-		err     string
-		cleanup func()
+		name     string
+		count    int
+		url      string
+		expected string
+		err      string
+		cleanup  func()
 	}
 	tests := []guTest{
 		func() guTest {
 			url, close := uuidServer(&uuidResponse{count: 1})
 			return guTest{
-				name:  "defaults",
-				count: 1,
-				url:   url + "/_uuids",
-				result: map[string]interface{}{
-					"uuids": []interface{}{"3cd2f787fc320c6654befd3a4a004df6"},
-				},
-				cleanup: close,
+				name:     "defaults",
+				count:    1,
+				url:      url + "/_uuids",
+				expected: `{"uuids":["3cd2f787fc320c6654befd3a4a004df6"]}`,
+				cleanup:  close,
 			}
 		}(),
 		func() guTest {
 			url, close := uuidServer(&uuidResponse{count: 3})
 			return guTest{
-				name:  "3 uuids",
-				count: 3,
-				url:   url + "/_uuids",
-				result: map[string]interface{}{
-					"uuids": []interface{}{"3cd2f787fc320c6654befd3a4a004df6", "3cd2f787fc320c6654befd3a4a005c10", "3cd2f787fc320c6654befd3a4a00624e"},
-				},
+				name:     "3 uuids",
+				count:    3,
+				url:      url + "/_uuids",
+				expected: `{"uuids":["3cd2f787fc320c6654befd3a4a004df6","3cd2f787fc320c6654befd3a4a005c10","3cd2f787fc320c6654befd3a4a00624e"]}`,
+				// result: map[string]interface{}{
+				// 	"uuids": []interface{}{"3cd2f787fc320c6654befd3a4a004df6", "3cd2f787fc320c6654befd3a4a005c10", "3cd2f787fc320c6654befd3a4a00624e"},
+				// },
 				cleanup: close,
 			}
 		}(),
@@ -102,7 +102,12 @@ func TestGetUUIDs(t *testing.T) {
 			}
 			result, err := getUUIDs(test.url, test.count)
 			testy.Error(t, test.err, err)
-			if d := diff.Interface(test.result, result); d != nil {
+			defer result.Close()
+			resultJSON, err := ioutil.ReadAll(result)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if d := diff.JSON([]byte(test.expected), resultJSON); d != nil {
 				t.Error(d)
 			}
 		})

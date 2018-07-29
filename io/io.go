@@ -6,7 +6,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+)
+
+const (
+	optOutputFormat = "output-format"
 )
 
 type defaultMode bool
@@ -42,7 +47,21 @@ func AddFlags(cmd *cobra.Command) {
 		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
 	}
 	sort.Strings(formats)
-	cmd.PersistentFlags().StringP("output-format", "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	cmd.PersistentFlags().StringP(optOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+}
+
+// SelectOutputProcessor selects and configures the desired output processor
+// based on the flags provided in cmd.
+func SelectOutputProcessor(cmd *cobra.Command) (OutputProcessor, error) {
+	name, err := cmd.Flags().GetString(optOutputFormat)
+	if err != nil {
+		return nil, err
+	}
+	processor, ok := outputModes[name]
+	if !ok {
+		return nil, errors.Errorf("Unrecognized output format '%s'", name)
+	}
+	return processor.new(cmd)
 }
 
 type outputMode interface {
