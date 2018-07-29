@@ -1,0 +1,10 @@
+language: go
+go:
+  - 1.10.x
+
+install:
+  - go get -u gopkg.in/alecthomas/gometalinter.v2 && gometalinter.v2 --install
+
+script:
+  - gometalinter.v2 --config .linter.json
+  - go test -race ./...
