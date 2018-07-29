@@ -3,6 +3,7 @@ package uuids
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -38,12 +39,17 @@ func uuidsCmd(cmd *cobra.Command, _ []string) {
 	fmt.Printf("%d UUIDs coming right up, from %s\n", count, url)
 }
 
-func getUUIDs(url string, count int) (interface{}, error) {
+func getUUIDs(url string, count int) (io.ReadCloser, error) {
 	c, err := chttp.New(context.TODO(), url)
 	if err != nil {
 		return nil, err
 	}
-	var result interface{}
-	_, err = c.DoJSON(context.TODO(), http.MethodGet, fmt.Sprintf("/_uuids?count=%d", count), nil, &result)
-	return result, err
+	res, err := c.DoReq(context.TODO(), http.MethodGet, fmt.Sprintf("/_uuids?count=%d", count), nil)
+	if err != nil {
+		return nil, err
+	}
+	if err = chttp.ResponseError(res); err != nil {
+		return nil, err
+	}
+	return res.Body, nil
 }
