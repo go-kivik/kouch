@@ -48,12 +48,10 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 		Use:     "kouch",
 		Short:   "kouch is a command-line tool for interacting with CouchDB",
 		Version: version,
-		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			outputer, err := io.SelectOutputProcessor(cmd)
-			if err != nil {
-				kouch.Exit(err)
-			}
 			cx.Outputer = outputer
+			return err
 		},
 	}
 

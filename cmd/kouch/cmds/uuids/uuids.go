@@ -21,28 +21,28 @@ func init() {
 			Short: "Returns one or more server-generated UUIDs",
 			Long: `Returns one or more Universally Unique Identifiers (UUIDs) from the
 CouchDB server.`,
-			Run: uuidsCmd(cx),
+			RunE: uuidsCmd(cx),
 		}
 		cmd.Flags().IntP("count", "C", 1, "Number of UUIDs to return")
 		return cmd
 	})
 }
 
-func uuidsCmd(cx *kouch.Context) func(*cobra.Command, []string) {
-	return func(cmd *cobra.Command, _ []string) {
+func uuidsCmd(cx *kouch.Context) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
 		count, err := cmd.Flags().GetInt("count")
 		if err != nil {
-			panic(err.Error())
+			return err
 		}
 		url, err := cmd.Flags().GetString("url")
 		if err != nil {
-			panic(err.Error())
+			return err
 		}
 		result, err := getUUIDs(url, count)
 		if err != nil {
-			panic(err.Error())
+			return err
 		}
-		cx.Outputer.Output(os.Stdout, result)
+		return cx.Outputer.Output(os.Stdout, result)
 	}
 }
 
