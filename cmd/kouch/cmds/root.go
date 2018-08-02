@@ -1,9 +1,6 @@
 package cmds
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -26,16 +23,14 @@ func Run() {
 
 	cmd := rootCmd(l, viper.New(), version)
 	if err := cmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(ExitUnknownFailure)
+		kouch.Exit(err)
 	}
 }
 
 func onInit(l log.Logger, conf *viper.Viper) func() {
 	return func() {
 		if err := ValidateConfig(conf); err != nil {
-			l.Errorln(err)
-			os.Exit(ExitFailedToInitialize)
+			kouch.Exit(err)
 		}
 	}
 }
@@ -50,15 +45,15 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     "kouch",
-		Short:   "kouch is a command-line tool for interacting with CouchDB",
-		Version: version,
-		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+		Use:           "kouch",
+		Short:         "kouch is a command-line tool for interacting with CouchDB",
+		Version:       version,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			outputer, err := io.SelectOutputProcessor(cmd)
-			if err != nil {
-				panic(err.Error())
-			}
 			cx.Outputer = outputer
+			return err
 		},
 	}
 

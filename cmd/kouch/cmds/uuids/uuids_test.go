@@ -83,10 +83,7 @@ func TestGetUUIDs(t *testing.T) {
 				count:    3,
 				url:      url + "/_uuids",
 				expected: `{"uuids":["3cd2f787fc320c6654befd3a4a004df6","3cd2f787fc320c6654befd3a4a005c10","3cd2f787fc320c6654befd3a4a00624e"]}`,
-				// result: map[string]interface{}{
-				// 	"uuids": []interface{}{"3cd2f787fc320c6654befd3a4a004df6", "3cd2f787fc320c6654befd3a4a005c10", "3cd2f787fc320c6654befd3a4a00624e"},
-				// },
-				cleanup: close,
+				cleanup:  close,
 			}
 		}(),
 		{
