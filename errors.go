@@ -3,6 +3,8 @@ package kouch
 import (
 	"fmt"
 	"os"
+
+	"github.com/go-kivik/kivik"
 )
 
 type exitStatuser interface {
@@ -23,6 +25,13 @@ func ExitStatus(err error) int {
 // Exit outputs err.Error() to stderr, then exits with the exit status embedded
 // in the error.
 func Exit(err error) {
-	fmt.Fprintf(os.Stderr, err.Error())
-	os.Exit(ExitStatus(err))
+	exitStatus := ExitStatus(err)
+	httpStatus := kivik.StatusCode(err)
+	if httpStatus >= 400 && httpStatus < 600 {
+		fmt.Fprintf(os.Stderr, "kouch: (%d) The requested URL returned error: %d %s\n",
+			exitStatus, httpStatus, err)
+	} else {
+		fmt.Fprintf(os.Stderr, "kouch: (%d) %s\n", exitStatus, err)
+	}
+	os.Exit(exitStatus)
 }
