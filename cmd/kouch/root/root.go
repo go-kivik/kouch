@@ -11,8 +11,8 @@ import (
 	"github.com/go-kivik/kouch/log"
 
 	// The individual sub-commands
-	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/get"
-	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/uuids"
+	_ "github.com/go-kivik/kouch/cmd/kouch/get"
+	_ "github.com/go-kivik/kouch/cmd/kouch/uuids"
 )
 
 const version = "0.0.1"
