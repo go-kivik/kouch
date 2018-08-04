@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/cmds/registry"
+	"github.com/go-kivik/kouch/cmd/kouch/registry"
 )
 
 func init() {

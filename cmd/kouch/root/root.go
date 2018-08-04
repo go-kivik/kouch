@@ -6,7 +6,7 @@ import (
 
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/cmds/registry"
+	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 

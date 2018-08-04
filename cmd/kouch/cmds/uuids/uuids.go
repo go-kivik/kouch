@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/cmds/registry"
+	"github.com/go-kivik/kouch/cmd/kouch/registry"
 )
 
 func init() {
