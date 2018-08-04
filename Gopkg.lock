@@ -29,13 +29,13 @@
   branch = "master"
   name = "github.com/go-kivik/couchdb"
   packages = [".","chttp"]
-  revision = "ee2454e1b6dfd80122772f7cc071c5ea87575576"
+  revision = "9f5be63c0d72d6782bac90bc81ba06942a51c873"
 
 [[projects]]
   branch = "master"
   name = "github.com/go-kivik/kivik"
   packages = [".","driver","errors"]
-  revision = "e380a8f34a0a5d5ede6ce39b4c024ec8979e2e25"
+  revision = "60c35f428a167679f4139d4ad59d97a5aaf8081c"
 
 [[projects]]
   branch = "master"
