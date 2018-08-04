@@ -1,4 +1,4 @@
-package cmds
+package root
 
 import (
 	"github.com/spf13/viper"
