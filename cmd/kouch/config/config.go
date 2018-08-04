@@ -15,6 +15,7 @@ const (
 	flagKouchConfigFile = "kouchconfig"
 	envKouchConfigFiles = "KOUCHCONFIG"
 	kouchHome           = ".kouch"
+	dynamicContextName  = "$dynamic$"
 )
 
 func init() {
@@ -52,4 +53,5 @@ func viewConfig(cx *kouch.Context) func(*cobra.Command, []string) error {
 // AddFlags adds command line flags for global config options.
 func AddFlags(cmd *cobra.Command) {
 	cmd.Flags().String(flagKouchConfigFile, "", "Path to the kouchconfig file to use for CLI requests.")
+	cmd.PersistentFlags().StringP("url", "u", "", "The default context's root URL")
 }

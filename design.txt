@@ -158,7 +158,7 @@ The root URL may be provided:
 - With the command line options: --root, --user, --password, etc
 - In the target URL
 
-The last one that has provides _any_ of the root context, is the only one that takes effect. This is to avoid confusing situations where auth might be set by config or in the environment, and a non-matching the url in the environment or command line.
+The last one that has provided _any_ of the root context, is the only one that takes effect. This is to avoid confusing situations where auth might be set by config or in the environment, and a non-matching the url in the environment or command line.
 
 The default database may be configured by any of these means, as well. The difference is that the lowest priority scope for the default database is the same as the last scope where the root URL was defined.  This may be best explained with some examples.
 
