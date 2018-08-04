@@ -1,4 +1,4 @@
-package cmds
+package root
 
 import (
 	"github.com/spf13/cobra"
@@ -6,13 +6,13 @@ import (
 
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/cmds/registry"
+	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 
 	// The individual sub-commands
-	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/get"
-	_ "github.com/go-kivik/kouch/cmd/kouch/cmds/uuids"
+	_ "github.com/go-kivik/kouch/cmd/kouch/get"
+	_ "github.com/go-kivik/kouch/cmd/kouch/uuids"
 )
 
 const version = "0.0.1"
