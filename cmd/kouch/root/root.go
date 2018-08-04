@@ -11,6 +11,7 @@ import (
 	"github.com/go-kivik/kouch/log"
 
 	// The individual sub-commands
+	"github.com/go-kivik/kouch/cmd/kouch/config"
 	_ "github.com/go-kivik/kouch/cmd/kouch/get"
 	_ "github.com/go-kivik/kouch/cmd/kouch/uuids"
 )
@@ -44,7 +45,7 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 		Conf:   conf,
 	}
 
-	rootCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:           "kouch",
 		Short:         "kouch is a command-line tool for interacting with CouchDB",
 		Version:       version,
@@ -57,9 +58,10 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 		},
 	}
 
-	rootCmd.PersistentFlags().StringP("url", "u", "", "The server's root URL")
-	io.AddFlags(rootCmd)
+	cmd.Flags().String(config.FlagKouchConfigFile, "", "Path to the kouchconfig file to use for CLI requests.")
+	cmd.PersistentFlags().StringP("url", "u", "", "The server's root URL")
+	io.AddFlags(cmd)
 
-	registry.AddSubcommands(cx, rootCmd)
-	return rootCmd
+	registry.AddSubcommands(cx, cmd)
+	return cmd
 }
