@@ -21,7 +21,7 @@ Schema, hostname, port, root path, basic auth, and default database can all be s
 - Exit statuses should follow Curl's conventions.
 - By default, output to stdout, with option to redirect to a file with -o/--output
 
-- Config to be stored in ~/.kouch/config, or as specified by -c/--config
+- Config to be stored in ~/.kouch/config, or as specified by --kouchconfig
 - Output can be formatted as:
   raw (unparsed)
   JSON (with indentation)

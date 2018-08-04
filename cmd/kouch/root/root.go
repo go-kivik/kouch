@@ -58,9 +58,9 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(config.FlagKouchConfigFile, "", "Path to the kouchconfig file to use for CLI requests.")
 	cmd.PersistentFlags().StringP("url", "u", "", "The server's root URL")
 	io.AddFlags(cmd)
+	config.AddFlags(cmd)
 
 	registry.AddSubcommands(cx, cmd)
 	return cmd
