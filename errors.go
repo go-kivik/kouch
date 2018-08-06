@@ -14,7 +14,7 @@ type InitError string
 func (i InitError) Error() string { return string(i) }
 
 // ExitStatus returns ExitFailedToInitialize
-func (i InitError) ExitStatus() int { return ExitFailedToInitialize }
+func (i InitError) ExitStatus() int { return chttp.ExitFailedToInitialize }
 
 type exitStatuser interface {
 	ExitStatus() int
@@ -28,7 +28,7 @@ func ExitStatus(err error) int {
 	if statuser, ok := err.(exitStatuser); ok { // nolint: misspell
 		return statuser.ExitStatus()
 	}
-	return ExitUnknownFailure
+	return chttp.ExitUnknownFailure
 }
 
 // Exit outputs err.Error() to stderr, then exits with the exit status embedded
