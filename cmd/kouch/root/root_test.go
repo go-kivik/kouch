@@ -6,7 +6,6 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/go-kivik/kouch/log"
 )
@@ -23,7 +22,6 @@ func TestRootCmd(t *testing.T) {
 	tests := []struct {
 		name     string
 		log      log.Logger
-		conf     *viper.Viper
 		version  string
 		expected *cobra.Command
 	}{
@@ -40,7 +38,7 @@ func TestRootCmd(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := rootCmd(test.log, test.conf, test.version)
+			result := rootCmd(test.log, test.version)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
 			}

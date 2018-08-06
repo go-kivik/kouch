@@ -23,19 +23,19 @@ func lockRegistry() func() {
 func TestAddSubcommands(t *testing.T) {
 	defer lockRegistry()()
 	initCount := 0
-	Register(nil, func(_ *kouch.Context) *cobra.Command {
+	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "foo"}
 	})
-	Register(nil, func(_ *kouch.Context) *cobra.Command {
+	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "bar"}
 	})
-	Register(nil, func(_ *kouch.Context) *cobra.Command {
+	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "baz"}
 	})
-	Register([]string{"foo"}, func(_ *kouch.Context) *cobra.Command {
+	Register([]string{"foo"}, func(_ *kouch.CmdContext) *cobra.Command {
 		initCount++
 		return &cobra.Command{}
 	})
@@ -47,10 +47,10 @@ func TestAddSubcommands(t *testing.T) {
 
 func TestAddSubcommandsPanic(t *testing.T) {
 	defer lockRegistry()()
-	Register(nil, func(_ *kouch.Context) *cobra.Command {
+	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
 		return &cobra.Command{Use: "foo"}
 	})
-	Register([]string{"foo", "bar", "baz"}, func(_ *kouch.Context) *cobra.Command {
+	Register([]string{"foo", "bar", "baz"}, func(_ *kouch.CmdContext) *cobra.Command {
 		return &cobra.Command{Use: "bar"}
 	})
 	recovered := func() (r interface{}) {
@@ -65,7 +65,7 @@ func TestAddSubcommandsPanic(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	nilFn := func(_ *kouch.Context) *cobra.Command {
+	nilFn := func(_ *kouch.CmdContext) *cobra.Command {
 		return nil
 	}
 	type regTest struct {
