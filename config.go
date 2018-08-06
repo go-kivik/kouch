@@ -12,6 +12,10 @@ type Config struct {
 	DefaultContext string `yaml:"default-context" json:"default-context,omitempty"`
 	// Contexts is a map of referencable names to context configs
 	Contexts []NamedContext `json:"contexts,omitempty"`
+
+	// File is the file where config was read from, or more precisely, where
+	// changes will be saved to.
+	File string `json:"-" yaml:"-"`
 }
 
 // NamedContext relates nicknames to context information.
