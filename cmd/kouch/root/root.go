@@ -7,11 +7,12 @@ import (
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/config"
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 
 	// The individual sub-commands
-	"github.com/go-kivik/kouch/cmd/kouch/config"
+	_ "github.com/go-kivik/kouch/cmd/kouch/config"
 	_ "github.com/go-kivik/kouch/cmd/kouch/get"
 	_ "github.com/go-kivik/kouch/cmd/kouch/uuids"
 )

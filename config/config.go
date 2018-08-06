@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"github.com/go-kivik/kouch"
+	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -20,7 +21,14 @@ func readConfigFile(file string) (*kouch.Config, error) {
 }
 
 // ReadConfig reads the config from files, env, and/or command-line arguments.
-func ReadConfig() (*kouch.Config, error) {
+func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
+	cfgFile, err := cmd.Flags().GetString(kouch.FlagConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	if cfgFile != "" {
+		return readConfigFile(cfgFile)
+	}
 	home := kouch.Home()
 	if home != "" {
 		conf, err := readConfigFile(path.Join(home, "config"))
@@ -29,4 +37,10 @@ func ReadConfig() (*kouch.Config, error) {
 		}
 	}
 	return &kouch.Config{}, nil
+}
+
+// AddFlags adds command line flags for global config options.
+func AddFlags(cmd *cobra.Command) {
+	cmd.Flags().String(kouch.FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests.")
+	cmd.PersistentFlags().StringP("url", "u", "", "The default context's root URL")
 }

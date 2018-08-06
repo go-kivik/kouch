@@ -5,12 +5,6 @@ import (
 	"path"
 )
 
-const (
-	// kouchHome is the default directory where config is stored under the
-	// users's home directory.
-	kouchHome = ".kouch"
-)
-
 // Home returns the kouch home dir, or an empty string if the user has no
 // home directory.
 func Home() string {
@@ -18,5 +12,5 @@ func Home() string {
 	if home == "" {
 		return ""
 	}
-	return path.Join(home, kouchHome)
+	return path.Join(home, HomeDir)
 }

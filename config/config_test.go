@@ -1,15 +1,16 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/kouch"
+	"github.com/spf13/cobra"
 )
 
 var expectedConf = &kouch.Config{DefaultContext: "foo",
@@ -67,6 +68,7 @@ func TestReadConfig(t *testing.T) {
 		name     string
 		files    map[string]string
 		env      map[string]string
+		args     []string
 		expected *kouch.Config
 		err      string
 	}{
@@ -86,6 +88,25 @@ contexts:
 			},
 			expected: expectedConf,
 		},
+		{
+			name: "specific config file",
+			files: map[string]string{
+				"kouch.yaml": `default-context: foo
+contexts:
+- context:
+    root: http://foo.com/
+  name: foo
+`,
+				".kouch/config": `default-context: bar
+contexts:
+- context:
+    root: http://bar.com/
+  name: bar
+`,
+			},
+			args:     []string{"--kouchconfig", "${HOME}/kouch.yaml"},
+			expected: expectedConf,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -94,13 +115,11 @@ contexts:
 			defer testy.RestoreEnv()()
 			env := map[string]string{"HOME": *tmpDir}
 			for k, v := range test.env {
-				env[k] = v
+				env[k] = strings.Replace(v, "${HOME}", *tmpDir, -1)
 			}
 			testy.SetEnv(env)
 			for filename, content := range test.files {
 				file := path.Join(*tmpDir, filename)
-				fmt.Printf("gonna create %s\n", file)
-				fmt.Printf("Creating dir: %s\n", path.Dir(file))
 				if err := os.MkdirAll(path.Dir(file), 0777); err != nil {
 					t.Fatal(err)
 				}
@@ -108,7 +127,15 @@ contexts:
 					t.Fatal(err)
 				}
 			}
-			conf, err := ReadConfig()
+
+			cmd := &cobra.Command{}
+			AddFlags(cmd)
+			for i, v := range test.args {
+				test.args[i] = strings.Replace(v, "${HOME}", *tmpDir, -1)
+			}
+			cmd.ParseFlags(test.args)
+
+			conf, err := ReadConfig(cmd)
 			testy.ErrorRE(t, test.err, err)
 			if d := diff.Interface(test.expected, conf); d != nil {
 				t.Fatal(d)
