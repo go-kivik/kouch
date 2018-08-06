@@ -1,9 +1,7 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
@@ -27,6 +25,6 @@ func init() {
 
 func viewConfig(cx *kouch.CmdContext) func(*cobra.Command, []string) error {
 	return func(_ *cobra.Command, _ []string) error {
-		return cx.Outputer.Output(os.Stdout, ioutil.NopCloser(strings.NewReader(`{"foo":"bar"}`)))
+		return cx.Outputer.Output(os.Stdout, cx.Conf.Dump())
 	}
 }
