@@ -1,4 +1,4 @@
-package kouch
+package config
 
 import (
 	"os"
@@ -12,5 +12,5 @@ func Home() string {
 	if home == "" {
 		return ""
 	}
-	return path.Join(home, HomeDir)
+	return path.Join(home, homeDir)
 }

@@ -1,4 +1,4 @@
-package kouch
+package config
 
 import (
 	"os"
