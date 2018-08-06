@@ -41,6 +41,11 @@ func rootCmd(l log.Logger, version string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			output, err := io.SelectOutput(cmd)
+			if err != nil {
+				return err
+			}
+			cx.Output = output
 			outputer, err := io.SelectOutputProcessor(cmd)
 			if err != nil {
 				return err

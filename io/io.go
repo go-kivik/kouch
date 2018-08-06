@@ -3,6 +3,7 @@ package io
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 
@@ -11,7 +12,11 @@ import (
 )
 
 const (
+	// FlagOutputFile specifies where to write output.
+	FlagOutputFile   = "output"
 	flagOutputFormat = "output-format"
+	// flagClobber indicates whether output files should be overwritten
+	flagClobber = "force"
 )
 
 type defaultMode bool
@@ -47,7 +52,30 @@ func AddFlags(cmd *cobra.Command) {
 		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
 	}
 	sort.Strings(formats)
-	cmd.PersistentFlags().StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	pf := cmd.PersistentFlags()
+	pf.StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	pf.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
+	pf.BoolP(flagClobber, "", false, "Overwrite destination files")
+}
+
+// SelectOutput returns an io.Writer for the output.
+func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
+	output, err := cmd.Flags().GetString(FlagOutputFile)
+	if err != nil {
+		return nil, err
+	}
+	if output == "" || output == "-" {
+		// Default to stdout
+		return os.Stdout, nil
+	}
+	clobber, err := cmd.Flags().GetBool(flagClobber)
+	if err != nil {
+		return nil, err
+	}
+	if clobber {
+		return os.Create(output)
+	}
+	return os.OpenFile(output, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
 }
 
 // SelectOutputProcessor selects and configures the desired output processor
