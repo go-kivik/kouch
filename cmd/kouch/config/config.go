@@ -3,7 +3,6 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/go-kivik/kouch"
@@ -16,20 +15,6 @@ const (
 )
 
 func init() {
-	registry.Register([]string{}, func(_ *kouch.CmdContext) *cobra.Command {
-		cmd := &cobra.Command{
-			Use:   "config",
-			Short: "Modify kouchconfig files",
-			Long: `Modify kouchconfig files using subcommands.
-
-The loading order follows these rules:
-
-  1. If the --` + kouch.FlagConfigFile + ` flag is set, that file is loaded.  The flag may only be set once and no merging takes place.
-  2. Otherwise, ` + path.Join("${HOME}", kouch.HomeDir) + `/config is used and no merging takes place.`,
-		}
-		return cmd
-	})
-
 	registry.Register([]string{"config"}, func(cx *kouch.CmdContext) *cobra.Command {
 		cmd := &cobra.Command{
 			Use:   "view",

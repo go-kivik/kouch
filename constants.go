@@ -1,15 +1,5 @@
 package kouch
 
-const (
-	// HomeDir is the default directory where config is stored under the user's
-	// home directory.
-	HomeDir = ".kouch"
-
-	// FlagConfigFile is the commandline flag used to set the global config
-	// file.
-	FlagConfigFile = "kouchconfig"
-)
-
 // Exit statuses, borrowed from Curl. Not all Curl statuses are represented here.
 const (
 	// Exited with an unknown failure.
