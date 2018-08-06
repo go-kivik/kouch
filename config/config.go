@@ -22,14 +22,35 @@ func readConfigFile(file string) (*kouch.Config, error) {
 
 // ReadConfig reads the config from files, env, and/or command-line arguments.
 func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
-	cfgFile, err := cmd.Flags().GetString(kouch.FlagConfigFile)
+	conf, err := fileConf(cmd)
+	if err != nil {
+		return nil, err
+	}
+	root, err := cmd.Flags().GetString(flagServerRoot)
+	if err != nil {
+		return nil, err
+	}
+	if root != "" {
+		conf.DefaultContext = dynamicContextName
+		conf.Contexts = append(conf.Contexts, kouch.NamedContext{
+			Name: dynamicContextName,
+			Context: &kouch.Context{
+				Root: root,
+			},
+		})
+	}
+	return conf, nil
+}
+
+func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
+	cfgFile, err := cmd.Flags().GetString(flagConfigFile)
 	if err != nil {
 		return nil, err
 	}
 	if cfgFile != "" {
 		return readConfigFile(cfgFile)
 	}
-	home := kouch.Home()
+	home := Home()
 	if home != "" {
 		conf, err := readConfigFile(path.Join(home, "config"))
 		if err == nil || !os.IsNotExist(err) {
@@ -41,6 +62,6 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 
 // AddFlags adds command line flags for global config options.
 func AddFlags(cmd *cobra.Command) {
-	cmd.Flags().String(kouch.FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests.")
-	cmd.PersistentFlags().StringP("url", "u", "", "The default context's root URL")
+	cmd.Flags().String(flagConfigFile, "", "Path to the kouchconfig file to use for CLI requests.")
+	cmd.PersistentFlags().StringP(flagServerRoot, "r", "", "The default context's root URL")
 }

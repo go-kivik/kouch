@@ -107,6 +107,21 @@ contexts:
 			args:     []string{"--kouchconfig", "${HOME}/kouch.yaml"},
 			expected: expectedConf,
 		},
+		{
+			name: "no config, url on command line",
+			args: []string{"--root", "foo.com"},
+			expected: &kouch.Config{
+				DefaultContext: dynamicContextName,
+				Contexts: []kouch.NamedContext{
+					{
+						Name: dynamicContextName,
+						Context: &kouch.Context{
+							Root: "foo.com",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

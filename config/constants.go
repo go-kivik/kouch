@@ -8,4 +8,7 @@ const (
 	// flagConfigFile is the commandline flag used to set the global config
 	// file.
 	flagConfigFile = "kouchconfig"
+	flagServerRoot = "root"
+
+	dynamicContextName = "$dynamic$"
 )
