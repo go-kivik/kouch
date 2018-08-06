@@ -14,10 +14,10 @@
   version = "v0.1.2"
 
 [[projects]]
+  branch = "master"
   name = "github.com/flimzy/testy"
   packages = ["."]
-  revision = "5da702c957f9ad08a56955c7cc2d7b0fb31590a5"
-  version = "v0.0.5"
+  revision = "31c43f571df3fba7e95b75d9719ffdff9d069725"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -148,6 +148,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0ca24d6a743d94d2fbf13159677b69bf748e9292b149c10a9fdff5f63d042a68"
+  inputs-digest = "d17fa5fcc62430669cf9d867eb98fa5f9d9b305606a89f5a6b2921d2096bd895"
   solver-name = "gps-cdcl"
   solver-version = 1

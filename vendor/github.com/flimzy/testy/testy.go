@@ -68,7 +68,7 @@ func StatusErrorRE(t *testing.T, expected string, status int, actual error) {
 		err = actual.Error()
 		actualStatus = StatusCode(actual)
 	}
-	if !regexp.MustCompile(expected).MatchString(err) {
+	if !regexp.MustCompile(expected).MatchString(err) || (expected == "" && err != "") {
 		t.Errorf("Unexpected error: %s (expected /%s/)", err, expected)
 	}
 	if status != actualStatus {
@@ -87,8 +87,70 @@ func ErrorRE(t *testing.T, expected string, actual error) {
 	if actual != nil {
 		err = actual.Error()
 	}
-	if !regexp.MustCompile(expected).MatchString(err) {
+	if !regexp.MustCompile(expected).MatchString(err) || (expected == "" && err != "") {
 		t.Errorf("Unexpected error: %s (expected /%s/)", err, expected)
+	}
+	if actual != nil {
+		t.SkipNow()
+	}
+}
+
+type exitStatuser interface {
+	ExitStatus() int
+}
+
+// ExitStatus returns the exit status embedded in the error, or 1 (unknown
+// error) if there is no specific status code.
+func ExitStatus(err error) int {
+	if err == nil {
+		return 0
+	}
+	if coder, ok := err.(exitStatuser); ok {
+		return coder.ExitStatus()
+	}
+	return 1
+}
+
+// ExitStatusError compares actual.Error() and the embeded exit status against
+// expected, and triggers an error if they do not match. If actual is non-nil,
+// t.SkipNow() is called as well.
+func ExitStatusError(t *testing.T, expected string, eStatus int, actual error) {
+	var err string
+	var actualEStatus int
+	if actual != nil {
+		err = actual.Error()
+		actualEStatus = ExitStatus(actual)
+	}
+	if expected != err {
+		t.Errorf("Unexpected error: %s (expected %s)", err, expected)
+	}
+	if eStatus != actualEStatus {
+		t.Errorf("Unexpected exit status: %d (expected %d)", actualEStatus, eStatus)
+	}
+	if actual != nil {
+		t.SkipNow()
+	}
+}
+
+// FullError compares actual.Error() and the embeded HTTP and exit statuses
+// against expected, and triggers an error if they do not match. If actual is
+// non-nil, t.SkipNow() is called as well.
+func FullError(t *testing.T, expected string, status, eStatus int, actual error) {
+	var err string
+	var actualStatus, actualEStatus int
+	if actual != nil {
+		err = actual.Error()
+		actualStatus = StatusCode(actual)
+		actualEStatus = ExitStatus(actual)
+	}
+	if expected != err {
+		t.Errorf("Unexpected error: %s (expected %s)", err, expected)
+	}
+	if status != actualStatus {
+		t.Errorf("Unexpected exit status: %d (expected %d)", actualStatus, status)
+	}
+	if eStatus != actualEStatus {
+		t.Errorf("Unexpected exit status: %d (expected %d)", actualEStatus, eStatus)
 	}
 	if actual != nil {
 		t.SkipNow()
