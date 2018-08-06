@@ -16,8 +16,11 @@ func readConfigFile(file string) (*kouch.Config, error) {
 		return nil, err
 	}
 	var conf *kouch.Config
-	err = yaml.NewDecoder(r).Decode(&conf)
-	return conf, err
+	if e := yaml.NewDecoder(r).Decode(&conf); e != nil {
+		return nil, e
+	}
+	conf.File = file
+	return conf, nil
 }
 
 // ReadConfig reads the config from files, env, and/or command-line arguments.

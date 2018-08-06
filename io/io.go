@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	optOutputFormat = "output-format"
+	flagOutputFormat = "output-format"
 )
 
 type defaultMode bool
@@ -47,13 +47,13 @@ func AddFlags(cmd *cobra.Command) {
 		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
 	}
 	sort.Strings(formats)
-	cmd.PersistentFlags().StringP(optOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	cmd.PersistentFlags().StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
 }
 
 // SelectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
 func SelectOutputProcessor(cmd *cobra.Command) (OutputProcessor, error) {
-	name, err := cmd.Flags().GetString(optOutputFormat)
+	name, err := cmd.Flags().GetString(flagOutputFormat)
 	if err != nil {
 		return nil, err
 	}

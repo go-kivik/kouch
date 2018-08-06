@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -24,10 +25,11 @@ var expectedConf = &kouch.Config{DefaultContext: "foo",
 
 func TestReadConfigFile(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected *kouch.Config
-		err      string
+		name         string
+		input        string
+		expected     *kouch.Config
+		expectedFile string
+		err          string
 	}{
 		{
 			name: "not found",
@@ -41,7 +43,8 @@ contexts:
     root: http://foo.com/
   name: foo
 `,
-			expected: expectedConf,
+			expected:     expectedConf,
+			expectedFile: "^/tmp/TestReadConfigFile_yaml_input-\\d+/config$",
 		},
 	}
 	for _, test := range tests {
@@ -56,6 +59,12 @@ contexts:
 			}
 			conf, err := readConfigFile(file)
 			testy.ErrorRE(t, test.err, err)
+			if test.expectedFile != "" {
+				if !regexp.MustCompile(test.expectedFile).MatchString(conf.File) {
+					t.Errorf("Conf file\nExpected: %s\n  Actual: %s\n", test.expectedFile, conf.File)
+				}
+				conf.File = ""
+			}
 			if d := diff.Interface(test.expected, conf); d != nil {
 				t.Fatal(d)
 			}
@@ -65,12 +74,13 @@ contexts:
 
 func TestReadConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		files    map[string]string
-		env      map[string]string
-		args     []string
-		expected *kouch.Config
-		err      string
+		name         string
+		files        map[string]string
+		env          map[string]string
+		args         []string
+		expected     *kouch.Config
+		expectedFile string
+		err          string
 	}{
 		{
 			name:     "no config",
@@ -86,7 +96,8 @@ contexts:
   name: foo
 `,
 			},
-			expected: expectedConf,
+			expected:     expectedConf,
+			expectedFile: "^/tmp/TestReadConfig_default_config_only-\\d+/.kouch/config$",
 		},
 		{
 			name: "specific config file",
@@ -104,8 +115,9 @@ contexts:
   name: bar
 `,
 			},
-			args:     []string{"--kouchconfig", "${HOME}/kouch.yaml"},
-			expected: expectedConf,
+			args:         []string{"--kouchconfig", "${HOME}/kouch.yaml"},
+			expected:     expectedConf,
+			expectedFile: "^/tmp/TestReadConfig_specific_config_file-\\d+/kouch.yaml$",
 		},
 		{
 			name: "no config, url on command line",
@@ -152,6 +164,12 @@ contexts:
 
 			conf, err := ReadConfig(cmd)
 			testy.ErrorRE(t, test.err, err)
+			if test.expectedFile != "" {
+				if !regexp.MustCompile(test.expectedFile).MatchString(conf.File) {
+					t.Errorf("Conf file\nExpected: %s\n  Actual: %s\n", test.expectedFile, conf.File)
+				}
+				conf.File = ""
+			}
 			if d := diff.Interface(test.expected, conf); d != nil {
 				t.Fatal(d)
 			}
