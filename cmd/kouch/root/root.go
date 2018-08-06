@@ -40,7 +40,7 @@ func onInit(l log.Logger, conf *viper.Viper) func() {
 func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 	cobra.OnInitialize(onInit(l, conf))
 
-	cx := &kouch.Context{
+	cx := &kouch.CmdContext{
 		Logger: l,
 		Conf:   conf,
 	}

@@ -19,7 +19,7 @@ const (
 )
 
 func init() {
-	registry.Register([]string{}, func(_ *kouch.Context) *cobra.Command {
+	registry.Register([]string{}, func(_ *kouch.CmdContext) *cobra.Command {
 		cmd := &cobra.Command{
 			Use:   "config",
 			Short: "Modify kouchconfig files",
@@ -34,7 +34,7 @@ The loading order follows these rules:
 		return cmd
 	})
 
-	registry.Register([]string{"config"}, func(cx *kouch.Context) *cobra.Command {
+	registry.Register([]string{"config"}, func(cx *kouch.CmdContext) *cobra.Command {
 		cmd := &cobra.Command{
 			Use:   "view",
 			Short: "Display merged kouchconfig settings or a specified kouchconfig file",
@@ -44,7 +44,7 @@ The loading order follows these rules:
 	})
 }
 
-func viewConfig(cx *kouch.Context) func(*cobra.Command, []string) error {
+func viewConfig(cx *kouch.CmdContext) func(*cobra.Command, []string) error {
 	return func(_ *cobra.Command, _ []string) error {
 		return cx.Outputer.Output(os.Stdout, ioutil.NopCloser(strings.NewReader(`{"foo":"bar"}`)))
 	}

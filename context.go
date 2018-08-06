@@ -7,8 +7,8 @@ import (
 	"github.com/go-kivik/kouch/log"
 )
 
-// Context is the command execution context.
-type Context struct {
+// CmdContext is the command execution context.
+type CmdContext struct {
 	Logger   log.Logger
 	Conf     *viper.Viper
 	Outputer io.OutputProcessor

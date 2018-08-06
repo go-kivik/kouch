@@ -11,7 +11,7 @@ import (
 )
 
 // CommandInitFunc returns a cobra sub command.
-type CommandInitFunc func(cx *kouch.Context) *cobra.Command
+type CommandInitFunc func(cx *kouch.CmdContext) *cobra.Command
 
 type subCommand struct {
 	children  map[string]*subCommand
@@ -43,7 +43,7 @@ func Register(parent []string, fn CommandInitFunc) {
 }
 
 // AddSubcommands initializes and adds all registered subcommands to cmd.
-func AddSubcommands(cx *kouch.Context, cmd *cobra.Command) {
+func AddSubcommands(cx *kouch.CmdContext, cmd *cobra.Command) {
 	initMU.Lock()
 	defer initMU.Unlock()
 	if err := addSubcommands(cx, cmd, nil, rootCommand); err != nil {
@@ -51,7 +51,7 @@ func AddSubcommands(cx *kouch.Context, cmd *cobra.Command) {
 	}
 }
 
-func addSubcommands(cx *kouch.Context, cmd *cobra.Command, path []string, cmdMap *subCommand) error {
+func addSubcommands(cx *kouch.CmdContext, cmd *cobra.Command, path []string, cmdMap *subCommand) error {
 	children := make(map[string]*cobra.Command)
 	for _, fn := range cmdMap.initFuncs {
 		subCmd := fn(cx)

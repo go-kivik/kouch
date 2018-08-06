@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"get"}, func(cx *kouch.Context) *cobra.Command {
+	registry.Register([]string{"get"}, func(cx *kouch.CmdContext) *cobra.Command {
 		cmd := &cobra.Command{
 			Use:   "uuids",
 			Short: "Returns one or more server-generated UUIDs",
@@ -28,7 +28,7 @@ CouchDB server.`,
 	})
 }
 
-func uuidsCmd(cx *kouch.Context) func(*cobra.Command, []string) error {
+func uuidsCmd(cx *kouch.CmdContext) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		count, err := cmd.Flags().GetInt("count")
 		if err != nil {
