@@ -3,7 +3,7 @@ package kouch
 // Config represents the kouch tool configuration.
 type Config struct {
 	// DefaultContext is the name of the context to be used by default.
-	DefaultContext string
+	DefaultContext string `yaml:"default-context"`
 	// Contexts is a map of referencable names to context configs
 	Contexts []NamedContext
 }
