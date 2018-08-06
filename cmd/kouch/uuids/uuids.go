@@ -34,11 +34,11 @@ func uuidsCmd(cx *kouch.CmdContext) func(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
-		url, err := cmd.Flags().GetString("url")
+		ctx, err := cx.Conf.DefaultCtx()
 		if err != nil {
 			return err
 		}
-		result, err := getUUIDs(url, count)
+		result, err := getUUIDs(ctx.Root, count)
 		if err != nil {
 			return err
 		}

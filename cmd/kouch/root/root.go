@@ -2,7 +2,6 @@ package root
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
 	"github.com/go-kivik/kouch"
@@ -23,27 +22,16 @@ const version = "0.0.1"
 func Run() {
 	l := log.New()
 
-	cmd := rootCmd(l, viper.New(), version)
+	cmd := rootCmd(l, version)
 	if err := cmd.Execute(); err != nil {
 		kouch.Exit(err)
 	}
 }
 
-func onInit(l log.Logger, conf *viper.Viper) func() {
-	return func() {
-		if err := ValidateConfig(conf); err != nil {
-			kouch.Exit(err)
-		}
-	}
-}
-
 // Run initializes the root command, adds subordinate commands, then executes.
-func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
-	cobra.OnInitialize(onInit(l, conf))
-
+func rootCmd(l log.Logger, version string) *cobra.Command {
 	cx := &kouch.CmdContext{
 		Logger: l,
-		Conf:   conf,
 	}
 
 	cmd := &cobra.Command{
@@ -54,8 +42,16 @@ func rootCmd(l log.Logger, conf *viper.Viper, version string) *cobra.Command {
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			outputer, err := io.SelectOutputProcessor(cmd)
+			if err != nil {
+				return err
+			}
 			cx.Outputer = outputer
-			return err
+			conf, err := config.ReadConfig(cmd)
+			if err != nil {
+				return err
+			}
+			cx.Conf = conf
+			return nil
 		},
 	}
 

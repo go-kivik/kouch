@@ -1,8 +1,6 @@
 package kouch
 
 import (
-	"github.com/spf13/viper"
-
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 )
@@ -10,6 +8,6 @@ import (
 // CmdContext is the command execution context.
 type CmdContext struct {
 	Logger   log.Logger
-	Conf     *viper.Viper
+	Conf     *Config
 	Outputer io.OutputProcessor
 }
