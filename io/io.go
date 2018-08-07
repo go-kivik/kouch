@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 )
@@ -74,18 +73,10 @@ func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
 		return nil, err
 	}
 
-	f, err := openFile(output, clobber)
-	if err != nil {
-		return nil, &errors.ExitError{Err: err, ExitCode: chttp.ExitWriteError}
-	}
-	return f, nil
-}
-
-func openFile(filename string, clobber bool) (io.Writer, error) {
-	if clobber {
-		return os.Create(filename)
-	}
-	return os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
+	return &delayedOpenWriter{
+		filename: output,
+		clobber:  clobber,
+	}, nil
 }
 
 // SelectOutputProcessor selects and configures the desired output processor
