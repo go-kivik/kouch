@@ -56,7 +56,7 @@ targets:
     all_dbs
     db_updates
     stats
-    uuids
+    uuids [done]
     membership
     session
     config

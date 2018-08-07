@@ -3,15 +3,21 @@ package io
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 )
 
 const (
+	// FlagOutputFile specifies where to write output.
+	FlagOutputFile   = "output"
 	flagOutputFormat = "output-format"
+	// flagClobber indicates whether output files should be overwritten
+	flagClobber = "force"
 )
 
 type defaultMode bool
@@ -47,7 +53,39 @@ func AddFlags(cmd *cobra.Command) {
 		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
 	}
 	sort.Strings(formats)
-	cmd.PersistentFlags().StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	pf := cmd.PersistentFlags()
+	pf.StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	pf.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
+	pf.BoolP(flagClobber, "", false, "Overwrite destination files")
+}
+
+// SelectOutput returns an io.Writer for the output.
+func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
+	output, err := cmd.Flags().GetString(FlagOutputFile)
+	if err != nil {
+		return nil, err
+	}
+	if output == "" || output == "-" {
+		// Default to stdout
+		return os.Stdout, nil
+	}
+	clobber, err := cmd.Flags().GetBool(flagClobber)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := openFile(output, clobber)
+	if err != nil {
+		return nil, &errors.ExitError{Err: err, ExitCode: chttp.ExitWriteError}
+	}
+	return f, nil
+}
+
+func openFile(filename string, clobber bool) (io.Writer, error) {
+	if clobber {
+		return os.Create(filename)
+	}
+	return os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
 }
 
 // SelectOutputProcessor selects and configures the desired output processor

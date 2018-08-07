@@ -132,6 +132,27 @@ func ExitStatusError(t *testing.T, expected string, eStatus int, actual error) {
 	}
 }
 
+// ExitStatusErrorRE compares actual.Error() and the embeded exit status against
+// expected, and triggers an error if they do not match. If actual is non-nil,
+// t.SkipNow() is called as well.
+func ExitStatusErrorRE(t *testing.T, expected string, eStatus int, actual error) {
+	var err string
+	var actualEStatus int
+	if actual != nil {
+		err = actual.Error()
+		actualEStatus = ExitStatus(actual)
+	}
+	if !regexp.MustCompile(expected).MatchString(err) || (expected == "" && err != "") {
+		t.Errorf("Unexpected error: %s (expected %s)", err, expected)
+	}
+	if actualEStatus != eStatus {
+		t.Errorf("Unexpected exit status: %d (expected %d)", actualEStatus, eStatus)
+	}
+	if actual != nil {
+		t.SkipNow()
+	}
+}
+
 // FullError compares actual.Error() and the embeded HTTP and exit statuses
 // against expected, and triggers an error if they do not match. If actual is
 // non-nil, t.SkipNow() is called as well.

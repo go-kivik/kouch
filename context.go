@@ -1,7 +1,9 @@
 package kouch
 
 import (
-	"github.com/go-kivik/kouch/io"
+	"io"
+
+	kio "github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 )
 
@@ -9,5 +11,6 @@ import (
 type CmdContext struct {
 	Logger   log.Logger
 	Conf     *Config
-	Outputer io.OutputProcessor
+	Output   io.Writer
+	Outputer kio.OutputProcessor
 }

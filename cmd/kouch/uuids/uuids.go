@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -42,7 +41,7 @@ func uuidsCmd(cx *kouch.CmdContext) func(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
-		return cx.Outputer.Output(os.Stdout, result)
+		return cx.Outputer.Output(cx.Output, result)
 	}
 }
 
