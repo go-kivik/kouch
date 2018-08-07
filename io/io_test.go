@@ -136,8 +136,11 @@ func TestSelectOutput(t *testing.T) {
 			AddFlags(cmd)
 			cmd.ParseFlags(test.args)
 			f, err := SelectOutput(cmd)
-			testy.ExitStatusErrorRE(t, test.err, test.exitStatus, err)
-			if file, ok := f.(*os.File); ok {
+			if err != nil {
+				t.Fatal(err)
+			}
+			switch file := f.(type) {
+			case *os.File:
 				if test.expectedFd != 0 {
 					if test.expectedFd != file.Fd() {
 						t.Errorf("Unexpected FD: Got %d, expected %d", file.Fd(), test.expectedFd)
@@ -146,9 +149,16 @@ func TestSelectOutput(t *testing.T) {
 				if test.expectedName != "" && test.expectedName != file.Name() {
 					t.Errorf("Unexpected name: Got %q, expected %q", file.Name(), test.expectedName)
 				}
-			} else {
+			case *delayedOpenWriter:
+				if test.expectedName != "" && test.expectedName != file.filename {
+					t.Errorf("Unexpected name: Got %q, expected %q", file.filename, test.expectedName)
+				}
+			default:
 				t.Errorf("Unexpected return type: %T", f)
 			}
+
+			_, err = f.Write([]byte("foo"))
+			testy.ExitStatusErrorRE(t, test.err, test.exitStatus, err)
 		})
 	}
 }
