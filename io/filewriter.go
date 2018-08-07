@@ -3,9 +3,6 @@ package io
 import (
 	"io"
 	"os"
-
-	"github.com/go-kivik/couchdb/chttp"
-	"github.com/go-kivik/kouch/internal/errors"
 )
 
 type delayedOpenWriter struct {
@@ -21,7 +18,7 @@ func (w *delayedOpenWriter) Write(p []byte) (int, error) {
 		var err error
 		w.w, err = w.open()
 		if err != nil {
-			return 0, &errors.ExitError{Err: err, ExitCode: chttp.ExitWriteError}
+			return 0, err
 		}
 	}
 	return w.w.Write(p)

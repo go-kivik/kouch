@@ -7,7 +7,6 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/spf13/cobra"
 )
 
@@ -29,27 +28,27 @@ func TestSelectOutputProcessor(t *testing.T) {
 		{
 			name:     "default output",
 			args:     nil,
-			expected: &jsonProcessor{},
+			expected: &errWrapper{&jsonProcessor{}},
 		},
 		{
 			name:     "explicit json with options",
 			args:     []string{"--output-format", "json", "--json-prefix", "xx"},
-			expected: &jsonProcessor{prefix: "xx"},
+			expected: &errWrapper{&jsonProcessor{prefix: "xx"}},
 		},
 		{
 			name:     "default json with options",
 			args:     []string{"--json-indent", "xx"},
-			expected: &jsonProcessor{indent: "xx"},
+			expected: &errWrapper{&jsonProcessor{indent: "xx"}},
 		},
 		{
 			name:     "raw output",
 			args:     []string{"-F", "raw"},
-			expected: &rawProcessor{},
+			expected: &errWrapper{&rawProcessor{}},
 		},
 		{
 			name:     "YAML output",
 			args:     []string{"-F", "yaml"},
-			expected: &yamlProcessor{},
+			expected: &errWrapper{&yamlProcessor{}},
 		},
 		{
 			name: "template output, no template",
@@ -84,7 +83,6 @@ func TestSelectOutput(t *testing.T) {
 		args         []string
 		expectedFd   uintptr
 		expectedName string
-		exitStatus   int
 		err          string
 		cleanup      func()
 	}
@@ -100,18 +98,16 @@ func TestSelectOutput(t *testing.T) {
 			}
 			f.Close()
 			return soTest{
-				name:       "overwrite error",
-				args:       []string{"--" + FlagOutputFile, f.Name()},
-				err:        "^open /tmp/overwrite\\d+: file exists$",
-				exitStatus: chttp.ExitWriteError,
-				cleanup:    func() { _ = os.Remove(f.Name()) },
+				name:    "overwrite error",
+				args:    []string{"--" + FlagOutputFile, f.Name()},
+				err:     "^open /tmp/overwrite\\d+: file exists$",
+				cleanup: func() { _ = os.Remove(f.Name()) },
 			}
 		}(),
 		{
-			name:       "Missing parent dir",
-			args:       []string{"--" + FlagOutputFile, "./foo/bar/baz"},
-			exitStatus: chttp.ExitWriteError,
-			err:        "open ./foo/bar/baz: no such file or directory",
+			name: "Missing parent dir",
+			args: []string{"--" + FlagOutputFile, "./foo/bar/baz"},
+			err:  "open ./foo/bar/baz: no such file or directory",
 		},
 		func() soTest {
 			f, err := ioutil.TempFile("", "overwrite")
@@ -158,7 +154,7 @@ func TestSelectOutput(t *testing.T) {
 			}
 
 			_, err = f.Write([]byte("foo"))
-			testy.ExitStatusErrorRE(t, test.err, test.exitStatus, err)
+			testy.ErrorRE(t, test.err, err)
 		})
 	}
 }

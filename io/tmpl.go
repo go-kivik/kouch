@@ -1,7 +1,6 @@
 package io
 
 import (
-	"encoding/json"
 	"html/template"
 	"io"
 
@@ -60,8 +59,8 @@ var _ OutputProcessor = &tmplProcessor{}
 
 func (p *tmplProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()
-	var unmarshaled interface{}
-	if err := json.NewDecoder(input).Decode(&unmarshaled); err != nil {
+	unmarshaled, err := unmarshal(input)
+	if err != nil {
 		return err
 	}
 	return p.template.Execute(o, unmarshaled)

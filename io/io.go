@@ -90,7 +90,8 @@ func SelectOutputProcessor(cmd *cobra.Command) (OutputProcessor, error) {
 	if !ok {
 		return nil, errors.Errorf("Unrecognized output format '%s'", name)
 	}
-	return processor.new(cmd)
+	p, err := processor.new(cmd)
+	return &errWrapper{p}, err
 }
 
 type outputMode interface {
