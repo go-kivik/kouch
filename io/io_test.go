@@ -7,6 +7,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/spf13/cobra"
 )
 
@@ -83,6 +84,7 @@ func TestSelectOutput(t *testing.T) {
 		args         []string
 		expectedFd   uintptr
 		expectedName string
+		exitStatus   int
 		err          string
 		cleanup      func()
 	}
@@ -98,12 +100,19 @@ func TestSelectOutput(t *testing.T) {
 			}
 			f.Close()
 			return soTest{
-				name:    "overwrite error",
-				args:    []string{"--" + FlagOutputFile, f.Name()},
-				err:     "^open /tmp/overwrite\\d+: file exists$",
-				cleanup: func() { _ = os.Remove(f.Name()) },
+				name:       "overwrite error",
+				args:       []string{"--" + FlagOutputFile, f.Name()},
+				err:        "^open /tmp/overwrite\\d+: file exists$",
+				exitStatus: chttp.ExitWriteError,
+				cleanup:    func() { _ = os.Remove(f.Name()) },
 			}
 		}(),
+		{
+			name:       "Missing parent dir",
+			args:       []string{"--" + FlagOutputFile, "./foo/bar/baz"},
+			exitStatus: chttp.ExitWriteError,
+			err:        "open ./foo/bar/baz: no such file or directory",
+		},
 		func() soTest {
 			f, err := ioutil.TempFile("", "overwrite")
 			if err != nil {
@@ -127,7 +136,7 @@ func TestSelectOutput(t *testing.T) {
 			AddFlags(cmd)
 			cmd.ParseFlags(test.args)
 			f, err := SelectOutput(cmd)
-			testy.ErrorRE(t, test.err, err)
+			testy.ExitStatusErrorRE(t, test.err, test.exitStatus, err)
 			if file, ok := f.(*os.File); ok {
 				if test.expectedFd != 0 {
 					if test.expectedFd != file.Fd() {
