@@ -28,3 +28,11 @@ func testOptions(t *testing.T, expected []string, cmd *cobra.Command) {
 		t.Error(d)
 	}
 }
+
+type errReader struct{}
+
+var _ io.Reader = &errReader{}
+
+func (r *errReader) Read(_ []byte) (int, error) {
+	return 0, errors.New("read error")
+}
