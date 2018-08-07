@@ -34,5 +34,5 @@ type errReader struct{}
 var _ io.Reader = &errReader{}
 
 func (r *errReader) Read(_ []byte) (int, error) {
-	return 0, errors.New("read error")
+	return 0, errors.New("errReader: read error")
 }

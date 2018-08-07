@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -59,12 +61,20 @@ var _ OutputProcessor = &jsonProcessor{}
 
 func (p *jsonProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()
-	var unmarshaled interface{}
-	if err := json.NewDecoder(input).Decode(&unmarshaled); err != nil {
+	unmarshaled, err := unmarshal(input)
+	if err != nil {
 		return err
 	}
 	enc := json.NewEncoder(o)
 	enc.SetIndent(p.prefix, p.indent)
 	enc.SetEscapeHTML(p.escapeHTML)
 	return enc.Encode(unmarshaled)
+}
+
+func unmarshal(r io.Reader) (interface{}, error) {
+	var unmarshaled interface{}
+	if err := json.NewDecoder(r).Decode(&unmarshaled); err != nil {
+		return nil, &errors.ExitError{Err: err, ExitCode: chttp.ExitWeirdReply}
+	}
+	return unmarshaled, nil
 }

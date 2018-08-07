@@ -1,7 +1,6 @@
 package io
 
 import (
-	"encoding/json"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -31,8 +30,8 @@ var _ OutputProcessor = &yamlProcessor{}
 
 func (p *yamlProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()
-	var unmarshaled interface{}
-	if err := json.NewDecoder(input).Decode(&unmarshaled); err != nil {
+	unmarshaled, err := unmarshal(input)
+	if err != nil {
 		return err
 	}
 	enc := yaml.NewEncoder(o)
