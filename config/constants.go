@@ -9,6 +9,7 @@ const (
 	// file.
 	flagConfigFile = "kouchconfig"
 	flagServerRoot = "root"
+	flagContext    = "context"
 
 	dynamicContextName = "$dynamic$"
 )

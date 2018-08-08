@@ -42,6 +42,13 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 			},
 		})
 	}
+	context, err := cmd.Flags().GetString(flagContext)
+	if err != nil {
+		return nil, err
+	}
+	if context != "" {
+		conf.DefaultContext = context
+	}
 	return conf, nil
 }
 
@@ -66,5 +73,6 @@ func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
 // AddFlags adds command line flags for global config options.
 func AddFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
-	cmd.PersistentFlags().StringP(flagServerRoot, "r", "", "The default context's root URL")
+	cmd.PersistentFlags().StringP(flagServerRoot, "r", "", "The root URL")
+	cmd.PersistentFlags().String(flagContext, "", "The named context to use")
 }
