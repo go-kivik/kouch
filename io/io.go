@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/go-kivik/kouch/registry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -33,6 +34,10 @@ func registerOutputMode(name string, m outputMode) {
 		panic(fmt.Sprintf("Output mode '%s' already registered", name))
 	}
 	outputModes[name] = m
+}
+
+func init() {
+	registry.RegisterFlags(addFlags)
 }
 
 // addFlags adds command line flags for all configured output modes.

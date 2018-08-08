@@ -15,7 +15,7 @@ var registryLock sync.Mutex
 func lockRegistry() func() {
 	registryLock.Lock()
 	return func() {
-		rootCommand = newSubCommand()
+		cmdTree = newSubCommand()
 		registryLock.Unlock()
 	}
 }
@@ -111,7 +111,7 @@ func TestRegister(t *testing.T) {
 				test.init()
 			}
 			Register(test.parent, test.fn)
-			if d := diff.Interface(test.expected, rootCommand); d != nil {
+			if d := diff.Interface(test.expected, cmdTree); d != nil {
 				t.Error(d)
 			}
 		})

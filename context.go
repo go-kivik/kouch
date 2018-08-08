@@ -3,7 +3,6 @@ package kouch
 import (
 	"io"
 
-	kio "github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/log"
 )
 
@@ -12,5 +11,10 @@ type CmdContext struct {
 	Logger   log.Logger
 	Conf     *Config
 	Output   io.Writer
-	Outputer kio.OutputProcessor
+	Outputer OutputProcessor
+}
+
+// OutputProcessor is a copy of kivik.io/OutputProcessor to prevent import cycles.
+type OutputProcessor interface {
+	Output(io.Writer, io.ReadCloser) error
 }

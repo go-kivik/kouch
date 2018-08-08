@@ -2,10 +2,6 @@ package root
 
 import (
 	"io/ioutil"
-	"testing"
-
-	"github.com/flimzy/diff"
-	"github.com/spf13/cobra"
 
 	"github.com/go-kivik/kouch/log"
 )
@@ -18,6 +14,7 @@ func init() {
 	discardLogger.SetStderr(ioutil.Discard)
 }
 
+/*
 func TestRootCmd(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -45,3 +42,4 @@ func TestRootCmd(t *testing.T) {
 		})
 	}
 }
+*/

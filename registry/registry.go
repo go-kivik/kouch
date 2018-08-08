@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/go-kivik/kouch"
 )
@@ -19,7 +20,8 @@ type subCommand struct {
 }
 
 var initMU sync.Mutex
-var rootCommand = newSubCommand()
+var cmdTree = newSubCommand()
+var rootInit CommandInitFunc
 
 func newSubCommand() *subCommand {
 	return &subCommand{
@@ -32,7 +34,7 @@ func newSubCommand() *subCommand {
 func Register(parent []string, fn CommandInitFunc) {
 	initMU.Lock()
 	defer initMU.Unlock()
-	cmd := rootCommand
+	cmd := cmdTree
 	for _, p := range parent {
 		if _, ok := cmd.children[p]; !ok {
 			cmd.children[p] = newSubCommand()
@@ -42,11 +44,31 @@ func Register(parent []string, fn CommandInitFunc) {
 	cmd.initFuncs = append(cmd.initFuncs, fn)
 }
 
+// RegisterRoot registers the root command.
+func RegisterRoot(fn CommandInitFunc) {
+	if rootInit != nil {
+		panic("Root command already registered")
+	}
+	rootInit = fn
+}
+
+// Root returns the initialized, configured root command.
+func Root(cx *kouch.CmdContext) *cobra.Command {
+	cmd := rootInit(cx)
+
+	for _, fn := range flagInitFuncs {
+		fn(cmd.PersistentFlags())
+	}
+
+	AddSubcommands(cx, cmd)
+	return cmd
+}
+
 // AddSubcommands initializes and adds all registered subcommands to cmd.
 func AddSubcommands(cx *kouch.CmdContext, cmd *cobra.Command) {
 	initMU.Lock()
 	defer initMU.Unlock()
-	if err := addSubcommands(cx, cmd, nil, rootCommand); err != nil {
+	if err := addSubcommands(cx, cmd, nil, cmdTree); err != nil {
 		panic(err.Error())
 	}
 }
@@ -72,4 +94,12 @@ func addSubcommands(cx *kouch.CmdContext, cmd *cobra.Command, path []string, cmd
 		}
 	}
 	return nil
+}
+
+type FlagInitFunc func(*pflag.FlagSet)
+
+var flagInitFuncs []FlagInitFunc
+
+func RegisterFlags(fn FlagInitFunc) {
+	flagInitFuncs = append(flagInitFuncs, fn)
 }
