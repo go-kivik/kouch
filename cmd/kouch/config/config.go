@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -14,12 +14,11 @@ const (
 
 func init() {
 	registry.Register([]string{"config"}, func(cx *kouch.CmdContext) *cobra.Command {
-		cmd := &cobra.Command{
+		return &cobra.Command{
 			Use:   "view",
 			Short: "Display merged kouchconfig settings or a specified kouchconfig file",
 			RunE:  viewConfig(cx),
 		}
-		return cmd
 	})
 }
 

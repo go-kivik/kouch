@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/registry"
 )
 
 type getUUIDsCtx struct {
