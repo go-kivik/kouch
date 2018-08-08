@@ -7,7 +7,6 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/spf13/cobra"
 )
 
 /*
@@ -88,9 +87,8 @@ func TestGetAttachmentOpts(t *testing.T) {
 	tests := []struct {
 		name     string
 		conf     *kouch.Config
-		cmd      *cobra.Command
 		args     []string
-		expected *getAttOpts
+		expected interface{}
 		err      string
 		status   int
 	}{
@@ -109,8 +107,53 @@ func TestGetAttachmentOpts(t *testing.T) {
 		{
 			name:   "duplicate filenames",
 			args:   []string{"--" + FlagFilename, "foo.txt", "foo.txt"},
-			err:    "Must use --" + FlagFilename + " and pass separate filename",
+			err:    "Must not use --" + FlagFilename + " and pass separate filename",
 			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name: "id from target",
+			args: []string{"123/foo.txt"},
+			expected: &getAttOpts{
+				filename: "foo.txt",
+				id:       "123",
+			},
+		},
+		{
+			name:   "doc ID provided twice",
+			args:   []string{"123/foo.txt", "--" + FlagDocID, "321"},
+			err:    "Must not use --id and pass doc ID as part of the target",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name:   "no doc ID provided",
+			args:   []string{"foo.txt"},
+			err:    "No document ID provided",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name: "db included in target",
+			args: []string{"/foo/123/foo.txt"},
+			expected: &getAttOpts{
+				db:       "foo",
+				id:       "123",
+				filename: "foo.txt",
+			},
+		},
+		{
+			name:   "db provided twice",
+			args:   []string{"/foo/123/foo.txt", "--" + FlagDatabase, "foo"},
+			err:    "Must not use --" + FlagDatabase + " and pass database as part of the target",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name: "full url target",
+			args: []string{"http://foo.com/foo/123/foo.txt"},
+			expected: &getAttOpts{
+				root:     "http://foo.com/",
+				db:       "foo",
+				id:       "123",
+				filename: "foo.txt",
+			},
 		},
 	}
 	for _, test := range tests {
@@ -118,10 +161,9 @@ func TestGetAttachmentOpts(t *testing.T) {
 			cx := &attCmdCtx{&kouch.CmdContext{
 				Conf: test.conf,
 			}}
-			cmd := &cobra.Command{Use: "kouch"}
-			cmd.AddCommand(attCmd(cx.CmdContext))
+			cmd := attCmd(cx.CmdContext)
 			cmd.ParseFlags(test.args)
-			opts, err := cx.getAttachmentOpts(test.cmd, cmd.Flags().Args())
+			opts, err := cx.getAttachmentOpts(cmd, cmd.Flags().Args())
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)
@@ -132,9 +174,11 @@ func TestGetAttachmentOpts(t *testing.T) {
 
 func TestParseTarget(t *testing.T) {
 	tests := []struct {
-		name             string
-		target           string
-		db, id, filename string
+		name                   string
+		target                 string
+		root, db, id, filename string
+		err                    string
+		status                 int
 	}{
 		{
 			name:     "simple filename only",
@@ -160,15 +204,31 @@ func TestParseTarget(t *testing.T) {
 			id:       "123",
 			filename: "foo/bar.txt",
 		},
+		{
+			name:   "invalid url",
+			target: "http://foo.com/%xx",
+			err:    `parse http://foo.com/%xx: invalid URL escape "%xx"`,
+			status: chttp.ExitStatusURLMalformed,
+		},
+		{
+			name:     "full url",
+			target:   "http://foo.com/foo/123/foo.txt",
+			root:     "http://foo.com",
+			db:       "foo",
+			id:       "123",
+			filename: "foo.txt",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			db, id, filename := parseTarget(test.target)
+			root, db, id, filename, err := parseTarget(test.target)
+			testy.ExitStatusError(t, test.err, test.status, err)
 			if db != test.db || id != test.id || filename != test.filename {
 				t.Errorf("Unexpected output:\n\t\tExpected:\tGot\n"+
-					"db\t\t%s\t%s\n"+
-					"id\t\t%s\t%s\n"+
-					"filename\t%s\t%s\n", test.db, db, test.id, id, test.filename, filename)
+					"root\t\t%s\t%s\n"+
+					"db\t\t%s\t\t%s\n"+
+					"id\t\t%s\t\t%s\n"+
+					"filename\t%s\t\t%s\n", test.root, root, test.db, db, test.id, id, test.filename, filename)
 			}
 		})
 	}
