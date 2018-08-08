@@ -95,13 +95,13 @@ func TestGetAttachmentOpts(t *testing.T) {
 		{
 			name:   "no filename",
 			args:   nil,
-			err:    "Must provide exactly one filename",
+			err:    "Must provide exactly one target",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:   "too many filenames",
 			args:   []string{"foo.txt", "bar.jpg"},
-			err:    "Must provide exactly one filename",
+			err:    "Must provide exactly one target",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
@@ -174,35 +174,31 @@ func TestGetAttachmentOpts(t *testing.T) {
 
 func TestParseTarget(t *testing.T) {
 	tests := []struct {
-		name                   string
-		target                 string
-		root, db, id, filename string
-		err                    string
-		status                 int
+		name     string
+		target   string
+		expected *getAttOpts
+		err      string
+		status   int
 	}{
 		{
 			name:     "simple filename only",
 			target:   "foo.txt",
-			filename: "foo.txt",
+			expected: &getAttOpts{filename: "foo.txt"},
 		},
 		{
 			name:     "simple id/filename",
 			target:   "123/foo.txt",
-			id:       "123",
-			filename: "foo.txt",
+			expected: &getAttOpts{id: "123", filename: "foo.txt"},
 		},
 		{
 			name:     "simple /db/id/filename",
 			target:   "/foo/123/foo.txt",
-			db:       "foo",
-			id:       "123",
-			filename: "foo.txt",
+			expected: &getAttOpts{db: "foo", id: "123", filename: "foo.txt"},
 		},
 		{
 			name:     "id + filename with slash",
 			target:   "123/foo/bar.txt",
-			id:       "123",
-			filename: "foo/bar.txt",
+			expected: &getAttOpts{id: "123", filename: "foo/bar.txt"},
 		},
 		{
 			name:   "invalid url",
@@ -213,22 +209,15 @@ func TestParseTarget(t *testing.T) {
 		{
 			name:     "full url",
 			target:   "http://foo.com/foo/123/foo.txt",
-			root:     "http://foo.com",
-			db:       "foo",
-			id:       "123",
-			filename: "foo.txt",
+			expected: &getAttOpts{root: "http://foo.com/", db: "foo", id: "123", filename: "foo.txt"},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			root, db, id, filename, err := parseTarget(test.target)
+			opts, err := parseTarget(test.target)
 			testy.ExitStatusError(t, test.err, test.status, err)
-			if db != test.db || id != test.id || filename != test.filename {
-				t.Errorf("Unexpected output:\n\t\tExpected:\tGot\n"+
-					"root\t\t%s\t%s\n"+
-					"db\t\t%s\t\t%s\n"+
-					"id\t\t%s\t\t%s\n"+
-					"filename\t%s\t\t%s\n", test.root, root, test.db, db, test.id, id, test.filename, filename)
+			if d := diff.Interface(test.expected, opts); d != nil {
+				t.Error(d)
 			}
 		})
 	}

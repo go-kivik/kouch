@@ -70,15 +70,14 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 */
 
 func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
-	opts := &getAttOpts{}
 	if len(args) < 1 || len(args) > 1 {
 		return nil, &errors.ExitError{
-			Err:      errors.New("Must provide exactly one filename"),
+			Err:      errors.New("Must provide exactly one target"),
 			ExitCode: chttp.ExitFailedToInitialize,
 		}
 	}
-	var err error
-	if opts.root, opts.db, opts.id, opts.filename, err = parseTarget(args[0]); err != nil {
+	opts, err := parseTarget(args[0])
+	if err != nil {
 		return nil, err
 	}
 
@@ -160,23 +159,30 @@ func getAttachment(opts *getAttOpts) error {
 	return nil
 }
 
-func parseTarget(target string) (root, db, id, filename string, err error) {
+func parseTarget(target string) (*getAttOpts, error) {
 	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
 		url, err := url.Parse(target)
 		if err != nil {
-			return "", "", "", "", &errors.ExitError{Err: err, ExitCode: chttp.ExitStatusURLMalformed}
+			return nil, &errors.ExitError{Err: err, ExitCode: chttp.ExitStatusURLMalformed}
 		}
-		_, db, id, filename, _ := parseTarget(url.Path)
-		return fmt.Sprintf("%s://%s/", url.Scheme, url.Host),
-			db, id, filename, nil
+		opts, err := parseTarget(url.Path)
+		opts.root = fmt.Sprintf("%s://%s/", url.Scheme, url.Host)
+		return opts, err
 	}
 	if strings.HasPrefix(target, "/") {
 		parts := strings.SplitN(target, "/", 4)
-		return "", parts[1], parts[2], parts[3], nil
+		return &getAttOpts{
+			db:       parts[1],
+			id:       parts[2],
+			filename: parts[3],
+		}, nil
 	}
 	if strings.Contains(target, "/") {
 		parts := strings.SplitN(target, "/", 2)
-		return "", "", parts[0], parts[1], nil
+		return &getAttOpts{
+			id:       parts[0],
+			filename: parts[1],
+		}, nil
 	}
-	return "", "", "", target, nil
+	return &getAttOpts{filename: target}, nil
 }
