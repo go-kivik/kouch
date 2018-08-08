@@ -13,36 +13,41 @@ import (
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 )
 
-func init() {
-	registry.Register([]string{"get"}, func(cx *kouch.CmdContext) *cobra.Command {
-		cmd := &cobra.Command{
-			Use:   "uuids",
-			Short: "Returns one or more server-generated UUIDs",
-			Long: `Returns one or more Universally Unique Identifiers (UUIDs) from the
-CouchDB server.`,
-			RunE: uuidsCmd(cx),
-		}
-		cmd.Flags().IntP("count", "C", 1, "Number of UUIDs to return")
-		return cmd
-	})
+type getUUIDsCtx struct {
+	*kouch.CmdContext
 }
 
-func uuidsCmd(cx *kouch.CmdContext) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, _ []string) error {
-		count, err := cmd.Flags().GetInt("count")
-		if err != nil {
-			return err
-		}
-		ctx, err := cx.Conf.DefaultCtx()
-		if err != nil {
-			return err
-		}
-		result, err := getUUIDs(ctx.Root, count)
-		if err != nil {
-			return err
-		}
-		return cx.Outputer.Output(cx.Output, result)
+func init() {
+	registry.Register([]string{"get"}, uuidsCmd)
+}
+
+func uuidsCmd(cx *kouch.CmdContext) *cobra.Command {
+	g := &getUUIDsCtx{cx}
+	cmd := &cobra.Command{
+		Use:   "uuids",
+		Short: "Returns one or more server-generated UUIDs",
+		Long: `Returns one or more Universally Unique Identifiers (UUIDs) from the
+CouchDB server.`,
+		RunE: g.getUUIDs,
 	}
+	cmd.Flags().IntP("count", "C", 1, "Number of UUIDs to return")
+	return cmd
+}
+
+func (cx *getUUIDsCtx) getUUIDs(cmd *cobra.Command, _ []string) error {
+	count, err := cmd.Flags().GetInt("count")
+	if err != nil {
+		return err
+	}
+	ctx, err := cx.Conf.DefaultCtx()
+	if err != nil {
+		return err
+	}
+	result, err := getUUIDs(ctx.Root, count)
+	if err != nil {
+		return err
+	}
+	return cx.Outputer.Output(cx.Output, result)
 }
 
 func getUUIDs(url string, count int) (io.ReadCloser, error) {
