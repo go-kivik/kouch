@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
 )
 
@@ -17,7 +18,7 @@ type yamlMode struct {
 
 var _ outputMode = &yamlMode{}
 
-func (m *yamlMode) config(cmd *cobra.Command) {}
+func (m *yamlMode) config(_ *pflag.FlagSet) {}
 
 func (m *yamlMode) new(cmd *cobra.Command) (OutputProcessor, error) {
 	return &yamlProcessor{}, nil

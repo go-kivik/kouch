@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func init() {
@@ -16,7 +17,7 @@ type rawMode struct {
 
 var _ outputMode = &rawMode{}
 
-func (m *rawMode) config(cmd *cobra.Command) {}
+func (m *rawMode) config(_ *pflag.FlagSet) {}
 
 func (m *rawMode) new(cmd *cobra.Command) (OutputProcessor, error) {
 	return &rawProcessor{}, nil

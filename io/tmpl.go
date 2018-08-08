@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func init() {
@@ -23,9 +24,9 @@ type tmplMode struct {
 
 var _ outputMode = &tmplMode{}
 
-func (m *tmplMode) config(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(optTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")
-	cmd.PersistentFlags().String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
+func (m *tmplMode) config(flags *pflag.FlagSet) {
+	flags.String(optTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")
+	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
 func (m *tmplMode) new(cmd *cobra.Command) (OutputProcessor, error) {

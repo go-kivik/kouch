@@ -12,7 +12,7 @@ import (
 
 func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
-	AddFlags(cmd)
+	addFlags(cmd.PersistentFlags())
 
 	testOptions(t, []string{"force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "template", "template-file"}, cmd)
 }
@@ -64,7 +64,7 @@ func TestSelectOutputProcessor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			AddFlags(cmd)
+			addFlags(cmd.PersistentFlags())
 			if err := cmd.ParseFlags(test.args); err != nil {
 				t.Fatal(err)
 			}
@@ -129,7 +129,7 @@ func TestSelectOutput(t *testing.T) {
 				defer test.cleanup()
 			}
 			cmd := &cobra.Command{}
-			AddFlags(cmd)
+			addFlags(cmd.PersistentFlags())
 			cmd.ParseFlags(test.args)
 			f, err := SelectOutput(cmd)
 			if err != nil {
