@@ -70,15 +70,19 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 */
 
 func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
-	if len(args) < 1 || len(args) > 1 {
-		return nil, &errors.ExitError{
-			Err:      errors.New("Must provide exactly one target"),
-			ExitCode: chttp.ExitFailedToInitialize,
+	opts := &getAttOpts{}
+	if len(args) > 0 {
+		if len(args) > 1 {
+			return nil, &errors.ExitError{
+				Err:      errors.New("Too many targets provided"),
+				ExitCode: chttp.ExitFailedToInitialize,
+			}
 		}
-	}
-	opts, err := parseTarget(args[0])
-	if err != nil {
-		return nil, err
+		var err error
+		opts, err = parseTarget(args[0])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := opts.filenameFromFlags(cmd.Flags()); err != nil {
@@ -91,14 +95,13 @@ func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getA
 		return nil, err
 	}
 
-	if opts.id == "" {
-		return nil, &errors.ExitError{
-			Err:      errors.New("No document ID provided"),
-			ExitCode: chttp.ExitFailedToInitialize,
+	if ctx, err := cx.Conf.DefaultCtx(); err == nil {
+		if opts.root == "" {
+			opts.root = ctx.Root
 		}
 	}
 
-	return opts, nil
+	return opts, opts.validate()
 }
 
 func (o *getAttOpts) filenameFromFlags(flags *pflag.FlagSet) error {
@@ -185,4 +188,20 @@ func parseTarget(target string) (*getAttOpts, error) {
 		}, nil
 	}
 	return &getAttOpts{filename: target}, nil
+}
+
+func (o *getAttOpts) validate() error {
+	if o.filename == "" {
+		return errors.NewExitError(chttp.ExitFailedToInitialize, "No filename provided")
+	}
+	if o.id == "" {
+		return errors.NewExitError(chttp.ExitFailedToInitialize, "No document ID provided")
+	}
+	if o.db == "" {
+		return errors.NewExitError(chttp.ExitFailedToInitialize, "No database name provided")
+	}
+	if o.root == "" {
+		return errors.NewExitError(chttp.ExitFailedToInitialize, "No root URL provided")
+	}
+	return nil
 }

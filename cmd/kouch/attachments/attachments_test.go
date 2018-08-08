@@ -95,13 +95,13 @@ func TestGetAttachmentOpts(t *testing.T) {
 		{
 			name:   "no filename",
 			args:   nil,
-			err:    "Must provide exactly one target",
+			err:    "No filename provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:   "too many filenames",
 			args:   []string{"foo.txt", "bar.jpg"},
-			err:    "Must provide exactly one target",
+			err:    "Too many targets provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
@@ -112,10 +112,16 @@ func TestGetAttachmentOpts(t *testing.T) {
 		},
 		{
 			name: "id from target",
-			args: []string{"123/foo.txt"},
+			conf: &kouch.Config{
+				DefaultContext: "foo",
+				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
+			},
+			args: []string{"123/foo.txt", "--database", "bar"},
 			expected: &getAttOpts{
-				filename: "foo.txt",
+				root:     "foo.com",
+				db:       "bar",
 				id:       "123",
+				filename: "foo.txt",
 			},
 		},
 		{
@@ -132,8 +138,13 @@ func TestGetAttachmentOpts(t *testing.T) {
 		},
 		{
 			name: "db included in target",
+			conf: &kouch.Config{
+				DefaultContext: "foo",
+				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
+			},
 			args: []string{"/foo/123/foo.txt"},
 			expected: &getAttOpts{
+				root:     "foo.com",
 				db:       "foo",
 				id:       "123",
 				filename: "foo.txt",
@@ -158,6 +169,9 @@ func TestGetAttachmentOpts(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.conf == nil {
+				test.conf = &kouch.Config{}
+			}
 			cx := &attCmdCtx{&kouch.CmdContext{
 				Conf: test.conf,
 			}}
@@ -219,6 +233,46 @@ func TestParseTarget(t *testing.T) {
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)
 			}
+		})
+	}
+}
+
+func TestGetAttOpts_Validate(t *testing.T) {
+	tests := []struct {
+		name   string
+		opts   *getAttOpts
+		err    string
+		status int
+	}{
+		{
+			name:   "no filename",
+			opts:   &getAttOpts{},
+			err:    "No filename provided",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name:   "no doc id",
+			opts:   &getAttOpts{filename: "foo.txt"},
+			err:    "No document ID provided",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name:   "no database provided",
+			opts:   &getAttOpts{id: "123", filename: "foo.txt"},
+			err:    "No database name provided",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name:   "no root url",
+			opts:   &getAttOpts{db: "foo", id: "123", filename: "foo.txt"},
+			err:    "No root URL provided",
+			status: chttp.ExitFailedToInitialize,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.opts.validate()
+			testy.ExitStatusError(t, test.err, test.status, err)
 		})
 	}
 }
