@@ -129,3 +129,47 @@ func TestGetAttachmentOpts(t *testing.T) {
 		})
 	}
 }
+
+func TestParseTarget(t *testing.T) {
+	tests := []struct {
+		name             string
+		target           string
+		db, id, filename string
+	}{
+		{
+			name:     "simple filename only",
+			target:   "foo.txt",
+			filename: "foo.txt",
+		},
+		{
+			name:     "simple id/filename",
+			target:   "123/foo.txt",
+			id:       "123",
+			filename: "foo.txt",
+		},
+		{
+			name:     "simple /db/id/filename",
+			target:   "/foo/123/foo.txt",
+			db:       "foo",
+			id:       "123",
+			filename: "foo.txt",
+		},
+		{
+			name:     "id + filename with slash",
+			target:   "123/foo/bar.txt",
+			id:       "123",
+			filename: "foo/bar.txt",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			db, id, filename := parseTarget(test.target)
+			if db != test.db || id != test.id || filename != test.filename {
+				t.Errorf("Unexpected output:\n\t\tExpected:\tGot\n"+
+					"db\t\t%s\t%s\n"+
+					"id\t\t%s\t%s\n"+
+					"filename\t%s\t%s\n", test.db, db, test.id, id, test.filename, filename)
+			}
+		})
+	}
+}

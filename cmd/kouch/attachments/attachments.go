@@ -83,3 +83,15 @@ func getAttachment(cx *kouch.CmdContext, cmd *cobra.Command, args []string) erro
 
 	return nil
 }
+
+func parseTarget(target string) (db, id, filename string) {
+	if strings.HasPrefix(target, "/") {
+		parts := strings.SplitN(target, "/", 4)
+		return parts[1], parts[2], parts[3]
+	}
+	if strings.Contains(target, "/") {
+		parts := strings.SplitN(target, "/", 2)
+		return "", parts[0], parts[1]
+	}
+	return "", "", target
+}
