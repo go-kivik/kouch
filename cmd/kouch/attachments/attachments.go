@@ -1,7 +1,10 @@
 package attachments
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -9,7 +12,7 @@ import (
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/errors"
-	"github.com/go-kivik/kouch/io"
+	kio "github.com/go-kivik/kouch/io"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -35,7 +38,7 @@ func attCmd(cx *kouch.CmdContext) *cobra.Command {
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment",
-		Long: `Fetches a file attachment, and sends the content to --` + io.FlagOutputFile + `.
+		Long: `Fetches a file attachment, and sends the content to --` + kio.FlagOutputFile + `.
 
 Target may be of the following formats:
 
@@ -65,17 +68,9 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return getAttachment(opts)
+	_, err = getAttachment(opts)
+	return err
 }
-
-/*
-   The single argument may be of one of the following formats:
-   nil -- in which case the --filename argument is necessary
-   {filename}  -- Assumes root url, db, and doc-id are provided with other flags
-   {docid}/{filename} -- doc id with slashes must use --docid. If there are multiple slashes in the target, the first one is considered a separator between docID and filename, and subsequent ones are part of the filename name.
-   /{db}/{docid}/{filename}
-   http://url/{db}/{docid}/{filename}
-*/
 
 func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	opts := &getAttOpts{}
@@ -109,7 +104,7 @@ func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getA
 		}
 	}
 
-	return opts, opts.validate()
+	return opts, nil
 }
 
 func (o *getAttOpts) filenameFromFlags(flags *pflag.FlagSet) error {
@@ -166,8 +161,23 @@ func (o *getAttOpts) dbFromFlags(flags *pflag.FlagSet) error {
 	return nil
 }
 
-func getAttachment(opts *getAttOpts) error {
-	return nil
+func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {
+	if err := opts.validate(); err != nil {
+		return nil, err
+	}
+	c, err := chttp.New(context.TODO(), opts.root)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/%s/%s/%s", opts.db, opts.id, opts.filename)
+	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err = chttp.ResponseError(res); err != nil {
+		return nil, err
+	}
+	return res.Body, nil
 }
 
 func parseTarget(target string) (*getAttOpts, error) {
