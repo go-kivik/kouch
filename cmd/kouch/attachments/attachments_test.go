@@ -233,6 +233,21 @@ func TestGetAttachment(t *testing.T) {
 			},
 			expected: "Test\ncontent\n",
 		},
+		{
+			name: "slashes",
+			opts: &getAttOpts{db: "foo/ba r", id: "123/b", filename: "foo/bar.txt"},
+			val: func(r *http.Request) error {
+				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
+					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
+				}
+				return nil
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Test\ncontent\n",
+		},
 	}
 	for _, test := range tests {
 		func(test gaTest) {

@@ -169,7 +169,7 @@ func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	path := fmt.Sprintf("/%s/%s/%s", opts.db, opts.id, opts.filename)
+	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(opts.db), chttp.EncodeDocID(opts.id), url.QueryEscape(opts.filename))
 	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
