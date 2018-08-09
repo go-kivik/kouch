@@ -35,8 +35,16 @@ func attCmd(cx *kouch.CmdContext) *cobra.Command {
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment",
-		Long:    `Fetches a file attachment, and sends the content to --` + io.FlagOutputFile + `.`,
-		RunE:    a.attachmentCmd,
+		Long: `Fetches a file attachment, and sends the content to --` + io.FlagOutputFile + `.
+
+Target may be of the following formats:
+
+  - {filename} -- The filename only. Alternately, the filename may be passed with the --` + FlagFilename + ` option, particularly for filenames with slashes.
+  - {id}/{filename} -- The document ID and filename.
+  - /{db}/{id}/{filename} -- With leading slash, the database name, document ID, and filename.
+  - http://host.com/{db}/{id}/{filename} -- A fully qualified URL, may include auth credentials.
+`,
+		RunE: a.attachmentCmd,
 	}
 	cmd.Flags().String(FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(FlagDocID, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
@@ -174,6 +182,9 @@ func parseTarget(target string) (*getAttOpts, error) {
 	}
 	if strings.HasPrefix(target, "/") {
 		parts := strings.SplitN(target, "/", 4)
+		if len(parts) < 4 {
+			return nil, errors.NewExitError(chttp.ExitStatusURLMalformed, "invalid target")
+		}
 		return &getAttOpts{
 			db:       parts[1],
 			id:       parts[2],
