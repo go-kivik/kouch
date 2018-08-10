@@ -19,6 +19,11 @@ import (
 
 const version = "0.0.1"
 
+// global config flags
+const (
+	flagVerbose = "verbose"
+)
+
 // Run is the entry point, which executes the root command.
 func Run() {
 	l := log.New()
@@ -42,6 +47,11 @@ func rootCmd(l log.Logger, version string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			v, err := cmd.Flags().GetBool(flagVerbose)
+			if err != nil {
+				return err
+			}
+			cx.Logger.SetVerbose(v)
 			output, err := io.SelectOutput(cmd)
 			if err != nil {
 				return err
@@ -60,6 +70,8 @@ func rootCmd(l log.Logger, version string) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.PersistentFlags().BoolP(flagVerbose, "v", false, "Make the operation more talkative")
 
 	io.AddFlags(cmd.PersistentFlags())
 	config.AddFlags(cmd.PersistentFlags())
