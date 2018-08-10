@@ -26,3 +26,16 @@ func (e *ExitError) Cause() error {
 func Errorf(format string, args ...interface{}) error {
 	return errors.Errorf(format, args...)
 }
+
+// New calls Go's standard errors.New function.
+func New(msg string) error {
+	return errors.New(msg)
+}
+
+// NewExitError returns a new ExitError
+func NewExitError(status int, fmt string, args ...interface{}) error {
+	return &ExitError{
+		Err:      errors.Errorf(fmt, args...),
+		ExitCode: status,
+	}
+}

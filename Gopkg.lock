@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/flimzy/testy"
   packages = ["."]
-  revision = "fd6506cce1a76395e855ccddaec52edb133220c5"
+  revision = "ad6926b42234d488a58c718022a862708a2d106a"
 
 [[projects]]
   branch = "master"
