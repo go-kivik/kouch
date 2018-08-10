@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -18,6 +19,7 @@ const (
 	flagOutputFormat = "output-format"
 	// flagClobber indicates whether output files should be overwritten
 	flagClobber = "force"
+	flagStderr  = "stderr"
 )
 
 type defaultMode bool
@@ -56,6 +58,7 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
 	flags.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
 	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
+	flags.String(flagStderr, "", `Where to redirect stderr (use "-" for stdout)`)
 }
 
 // SelectOutput returns an io.Writer for the output.
@@ -108,4 +111,32 @@ type outputMode interface {
 // OutputProcessor processes a command's output for display to a user.
 type OutputProcessor interface {
 	Output(io.Writer, io.ReadCloser) error
+}
+
+// RedirStderr redirects stderr based on configuration.
+func RedirStderr(flags *pflag.FlagSet) error {
+	filename, err := flags.GetString(flagStderr)
+	if err != nil {
+		return err
+	}
+	if filename == "" {
+		return nil
+	}
+	if filename == "-" {
+		os.Stderr = os.Stdout
+		return nil
+	}
+	clobber, err := flags.GetBool(flagClobber)
+	if err != nil {
+		return err
+	}
+	f, err := openOutputFile(filename, clobber)
+	if err != nil {
+		return &errors.ExitError{
+			Err:      err,
+			ExitCode: chttp.ExitWriteError,
+		}
+	}
+	os.Stderr = f
+	return nil
 }
