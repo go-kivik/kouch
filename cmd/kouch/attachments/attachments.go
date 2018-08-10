@@ -68,7 +68,12 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = getAttachment(opts)
+	resp, err := getAttachment(opts)
+	if err != nil {
+		return err
+	}
+	defer resp.Close()
+	_, err = io.Copy(cx.Output, resp)
 	return err
 }
 
