@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-kivik/kouch"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -71,8 +72,8 @@ func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
 }
 
 // AddFlags adds command line flags for global config options.
-func AddFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(flagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
-	cmd.PersistentFlags().StringP(flagServerRoot, "r", "", "The root URL")
-	cmd.PersistentFlags().String(flagContext, "", "The named context to use")
+func AddFlags(flags *pflag.FlagSet) {
+	flags.String(flagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
+	flags.StringP(flagServerRoot, "r", "", "The root URL")
+	flags.String(flagContext, "", "The named context to use")
 }

@@ -14,7 +14,7 @@ import (
 func TestJsonModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
 	mode := &jsonMode{}
-	mode.config(cmd)
+	mode.config(cmd.PersistentFlags())
 
 	testOptions(t, []string{"json-escape-html", "json-indent", "json-prefix"}, cmd)
 }
@@ -63,7 +63,7 @@ func TestJsonNew(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			mode := &jsonMode{}
-			mode.config(cmd)
+			mode.config(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.parseErr, err)

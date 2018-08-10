@@ -156,7 +156,7 @@ contexts:
 			}
 
 			cmd := &cobra.Command{}
-			AddFlags(cmd)
+			AddFlags(cmd.PersistentFlags())
 			for i, v := range test.args {
 				test.args[i] = strings.Replace(v, "${HOME}", *tmpDir, -1)
 			}

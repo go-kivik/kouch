@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -35,14 +36,14 @@ func registerOutputMode(name string, m outputMode) {
 }
 
 // AddFlags adds command line flags for all configured output modes.
-func AddFlags(cmd *cobra.Command) {
+func AddFlags(flags *pflag.FlagSet) {
 	defaults := make([]string, 0)
 	formats := make([]string, 0, len(outputModes))
 	for name, mode := range outputModes {
 		if mode.isDefault() {
 			defaults = append(defaults, name)
 		}
-		mode.config(cmd)
+		mode.config(flags)
 		formats = append(formats, name)
 	}
 	if len(defaults) == 0 {
@@ -52,10 +53,9 @@ func AddFlags(cmd *cobra.Command) {
 		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
 	}
 	sort.Strings(formats)
-	pf := cmd.PersistentFlags()
-	pf.StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
-	pf.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
-	pf.BoolP(flagClobber, "", false, "Overwrite destination files")
+	flags.StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	flags.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
+	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
 }
 
 // SelectOutput returns an io.Writer for the output.
@@ -96,7 +96,7 @@ func SelectOutputProcessor(cmd *cobra.Command) (OutputProcessor, error) {
 
 type outputMode interface {
 	// config sets flags for the passed command, at start-up
-	config(*cobra.Command)
+	config(*pflag.FlagSet)
 	// isDefault returns true if this should be the default format. Exactly one
 	// output mode must return true.
 	isDefault() bool

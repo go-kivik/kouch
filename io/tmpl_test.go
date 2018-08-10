@@ -15,7 +15,7 @@ import (
 func TestTmplModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
 	mode := &tmplMode{}
-	mode.config(cmd)
+	mode.config(cmd.PersistentFlags())
 
 	testOptions(t, []string{"template", "template-file"}, cmd)
 }
@@ -64,7 +64,7 @@ func TestTmplNew(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			mode := &tmplMode{}
-			mode.config(cmd)
+			mode.config(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.flagsErr, err)

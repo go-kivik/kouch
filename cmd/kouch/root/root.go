@@ -61,8 +61,8 @@ func rootCmd(l log.Logger, version string) *cobra.Command {
 		},
 	}
 
-	io.AddFlags(cmd)
-	config.AddFlags(cmd)
+	io.AddFlags(cmd.PersistentFlags())
+	config.AddFlags(cmd.PersistentFlags())
 
 	registry.AddSubcommands(cx, cmd)
 	return cmd
