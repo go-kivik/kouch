@@ -8,7 +8,6 @@ import (
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/config"
 	"github.com/go-kivik/kouch/io"
-	"github.com/go-kivik/kouch/log"
 
 	// The individual sub-commands
 	_ "github.com/go-kivik/kouch/cmd/kouch/attachments"
@@ -19,21 +18,22 @@ import (
 
 const version = "0.0.1"
 
+// global config flags
+const (
+	flagVerbose = "verbose"
+)
+
 // Run is the entry point, which executes the root command.
 func Run() {
-	l := log.New()
-
-	cmd := rootCmd(l, version)
+	cmd := rootCmd(version)
 	if err := cmd.Execute(); err != nil {
 		kouch.Exit(err)
 	}
 }
 
 // Run initializes the root command, adds subordinate commands, then executes.
-func rootCmd(l log.Logger, version string) *cobra.Command {
-	cx := &kouch.CmdContext{
-		Logger: l,
-	}
+func rootCmd(version string) *cobra.Command {
+	cx := &kouch.CmdContext{}
 
 	cmd := &cobra.Command{
 		Use:           "kouch",
@@ -42,6 +42,10 @@ func rootCmd(l log.Logger, version string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			var err error
+			if cx.Verbose, err = cmd.Flags().GetBool(flagVerbose); err != nil {
+				return err
+			}
 			output, err := io.SelectOutput(cmd)
 			if err != nil {
 				return err
@@ -61,8 +65,10 @@ func rootCmd(l log.Logger, version string) *cobra.Command {
 		},
 	}
 
-	io.AddFlags(cmd)
-	config.AddFlags(cmd)
+	cmd.PersistentFlags().BoolP(flagVerbose, "v", false, "Make the operation more talkative")
+
+	io.AddFlags(cmd.PersistentFlags())
+	config.AddFlags(cmd.PersistentFlags())
 
 	registry.AddSubcommands(cx, cmd)
 	return cmd

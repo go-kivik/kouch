@@ -7,6 +7,7 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func init() {
@@ -25,10 +26,10 @@ type jsonMode struct {
 
 var _ outputMode = &jsonMode{}
 
-func (m *jsonMode) config(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(optJSONPrefix, "", "Prefix to begin each line of the JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
-	cmd.PersistentFlags().String(optJSONIndent, "", "Indentation string for JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
-	cmd.PersistentFlags().Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
+func (m *jsonMode) config(flags *pflag.FlagSet) {
+	flags.String(optJSONPrefix, "", "Prefix to begin each line of the JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
+	flags.String(optJSONIndent, "", "Indentation string for JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
+	flags.Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
 func (m *jsonMode) new(cmd *cobra.Command) (OutputProcessor, error) {
