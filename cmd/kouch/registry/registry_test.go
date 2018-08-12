@@ -78,8 +78,8 @@ func TestRegister(t *testing.T) {
 			name: "simple",
 			fn:   nilFn,
 			expected: &subCommand{
-				children:  map[string]*subCommand{},
-				initFuncs: []CommandInitFunc{nilFn},
+				children: map[string]*subCommand{},
+				cmds:     []*cobra.Command{nil},
 			},
 		},
 		{
@@ -91,14 +91,14 @@ func TestRegister(t *testing.T) {
 					"foo": &subCommand{
 						children: map[string]*subCommand{
 							"bar": &subCommand{
-								children:  map[string]*subCommand{},
-								initFuncs: []CommandInitFunc{nilFn},
+								children: map[string]*subCommand{},
+								cmds:     []*cobra.Command{nil},
 							},
 						},
-						initFuncs: []CommandInitFunc{},
+						cmds: []*cobra.Command{},
 					},
 				},
-				initFuncs: []CommandInitFunc{},
+				cmds: []*cobra.Command{},
 			},
 		},
 	}

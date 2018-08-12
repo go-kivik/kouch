@@ -12,8 +12,8 @@ import (
 type CommandInitFunc func() *cobra.Command
 
 type subCommand struct {
-	children  map[string]*subCommand
-	initFuncs []CommandInitFunc
+	children map[string]*subCommand
+	cmds     []*cobra.Command
 }
 
 var initMU sync.Mutex
@@ -21,13 +21,14 @@ var rootCommand = newSubCommand()
 
 func newSubCommand() *subCommand {
 	return &subCommand{
-		children:  make(map[string]*subCommand),
-		initFuncs: []CommandInitFunc{},
+		children: make(map[string]*subCommand),
+		cmds:     []*cobra.Command{},
 	}
 }
 
 // Register registers a sub-command.
 func Register(parent []string, fn CommandInitFunc) {
+	cmd := fn()
 	initMU.Lock()
 	defer initMU.Unlock()
 	rootCmd := rootCommand
@@ -37,7 +38,7 @@ func Register(parent []string, fn CommandInitFunc) {
 		}
 		rootCmd = rootCmd.children[p]
 	}
-	rootCmd.initFuncs = append(rootCmd.initFuncs, fn)
+	rootCmd.cmds = append(rootCmd.cmds, cmd)
 }
 
 // AddSubcommands initializes and adds all registered subcommands to cmd.
@@ -51,8 +52,7 @@ func AddSubcommands(cmd *cobra.Command) {
 
 func addSubcommands(cmd *cobra.Command, path []string, cmdMap *subCommand) error {
 	children := make(map[string]*cobra.Command)
-	for _, fn := range cmdMap.initFuncs {
-		subCmd := fn()
+	for _, subCmd := range cmdMap.cmds {
 		var cmdName string
 		if u := subCmd.Use; u != "" {
 			cmdName = strings.Fields(subCmd.Use)[0]
