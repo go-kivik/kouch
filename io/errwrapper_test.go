@@ -9,6 +9,7 @@ import (
 
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 )
 
 func TestErrWrapper(t *testing.T) {
@@ -16,7 +17,7 @@ func TestErrWrapper(t *testing.T) {
 		name   string
 		w      io.Writer
 		r      io.ReadCloser
-		p      OutputProcessor
+		p      kouch.OutputProcessor
 		err    string
 		status int
 	}{

@@ -33,8 +33,6 @@ func Run() {
 
 // Run initializes the root command, adds subordinate commands, then executes.
 func rootCmd(version string) *cobra.Command {
-	cx := &kouch.CmdContext{}
-
 	cmd := &cobra.Command{
 		Use:           "kouch",
 		Short:         "kouch is a command-line tool for interacting with CouchDB",
@@ -42,28 +40,31 @@ func rootCmd(version string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := kouch.GetContext(cmd)
 			if err := io.RedirStderr(cmd.Flags()); err != nil {
 				return err
 			}
-			var err error
-			if cx.Verbose, err = cmd.Flags().GetBool(flagVerbose); err != nil {
+			verbose, err := cmd.Flags().GetBool(flagVerbose)
+			if err != nil {
 				return err
 			}
+			ctx = kouch.SetVerbose(ctx, verbose)
 			output, err := io.SelectOutput(cmd)
 			if err != nil {
 				return err
 			}
-			cx.Output = output
+			ctx = kouch.SetOutput(ctx, output)
 			outputer, err := io.SelectOutputProcessor(cmd)
 			if err != nil {
 				return err
 			}
-			cx.Outputer = outputer
+			ctx = kouch.SetOutputer(ctx, outputer)
 			conf, err := config.ReadConfig(cmd)
 			if err != nil {
 				return err
 			}
-			cx.Conf = conf
+			ctx = kouch.SetConf(ctx, conf)
+			kouch.SetContext(ctx, cmd)
 			return nil
 		},
 	}
@@ -73,6 +74,6 @@ func rootCmd(version string) *cobra.Command {
 	io.AddFlags(cmd.PersistentFlags())
 	config.AddFlags(cmd.PersistentFlags())
 
-	registry.AddSubcommands(cx, cmd)
+	registry.AddSubcommands(cmd)
 	return cmd
 }

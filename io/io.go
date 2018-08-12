@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -84,7 +85,7 @@ func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
 
 // SelectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
-func SelectOutputProcessor(cmd *cobra.Command) (OutputProcessor, error) {
+func SelectOutputProcessor(cmd *cobra.Command) (kouch.OutputProcessor, error) {
 	name, err := cmd.Flags().GetString(flagOutputFormat)
 	if err != nil {
 		return nil, err
@@ -105,12 +106,7 @@ type outputMode interface {
 	isDefault() bool
 	// new takes cmd, after command line options have been parsed, and returns
 	// a new output processor.
-	new(*cobra.Command) (OutputProcessor, error)
-}
-
-// OutputProcessor processes a command's output for display to a user.
-type OutputProcessor interface {
-	Output(io.Writer, io.ReadCloser) error
+	new(*cobra.Command) (kouch.OutputProcessor, error)
 }
 
 // RedirStderr redirects stderr based on configuration.

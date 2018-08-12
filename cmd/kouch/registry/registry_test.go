@@ -6,8 +6,6 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/spf13/cobra"
-
-	"github.com/go-kivik/kouch"
 )
 
 var registryLock sync.Mutex
@@ -20,42 +18,13 @@ func lockRegistry() func() {
 	}
 }
 
-func TestAddSubcommands(t *testing.T) {
-	defer lockRegistry()()
-	initCount := 0
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
-		initCount++
-		return &cobra.Command{Use: "foo"}
-	})
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
-		initCount++
-		return &cobra.Command{Use: "bar"}
-	})
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
-		initCount++
-		return &cobra.Command{Use: "baz"}
-	})
-	Register([]string{"foo"}, func(_ *kouch.CmdContext) *cobra.Command {
-		initCount++
-		return &cobra.Command{}
-	})
-	AddSubcommands(nil, &cobra.Command{})
-	if expected := 4; initCount != expected {
-		t.Errorf("Expected %d initializations, got %d", expected, initCount)
-	}
-}
-
 func TestAddSubcommandsPanic(t *testing.T) {
 	defer lockRegistry()()
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
-		return &cobra.Command{Use: "foo"}
-	})
-	Register([]string{"foo", "bar", "baz"}, func(_ *kouch.CmdContext) *cobra.Command {
-		return &cobra.Command{Use: "bar"}
-	})
+	Register(nil, &cobra.Command{Use: "foo"})
+	Register([]string{"foo", "bar", "baz"}, &cobra.Command{Use: "bar"})
 	recovered := func() (r interface{}) {
 		defer func() { r = recover() }()
-		AddSubcommands(nil, &cobra.Command{})
+		AddSubcommands(&cobra.Command{})
 		return nil
 	}()
 	expected := "Subcommand 'foo bar' not registered"
@@ -65,42 +34,39 @@ func TestAddSubcommandsPanic(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	nilFn := func(_ *kouch.CmdContext) *cobra.Command {
-		return nil
-	}
 	type regTest struct {
 		name     string
 		init     func()
 		parent   []string
-		fn       CommandInitFunc
+		cmd      *cobra.Command
 		expected interface{}
 	}
 	tests := []regTest{
 		{
 			name: "simple",
-			fn:   nilFn,
+			cmd:  nil,
 			expected: &subCommand{
-				children:  map[string]*subCommand{},
-				initFuncs: []CommandInitFunc{nilFn},
+				children: map[string]*subCommand{},
+				cmds:     []*cobra.Command{nil},
 			},
 		},
 		{
 			name:   "subcommand with no parent",
 			parent: []string{"foo", "bar"},
-			fn:     nilFn,
+			cmd:    nil,
 			expected: &subCommand{
 				children: map[string]*subCommand{
 					"foo": &subCommand{
 						children: map[string]*subCommand{
 							"bar": &subCommand{
-								children:  map[string]*subCommand{},
-								initFuncs: []CommandInitFunc{nilFn},
+								children: map[string]*subCommand{},
+								cmds:     []*cobra.Command{nil},
 							},
 						},
-						initFuncs: []CommandInitFunc{},
+						cmds: []*cobra.Command{},
 					},
 				},
-				initFuncs: []CommandInitFunc{},
+				cmds: []*cobra.Command{},
 			},
 		},
 	}
@@ -110,7 +76,7 @@ func TestRegister(t *testing.T) {
 			if test.init != nil {
 				test.init()
 			}
-			Register(test.parent, test.fn)
+			Register(test.parent, test.cmd)
 			if d := diff.Interface(test.expected, rootCommand); d != nil {
 				t.Error(d)
 			}

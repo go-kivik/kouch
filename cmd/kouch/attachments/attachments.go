@@ -24,16 +24,11 @@ const (
 	FlagDatabase = "database"
 )
 
-type attCmdCtx struct {
-	*kouch.CmdContext
-}
-
 func init() {
-	registry.Register([]string{"get"}, attCmd)
+	registry.Register([]string{"get"}, attCmd())
 }
 
-func attCmd(cx *kouch.CmdContext) *cobra.Command {
-	a := &attCmdCtx{cx}
+func attCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
@@ -47,7 +42,7 @@ Target may be of the following formats:
   - /{db}/{id}/{filename} -- With leading slash, the database name, document ID, and filename.
   - http://host.com/{db}/{id}/{filename} -- A fully qualified URL, may include auth credentials.
 `,
-		RunE: a.attachmentCmd,
+		RunE: attachmentCmd,
 	}
 	cmd.Flags().String(FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(FlagDocID, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
@@ -63,8 +58,9 @@ type getAttOpts struct {
 	filename string
 }
 
-func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
-	opts, err := cx.getAttachmentOpts(cmd, args)
+func attachmentCmd(cmd *cobra.Command, args []string) error {
+	ctx := kouch.GetContext(cmd)
+	opts, err := getAttachmentOpts(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -73,11 +69,12 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer resp.Close()
-	_, err = io.Copy(cx.Output, resp)
+	_, err = io.Copy(kouch.Output(ctx), resp)
 	return err
 }
 
-func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
+func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
+	ctx := kouch.GetContext(cmd)
 	opts := &getAttOpts{}
 	if len(args) > 0 {
 		if len(args) > 1 {
@@ -103,9 +100,9 @@ func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getA
 		return nil, err
 	}
 
-	if ctx, err := cx.Conf.DefaultCtx(); err == nil {
+	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
 		if opts.root == "" {
-			opts.root = ctx.Root
+			opts.root = defCtx.Root
 		}
 	}
 

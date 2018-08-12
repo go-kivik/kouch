@@ -90,12 +90,10 @@ func TestGetAttachmentOpts(t *testing.T) {
 			if test.conf == nil {
 				test.conf = &kouch.Config{}
 			}
-			cx := &attCmdCtx{&kouch.CmdContext{
-				Conf: test.conf,
-			}}
-			cmd := attCmd(cx.CmdContext)
+			cmd := attCmd()
+			kouch.SetContext(kouch.SetConf(kouch.GetContext(cmd), test.conf), cmd)
 			cmd.ParseFlags(test.args)
-			opts, err := cx.getAttachmentOpts(cmd, cmd.Flags().Args())
+			opts, err := getAttachmentOpts(cmd, cmd.Flags().Args())
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)

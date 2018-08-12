@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -32,7 +33,7 @@ func (m *jsonMode) config(flags *pflag.FlagSet) {
 	flags.Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
-func (m *jsonMode) new(cmd *cobra.Command) (OutputProcessor, error) {
+func (m *jsonMode) new(cmd *cobra.Command) (kouch.OutputProcessor, error) {
 	prefix, err := cmd.Flags().GetString(optJSONPrefix)
 	if err != nil {
 		return nil, err
@@ -58,7 +59,7 @@ type jsonProcessor struct {
 	escapeHTML bool
 }
 
-var _ OutputProcessor = &jsonProcessor{}
+var _ kouch.OutputProcessor = &jsonProcessor{}
 
 func (p *jsonProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()
