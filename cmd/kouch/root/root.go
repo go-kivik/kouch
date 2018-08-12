@@ -65,7 +65,7 @@ func rootCmd(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cx.Conf = conf
+			ctx = kouch.SetConf(ctx, conf)
 			kouch.SetContext(ctx, cmd)
 			return nil
 		},

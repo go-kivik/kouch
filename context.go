@@ -17,11 +17,21 @@ var (
 	verboseContextKey         = &contextKey{"verbose"}
 	outputContextKey          = &contextKey{"output"}
 	outputProcessorContextKey = &contextKey{"outputer"}
+	configContextKey          = &contextKey{"config"}
 )
 
 // CmdContext is the command execution context.
-type CmdContext struct {
-	Conf *Config
+type CmdContext struct{}
+
+// Conf returns the context's current configuration struct, or panics if none is
+// set.
+func Conf(ctx context.Context) *Config {
+	return ctx.Value(configContextKey).(*Config)
+}
+
+// SetConf returns a new context with the current config set to conf.
+func SetConf(ctx context.Context, conf *Config) context.Context {
+	return context.WithValue(ctx, configContextKey, conf)
 }
 
 // Outputer returns the context's current output processor, or panics if none

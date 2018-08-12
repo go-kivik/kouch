@@ -40,7 +40,7 @@ func (cx *getUUIDsCtx) getUUIDs(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	defCtx, err := cx.Conf.DefaultCtx()
+	defCtx, err := kouch.Conf(ctx).DefaultCtx()
 	if err != nil {
 		return err
 	}

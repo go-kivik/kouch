@@ -79,6 +79,7 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 }
 
 func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
+	ctx := kouch.GetContext(cmd)
 	opts := &getAttOpts{}
 	if len(args) > 0 {
 		if len(args) > 1 {
@@ -104,7 +105,7 @@ func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getA
 		return nil, err
 	}
 
-	if defCtx, err := cx.Conf.DefaultCtx(); err == nil {
+	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
 		if opts.root == "" {
 			opts.root = defCtx.Root
 		}
