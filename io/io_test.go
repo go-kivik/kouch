@@ -8,6 +8,7 @@ import (
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ func TestSelectOutputProcessor(t *testing.T) {
 		name     string
 		args     []string
 		format   string
-		expected OutputProcessor
+		expected kouch.OutputProcessor
 		err      string
 	}{
 		{

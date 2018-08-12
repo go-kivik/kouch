@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 
+	"github.com/go-kivik/kouch"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -29,7 +30,7 @@ func (m *tmplMode) config(flags *pflag.FlagSet) {
 	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
-func (m *tmplMode) new(cmd *cobra.Command) (OutputProcessor, error) {
+func (m *tmplMode) new(cmd *cobra.Command) (kouch.OutputProcessor, error) {
 	templateString, err := cmd.Flags().GetString(optTemplate)
 	if err != nil {
 		return nil, err
@@ -56,7 +57,7 @@ type tmplProcessor struct {
 	template *template.Template
 }
 
-var _ OutputProcessor = &tmplProcessor{}
+var _ kouch.OutputProcessor = &tmplProcessor{}
 
 func (p *tmplProcessor) Output(o io.Writer, input io.ReadCloser) error {
 	defer input.Close()

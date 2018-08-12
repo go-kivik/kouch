@@ -4,14 +4,15 @@ import (
 	"io"
 
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
 )
 
 type errWrapper struct {
-	OutputProcessor
+	kouch.OutputProcessor
 }
 
-var _ OutputProcessor = &errWrapper{}
+var _ kouch.OutputProcessor = &errWrapper{}
 
 func (p *errWrapper) Output(w io.Writer, r io.ReadCloser) error {
 	return p.OutputProcessor.Output(&exitStatusWriter{w}, &exitStatusReadCloser{r})
