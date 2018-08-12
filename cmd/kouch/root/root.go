@@ -42,13 +42,15 @@ func rootCmd(version string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := kouch.GetContext(cmd)
 			if err := io.RedirStderr(cmd.Flags()); err != nil {
 				return err
 			}
-			var err error
-			if cx.Verbose, err = cmd.Flags().GetBool(flagVerbose); err != nil {
+			verbose, err := cmd.Flags().GetBool(flagVerbose)
+			if err != nil {
 				return err
 			}
+			ctx = kouch.SetVerbose(ctx, verbose)
 			output, err := io.SelectOutput(cmd)
 			if err != nil {
 				return err
@@ -64,6 +66,7 @@ func rootCmd(version string) *cobra.Command {
 				return err
 			}
 			cx.Conf = conf
+			kouch.SetContext(ctx, cmd)
 			return nil
 		},
 	}

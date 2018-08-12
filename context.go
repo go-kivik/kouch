@@ -12,12 +12,27 @@ type contextKey struct {
 	name string
 }
 
+// Context Keys
+var (
+	verboseContextKey = &contextKey{"verbose"}
+)
+
 // CmdContext is the command execution context.
 type CmdContext struct {
-	Verbose  bool
 	Conf     *Config
 	Output   io.Writer
 	Outputer OutputProcessor
+}
+
+// Verbose returns the verbosity flag of the context.
+func Verbose(ctx context.Context) bool {
+	verbose, _ := ctx.Value(verboseContextKey).(bool)
+	return verbose
+}
+
+// SetVerbose returns a new context with the Verbose flag set to value.
+func SetVerbose(ctx context.Context, value bool) context.Context {
+	return context.WithValue(ctx, verboseContextKey, value)
 }
 
 type contexter interface {
