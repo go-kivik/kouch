@@ -14,14 +14,25 @@ type contextKey struct {
 
 // Context Keys
 var (
-	verboseContextKey = &contextKey{"verbose"}
-	outputContextKey  = &contextKey{"output"}
+	verboseContextKey         = &contextKey{"verbose"}
+	outputContextKey          = &contextKey{"output"}
+	outputProcessorContextKey = &contextKey{"outputer"}
 )
 
 // CmdContext is the command execution context.
 type CmdContext struct {
-	Conf     *Config
-	Outputer OutputProcessor
+	Conf *Config
+}
+
+// Outputer returns the context's current output processor, or panics if none
+// is set.
+func Outputer(ctx context.Context) OutputProcessor {
+	return ctx.Value(outputProcessorContextKey).(OutputProcessor)
+}
+
+// SetOutputer returns a new context with the output processor set to op.
+func SetOutputer(ctx context.Context, op OutputProcessor) context.Context {
+	return context.WithValue(ctx, outputProcessorContextKey, op)
 }
 
 // Output returns the context's current output, or panics if none is set.

@@ -48,7 +48,7 @@ func (cx *getUUIDsCtx) getUUIDs(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	return cx.Outputer.Output(kouch.Output(ctx), result)
+	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
 func getUUIDs(url string, count int) (io.ReadCloser, error) {

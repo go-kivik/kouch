@@ -24,7 +24,8 @@ func init() {
 }
 
 func viewConfig(cx *kouch.CmdContext) func(*cobra.Command, []string) error {
-	return func(_ *cobra.Command, _ []string) error {
-		return cx.Outputer.Output(os.Stdout, cx.Conf.Dump())
+	return func(cmd *cobra.Command, _ []string) error {
+		ctx := kouch.GetContext(cmd)
+		return kouch.Outputer(ctx).Output(os.Stdout, cx.Conf.Dump())
 	}
 }

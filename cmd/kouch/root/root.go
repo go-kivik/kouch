@@ -60,7 +60,7 @@ func rootCmd(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cx.Outputer = outputer
+			ctx = kouch.SetOutputer(ctx, outputer)
 			conf, err := config.ReadConfig(cmd)
 			if err != nil {
 				return err
