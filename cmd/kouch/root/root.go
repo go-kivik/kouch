@@ -55,7 +55,7 @@ func rootCmd(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cx.Output = output
+			ctx = kouch.SetOutput(ctx, output)
 			outputer, err := io.SelectOutputProcessor(cmd)
 			if err != nil {
 				return err

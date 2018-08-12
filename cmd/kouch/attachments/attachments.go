@@ -64,6 +64,7 @@ type getAttOpts struct {
 }
 
 func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
+	ctx := kouch.GetContext(cmd)
 	opts, err := cx.getAttachmentOpts(cmd, args)
 	if err != nil {
 		return err
@@ -73,7 +74,7 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer resp.Close()
-	_, err = io.Copy(cx.Output, resp)
+	_, err = io.Copy(kouch.Output(ctx), resp)
 	return err
 }
 

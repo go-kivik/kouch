@@ -35,6 +35,7 @@ CouchDB server.`,
 }
 
 func (cx *getUUIDsCtx) getUUIDs(cmd *cobra.Command, _ []string) error {
+	ctx := kouch.GetContext(cmd)
 	count, err := cmd.Flags().GetInt("count")
 	if err != nil {
 		return err
@@ -47,7 +48,7 @@ func (cx *getUUIDsCtx) getUUIDs(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	return cx.Outputer.Output(cx.Output, result)
+	return cx.Outputer.Output(kouch.Output(ctx), result)
 }
 
 func getUUIDs(url string, count int) (io.ReadCloser, error) {

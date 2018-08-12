@@ -15,13 +15,23 @@ type contextKey struct {
 // Context Keys
 var (
 	verboseContextKey = &contextKey{"verbose"}
+	outputContextKey  = &contextKey{"output"}
 )
 
 // CmdContext is the command execution context.
 type CmdContext struct {
 	Conf     *Config
-	Output   io.Writer
 	Outputer OutputProcessor
+}
+
+// Output returns the context's current output, or panics if none is set.
+func Output(ctx context.Context) io.Writer {
+	return ctx.Value(outputContextKey).(io.Writer)
+}
+
+// SetOutput returns a new context with the output set to w.
+func SetOutput(ctx context.Context, w io.Writer) context.Context {
+	return context.WithValue(ctx, outputContextKey, w)
 }
 
 // Verbose returns the verbosity flag of the context.
