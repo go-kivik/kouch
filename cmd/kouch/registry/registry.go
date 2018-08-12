@@ -8,9 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CommandInitFunc returns a cobra sub command.
-type CommandInitFunc func() *cobra.Command
-
 type subCommand struct {
 	children map[string]*subCommand
 	cmds     []*cobra.Command
@@ -27,8 +24,7 @@ func newSubCommand() *subCommand {
 }
 
 // Register registers a sub-command.
-func Register(parent []string, fn CommandInitFunc) {
-	cmd := fn()
+func Register(parent []string, cmd *cobra.Command) {
 	initMU.Lock()
 	defer initMU.Unlock()
 	rootCmd := rootCommand

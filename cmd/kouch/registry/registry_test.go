@@ -18,39 +18,10 @@ func lockRegistry() func() {
 	}
 }
 
-func TestAddSubcommands(t *testing.T) {
-	defer lockRegistry()()
-	initCount := 0
-	Register(nil, func() *cobra.Command {
-		initCount++
-		return &cobra.Command{Use: "foo"}
-	})
-	Register(nil, func() *cobra.Command {
-		initCount++
-		return &cobra.Command{Use: "bar"}
-	})
-	Register(nil, func() *cobra.Command {
-		initCount++
-		return &cobra.Command{Use: "baz"}
-	})
-	Register([]string{"foo"}, func() *cobra.Command {
-		initCount++
-		return &cobra.Command{}
-	})
-	AddSubcommands(&cobra.Command{})
-	if expected := 4; initCount != expected {
-		t.Errorf("Expected %d initializations, got %d", expected, initCount)
-	}
-}
-
 func TestAddSubcommandsPanic(t *testing.T) {
 	defer lockRegistry()()
-	Register(nil, func() *cobra.Command {
-		return &cobra.Command{Use: "foo"}
-	})
-	Register([]string{"foo", "bar", "baz"}, func() *cobra.Command {
-		return &cobra.Command{Use: "bar"}
-	})
+	Register(nil, &cobra.Command{Use: "foo"})
+	Register([]string{"foo", "bar", "baz"}, &cobra.Command{Use: "bar"})
 	recovered := func() (r interface{}) {
 		defer func() { r = recover() }()
 		AddSubcommands(&cobra.Command{})
@@ -63,20 +34,17 @@ func TestAddSubcommandsPanic(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	nilFn := func() *cobra.Command {
-		return nil
-	}
 	type regTest struct {
 		name     string
 		init     func()
 		parent   []string
-		fn       CommandInitFunc
+		cmd      *cobra.Command
 		expected interface{}
 	}
 	tests := []regTest{
 		{
 			name: "simple",
-			fn:   nilFn,
+			cmd:  nil,
 			expected: &subCommand{
 				children: map[string]*subCommand{},
 				cmds:     []*cobra.Command{nil},
@@ -85,7 +53,7 @@ func TestRegister(t *testing.T) {
 		{
 			name:   "subcommand with no parent",
 			parent: []string{"foo", "bar"},
-			fn:     nilFn,
+			cmd:    nil,
 			expected: &subCommand{
 				children: map[string]*subCommand{
 					"foo": &subCommand{
@@ -108,7 +76,7 @@ func TestRegister(t *testing.T) {
 			if test.init != nil {
 				test.init()
 			}
-			Register(test.parent, test.fn)
+			Register(test.parent, test.cmd)
 			if d := diff.Interface(test.expected, rootCommand); d != nil {
 				t.Error(d)
 			}

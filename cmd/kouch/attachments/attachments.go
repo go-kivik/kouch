@@ -27,7 +27,7 @@ const (
 type attCmdCtx struct{}
 
 func init() {
-	registry.Register([]string{"get"}, attCmd)
+	registry.Register([]string{"get"}, attCmd())
 }
 
 func attCmd() *cobra.Command {

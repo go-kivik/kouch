@@ -13,13 +13,10 @@ const (
 )
 
 func init() {
-	registry.Register([]string{"config"}, func() *cobra.Command {
-		cmd := &cobra.Command{
-			Use:   "view",
-			Short: "Display merged kouchconfig settings or a specified kouchconfig file",
-			RunE:  viewConfig(),
-		}
-		return cmd
+	registry.Register([]string{"config"}, &cobra.Command{
+		Use:   "view",
+		Short: "Display merged kouchconfig settings or a specified kouchconfig file",
+		RunE:  viewConfig(),
 	})
 }
 
