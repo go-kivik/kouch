@@ -20,9 +20,6 @@ var (
 	configContextKey          = &contextKey{"config"}
 )
 
-// CmdContext is the command execution context.
-type CmdContext struct{}
-
 // Conf returns the context's current configuration struct, or panics if none is
 // set.
 func Conf(ctx context.Context) *Config {

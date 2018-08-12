@@ -33,8 +33,6 @@ func Run() {
 
 // Run initializes the root command, adds subordinate commands, then executes.
 func rootCmd(version string) *cobra.Command {
-	cx := &kouch.CmdContext{}
-
 	cmd := &cobra.Command{
 		Use:           "kouch",
 		Short:         "kouch is a command-line tool for interacting with CouchDB",
@@ -76,6 +74,6 @@ func rootCmd(version string) *cobra.Command {
 	io.AddFlags(cmd.PersistentFlags())
 	config.AddFlags(cmd.PersistentFlags())
 
-	registry.AddSubcommands(cx, cmd)
+	registry.AddSubcommands(cmd)
 	return cmd
 }

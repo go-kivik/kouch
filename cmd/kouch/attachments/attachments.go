@@ -24,16 +24,14 @@ const (
 	FlagDatabase = "database"
 )
 
-type attCmdCtx struct {
-	*kouch.CmdContext
-}
+type attCmdCtx struct{}
 
 func init() {
 	registry.Register([]string{"get"}, attCmd)
 }
 
-func attCmd(cx *kouch.CmdContext) *cobra.Command {
-	a := &attCmdCtx{cx}
+func attCmd() *cobra.Command {
+	a := &attCmdCtx{}
 	cmd := &cobra.Command{
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},

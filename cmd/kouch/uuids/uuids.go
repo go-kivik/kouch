@@ -14,15 +14,14 @@ import (
 )
 
 type getUUIDsCtx struct {
-	*kouch.CmdContext
 }
 
 func init() {
 	registry.Register([]string{"get"}, uuidsCmd)
 }
 
-func uuidsCmd(cx *kouch.CmdContext) *cobra.Command {
-	g := &getUUIDsCtx{cx}
+func uuidsCmd() *cobra.Command {
+	g := &getUUIDsCtx{}
 	cmd := &cobra.Command{
 		Use:   "uuids",
 		Short: "Returns one or more server-generated UUIDs",

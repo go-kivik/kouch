@@ -3,13 +3,12 @@ package config
 import (
 	"path"
 
-	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	registry.Register([]string{}, func(_ *kouch.CmdContext) *cobra.Command {
+	registry.Register([]string{}, func() *cobra.Command {
 		cmd := &cobra.Command{
 			Use:   "config",
 			Short: "Modify kouchconfig files",

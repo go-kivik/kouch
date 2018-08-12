@@ -6,8 +6,6 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/spf13/cobra"
-
-	"github.com/go-kivik/kouch"
 )
 
 var registryLock sync.Mutex
@@ -23,23 +21,23 @@ func lockRegistry() func() {
 func TestAddSubcommands(t *testing.T) {
 	defer lockRegistry()()
 	initCount := 0
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
+	Register(nil, func() *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "foo"}
 	})
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
+	Register(nil, func() *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "bar"}
 	})
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
+	Register(nil, func() *cobra.Command {
 		initCount++
 		return &cobra.Command{Use: "baz"}
 	})
-	Register([]string{"foo"}, func(_ *kouch.CmdContext) *cobra.Command {
+	Register([]string{"foo"}, func() *cobra.Command {
 		initCount++
 		return &cobra.Command{}
 	})
-	AddSubcommands(nil, &cobra.Command{})
+	AddSubcommands(&cobra.Command{})
 	if expected := 4; initCount != expected {
 		t.Errorf("Expected %d initializations, got %d", expected, initCount)
 	}
@@ -47,15 +45,15 @@ func TestAddSubcommands(t *testing.T) {
 
 func TestAddSubcommandsPanic(t *testing.T) {
 	defer lockRegistry()()
-	Register(nil, func(_ *kouch.CmdContext) *cobra.Command {
+	Register(nil, func() *cobra.Command {
 		return &cobra.Command{Use: "foo"}
 	})
-	Register([]string{"foo", "bar", "baz"}, func(_ *kouch.CmdContext) *cobra.Command {
+	Register([]string{"foo", "bar", "baz"}, func() *cobra.Command {
 		return &cobra.Command{Use: "bar"}
 	})
 	recovered := func() (r interface{}) {
 		defer func() { r = recover() }()
-		AddSubcommands(nil, &cobra.Command{})
+		AddSubcommands(&cobra.Command{})
 		return nil
 	}()
 	expected := "Subcommand 'foo bar' not registered"
@@ -65,7 +63,7 @@ func TestAddSubcommandsPanic(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	nilFn := func(_ *kouch.CmdContext) *cobra.Command {
+	nilFn := func() *cobra.Command {
 		return nil
 	}
 	type regTest struct {
