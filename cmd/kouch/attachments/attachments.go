@@ -103,9 +103,9 @@ func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getA
 		return nil, err
 	}
 
-	if ctx, err := cx.Conf.DefaultCtx(); err == nil {
+	if defCtx, err := cx.Conf.DefaultCtx(); err == nil {
 		if opts.root == "" {
-			opts.root = ctx.Root
+			opts.root = defCtx.Root
 		}
 	}
 

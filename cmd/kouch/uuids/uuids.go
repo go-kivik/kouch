@@ -39,11 +39,11 @@ func (cx *getUUIDsCtx) getUUIDs(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, err := cx.Conf.DefaultCtx()
+	defCtx, err := cx.Conf.DefaultCtx()
 	if err != nil {
 		return err
 	}
-	result, err := getUUIDs(ctx.Root, count)
+	result, err := getUUIDs(defCtx.Root, count)
 	if err != nil {
 		return err
 	}
