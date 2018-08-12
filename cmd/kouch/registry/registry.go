@@ -32,14 +32,14 @@ func newSubCommand() *subCommand {
 func Register(parent []string, fn CommandInitFunc) {
 	initMU.Lock()
 	defer initMU.Unlock()
-	cmd := rootCommand
+	rootCmd := rootCommand
 	for _, p := range parent {
-		if _, ok := cmd.children[p]; !ok {
-			cmd.children[p] = newSubCommand()
+		if _, ok := rootCmd.children[p]; !ok {
+			rootCmd.children[p] = newSubCommand()
 		}
-		cmd = cmd.children[p]
+		rootCmd = rootCmd.children[p]
 	}
-	cmd.initFuncs = append(cmd.initFuncs, fn)
+	rootCmd.initFuncs = append(rootCmd.initFuncs, fn)
 }
 
 // AddSubcommands initializes and adds all registered subcommands to cmd.
