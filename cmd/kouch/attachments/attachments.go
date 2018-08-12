@@ -24,14 +24,11 @@ const (
 	FlagDatabase = "database"
 )
 
-type attCmdCtx struct{}
-
 func init() {
 	registry.Register([]string{"get"}, attCmd())
 }
 
 func attCmd() *cobra.Command {
-	a := &attCmdCtx{}
 	cmd := &cobra.Command{
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
@@ -45,7 +42,7 @@ Target may be of the following formats:
   - /{db}/{id}/{filename} -- With leading slash, the database name, document ID, and filename.
   - http://host.com/{db}/{id}/{filename} -- A fully qualified URL, may include auth credentials.
 `,
-		RunE: a.attachmentCmd,
+		RunE: attachmentCmd,
 	}
 	cmd.Flags().String(FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(FlagDocID, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
@@ -61,9 +58,9 @@ type getAttOpts struct {
 	filename string
 }
 
-func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
+func attachmentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := cx.getAttachmentOpts(cmd, args)
+	opts, err := getAttachmentOpts(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -76,7 +73,7 @@ func (cx *attCmdCtx) attachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func (cx *attCmdCtx) getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
+func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	ctx := kouch.GetContext(cmd)
 	opts := &getAttOpts{}
 	if len(args) > 0 {
