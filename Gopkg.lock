@@ -10,8 +10,8 @@
 [[projects]]
   name = "github.com/flimzy/diff"
   packages = ["."]
-  revision = "cbbf57022d4b1c8923c8dd293fce1c2fd8945227"
-  version = "v0.1.2"
+  revision = "37c8c6c61d1e819bb8d41872ac946cd98561bb79"
+  version = "v0.1.3"
 
 [[projects]]
   branch = "master"
@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/go-kivik/couchdb"
   packages = [".","chttp"]
-  revision = "96585a6231741c725b04552e0f79f1a865f7a78d"
+  revision = "a729235182c8a2ea5d2800e92517bc33ed6593bf"
 
 [[projects]]
   branch = "master"

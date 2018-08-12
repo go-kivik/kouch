@@ -5,8 +5,10 @@ package diff
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"reflect"
 	"strings"
 
@@ -70,13 +72,38 @@ func TextSlices(expected, actual []string) *Result {
 }
 
 // Text compares two strings, line-by-line, for differences.
-func Text(expected, actual string) *Result {
-	expected = strings.TrimSuffix(expected, "\n")
-	actual = strings.TrimSuffix(actual, "\n")
+// expected and actual must be of one of the following types:
+// - string
+// - []byte
+// - io.Reader
+func Text(expected, actual interface{}) *Result {
+	exp, err := toText(expected)
+	if err != nil {
+		return &Result{err: fmt.Sprintf("[diff] expected: %s", err)}
+	}
+	act, err := toText(actual)
+	if err != nil {
+		return &Result{err: fmt.Sprintf("[diff] actual: %s", err)}
+	}
+	exp = strings.TrimSuffix(exp, "\n")
+	act = strings.TrimSuffix(act, "\n")
 	return TextSlices(
-		strings.SplitAfter(expected, "\n"),
-		strings.SplitAfter(actual, "\n"),
+		strings.SplitAfter(exp, "\n"),
+		strings.SplitAfter(act, "\n"),
 	)
+}
+
+func toText(i interface{}) (string, error) {
+	switch t := i.(type) {
+	case string:
+		return t, nil
+	case []byte:
+		return string(t), nil
+	case io.Reader:
+		text, err := ioutil.ReadAll(t)
+		return string(text), err
+	}
+	return "", errors.New("input must be of type string, []byte, or io.Reader")
 }
 
 func isJSON(i interface{}) (bool, []byte, error) {
