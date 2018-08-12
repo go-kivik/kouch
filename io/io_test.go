@@ -7,6 +7,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +15,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "template", "template-file"}, cmd)
+	testOptions(t, []string{"force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {
@@ -155,6 +156,99 @@ func TestSelectOutput(t *testing.T) {
 
 			_, err = f.Write([]byte("foo"))
 			testy.ErrorRE(t, test.err, err)
+		})
+	}
+}
+
+func TestRedirStderr(t *testing.T) {
+	var stderr = os.Stderr
+	defer func() {
+		// Restore original setting
+		os.Stderr = stderr
+	}()
+	type rsTest struct {
+		name     string
+		args     []string
+		expected string
+		err      string
+		status   int
+		cleanup  func()
+	}
+	tests := []rsTest{
+		{
+			name:     "No redirection",
+			args:     nil,
+			expected: "/dev/stderr",
+		},
+		{
+			name:   "Dir doesn't exist",
+			args:   []string{"--stderr", "./does_not_exist/foo"},
+			err:    "open ./does_not_exist/foo: no such file or directory",
+			status: chttp.ExitWriteError,
+		},
+		func() rsTest {
+			tmpDir, err := ioutil.TempDir("", "stderrRedir-")
+			if err != nil {
+				t.Fatal(err)
+			}
+			return rsTest{
+				name:     "redir to file",
+				args:     []string{"--stderr", tmpDir + "/foo"},
+				expected: tmpDir + "/foo",
+				cleanup:  func() { _ = os.RemoveAll(tmpDir) },
+			}
+		}(),
+		func() rsTest {
+			f, err := ioutil.TempFile("", "stderrRedir-")
+			if err != nil {
+				t.Fatal(err)
+			}
+			tmpfile := f.Name()
+			_ = f.Close()
+			return rsTest{
+				name:    "file already exists",
+				args:    []string{"--stderr", tmpfile},
+				err:     "open /tmp/stderrRedir-\\d+: file exists",
+				status:  chttp.ExitWriteError,
+				cleanup: func() { _ = os.Remove(tmpfile) },
+			}
+		}(),
+		func() rsTest {
+			f, err := ioutil.TempFile("", "stderrRedir-")
+			if err != nil {
+				t.Fatal(err)
+			}
+			tmpfile := f.Name()
+			_ = f.Close()
+			return rsTest{
+				name:     "file already exists, + clobber",
+				args:     []string{"--stderr", tmpfile, "--force"},
+				expected: tmpfile,
+				cleanup:  func() { _ = os.Remove(tmpfile) },
+			}
+		}(),
+		{
+			name:     "stdout",
+			args:     []string{"--stderr", "-"},
+			expected: "/dev/stdout",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.cleanup != nil {
+				defer test.cleanup()
+			}
+			t.Run("group", func(t *testing.T) {
+				cmd := &cobra.Command{}
+				AddFlags(cmd.PersistentFlags())
+				cmd.ParseFlags(test.args)
+				err := RedirStderr(cmd.Flags())
+				testy.ExitStatusErrorRE(t, test.err, test.status, err)
+				filename := os.Stderr.Name()
+				if filename != test.expected {
+					t.Errorf("Unexpected filename: %s", filename)
+				}
+			})
 		})
 	}
 }

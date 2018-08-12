@@ -42,6 +42,9 @@ func rootCmd(version string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			if err := io.RedirStderr(cmd.Flags()); err != nil {
+				return err
+			}
 			var err error
 			if cx.Verbose, err = cmd.Flags().GetBool(flagVerbose); err != nil {
 				return err

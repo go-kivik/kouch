@@ -25,8 +25,12 @@ func (w *delayedOpenWriter) Write(p []byte) (int, error) {
 }
 
 func (w *delayedOpenWriter) open() (io.Writer, error) {
-	if w.clobber {
-		return os.Create(w.filename)
+	return openOutputFile(w.filename, w.clobber)
+}
+
+func openOutputFile(filename string, clobber bool) (*os.File, error) {
+	if clobber {
+		return os.Create(filename)
 	}
-	return os.OpenFile(w.filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
+	return os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
 }
