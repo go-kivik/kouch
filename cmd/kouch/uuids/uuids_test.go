@@ -1,6 +1,7 @@
 package uuids
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -59,6 +60,7 @@ func uuidServer(r *uuidResponse) (url string, close func()) {
 func TestGetUUIDs(t *testing.T) {
 	type guTest struct {
 		name     string
+		ctx      context.Context
 		count    int
 		url      string
 		expected string
@@ -98,7 +100,11 @@ func TestGetUUIDs(t *testing.T) {
 			if test.cleanup != nil {
 				defer test.cleanup()
 			}
-			result, err := getUUIDs(test.url, test.count)
+			var ctx context.Context
+			if test.ctx != nil {
+				ctx = test.ctx
+			}
+			result, err := getUUIDs(ctx, test.url, test.count)
 			testy.Error(t, test.err, err)
 			defer result.Close()
 			resultJSON, err := ioutil.ReadAll(result)
