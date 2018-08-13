@@ -44,11 +44,10 @@ func rootCmd(version string) *cobra.Command {
 			if err := io.RedirStderr(cmd.Flags()); err != nil {
 				return err
 			}
-			verbose, err := cmd.Flags().GetBool(flagVerbose)
+			ctx, err := verbose(ctx, cmd)
 			if err != nil {
 				return err
 			}
-			ctx = kouch.SetVerbose(ctx, verbose)
 			output, err := io.SelectOutput(cmd)
 			if err != nil {
 				return err
