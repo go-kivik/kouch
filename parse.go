@@ -10,12 +10,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const (
-	FlagFilename = "filename"
-	FlagDocID    = "id"
-	FlagDatabase = "database"
-)
-
 // Target is a parsed target passed on the command line
 type Target struct {
 	// Root is the root URL.
