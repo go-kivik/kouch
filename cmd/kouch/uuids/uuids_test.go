@@ -96,13 +96,12 @@ func TestGetUUIDs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			if test.cleanup != nil {
 				defer test.cleanup()
 			}
-			var ctx context.Context
-			if test.ctx != nil {
-				ctx = test.ctx
+			ctx := test.ctx
+			if ctx == nil {
+				ctx = context.Background()
 			}
 			result, err := getUUIDs(ctx, test.url, test.count)
 			testy.Error(t, test.err, err)
