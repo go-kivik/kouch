@@ -108,7 +108,7 @@ func TestGetAttachmentOpts(t *testing.T) {
 	}
 }
 
-func TestGetAttOpts_Validate(t *testing.T) {
+func TestValidateTarget(t *testing.T) {
 	tests := []struct {
 		name   string
 		opts   *getAttOpts
@@ -139,10 +139,14 @@ func TestGetAttOpts_Validate(t *testing.T) {
 			err:    "No root URL provided",
 			status: chttp.ExitFailedToInitialize,
 		},
+		{
+			name: "valid",
+			opts: &getAttOpts{kouch.Target{Root: "xxx", Database: "foo", DocID: "123", Filename: "foo.txt"}},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := test.opts.validate()
+			err := validateTarget(&test.opts.Target)
 			testy.ExitStatusError(t, test.err, test.status, err)
 		})
 	}

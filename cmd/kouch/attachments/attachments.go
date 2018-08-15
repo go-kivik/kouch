@@ -98,7 +98,7 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 }
 
 func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {
-	if err := opts.validate(); err != nil {
+	if err := validateTarget(&opts.Target); err != nil {
 		return nil, err
 	}
 	c, err := chttp.New(context.TODO(), opts.Root)
@@ -116,17 +116,17 @@ func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
-func (o *getAttOpts) validate() error {
-	if o.Filename == "" {
+func validateTarget(t *kouch.Target) error {
+	if t.Filename == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No filename provided")
 	}
-	if o.DocID == "" {
+	if t.DocID == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No document ID provided")
 	}
-	if o.Database == "" {
+	if t.Database == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No database name provided")
 	}
-	if o.Root == "" {
+	if t.Root == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No root URL provided")
 	}
 	return nil
