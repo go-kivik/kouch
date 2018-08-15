@@ -52,8 +52,8 @@ func TestGetAttachmentOpts(t *testing.T) {
 		},
 		{
 			name:   "doc ID provided twice",
-			args:   []string{"123/foo.txt", "--" + FlagDocID, "321"},
-			err:    "Must not use --id and pass doc ID as part of the target",
+			args:   []string{"123/foo.txt", "--" + kouch.FlagDocID, "321"},
+			err:    "Must not use --id and pass document ID as part of the target",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{

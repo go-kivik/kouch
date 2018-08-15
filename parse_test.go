@@ -126,3 +126,64 @@ func TestFilenameFromFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestDocIDFromFlags(t *testing.T) {
+	idFlagSet := func() *pflag.FlagSet {
+		return flagSet(func(pf *pflag.FlagSet) {
+			pf.String(FlagDocID, "", "id")
+		})
+	}
+	tests := []struct {
+		name     string
+		target   *Target
+		flags    *pflag.FlagSet
+		expected *Target
+		err      string
+	}{
+		{
+			name:     "no flags",
+			target:   &Target{},
+			flags:    idFlagSet(),
+			expected: &Target{},
+		},
+		{
+			name:   "no flag defined",
+			target: &Target{},
+			flags:  flagSet(),
+			err:    "flag accessed but not defined: id",
+		},
+		{
+			name:   "id already set",
+			target: &Target{DocID: "321"},
+			flags: func() *pflag.FlagSet {
+				fs := idFlagSet()
+				if err := fs.Set("id", "123"); err != nil {
+					t.Fatal(err)
+				}
+				return fs
+			}(),
+			err: "Must not use --" + FlagDocID + " and pass document ID as part of the target",
+		},
+		{
+			name:   "id set anew",
+			target: &Target{},
+			flags: func() *pflag.FlagSet {
+				fs := idFlagSet()
+				if err := fs.Set("id", "123"); err != nil {
+					t.Fatal(err)
+				}
+				return fs
+			}(),
+			expected: &Target{DocID: "123"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.target.DocIDFromFlags(test.flags)
+			testy.Error(t, test.err, err)
+			if d := diff.Interface(test.expected, test.target); d != nil {
+				t.Error(d)
+			}
+		})
+	}
+}

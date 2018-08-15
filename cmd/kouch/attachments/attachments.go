@@ -18,7 +18,6 @@ import (
 
 // Flags for necessary arguments
 const (
-	FlagDocID    = "id"
 	FlagDatabase = "database"
 )
 
@@ -43,7 +42,7 @@ Target may be of the following formats:
 		RunE: attachmentCmd,
 	}
 	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
-	cmd.Flags().String(FlagDocID, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
+	cmd.Flags().String(kouch.FlagDocID, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
 	cmd.Flags().String(FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
 	return cmd
 }
@@ -88,7 +87,7 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	if err := opts.Target.FilenameFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := opts.idFromFlags(cmd.Flags()); err != nil {
+	if err := opts.Target.DocIDFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 	if err := opts.dbFromFlags(cmd.Flags()); err != nil {
@@ -102,24 +101,6 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	}
 
 	return opts, nil
-}
-
-func (o *getAttOpts) idFromFlags(flags *pflag.FlagSet) error {
-	id, err := flags.GetString(FlagDocID)
-	if err != nil {
-		return err
-	}
-	if id == "" {
-		return nil
-	}
-	if o.DocID != "" {
-		return &errors.ExitError{
-			Err:      errors.New("Must not use --" + FlagDocID + " and pass doc ID as part of the target"),
-			ExitCode: chttp.ExitFailedToInitialize,
-		}
-	}
-	o.DocID = id
-	return nil
 }
 
 func (o *getAttOpts) dbFromFlags(flags *pflag.FlagSet) error {

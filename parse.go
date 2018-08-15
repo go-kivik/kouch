@@ -12,6 +12,7 @@ import (
 
 const (
 	FlagFilename = "filename"
+	FlagDocID    = "id"
 )
 
 // Target is a parsed target passed on the command line
@@ -74,5 +75,24 @@ func (t *Target) FilenameFromFlags(flags *pflag.FlagSet) error {
 		}
 	}
 	t.Filename = fn
+	return nil
+}
+
+// DocIDFromFlags sets t.DocID from the passed flagset.
+func (t *Target) DocIDFromFlags(flags *pflag.FlagSet) error {
+	id, err := flags.GetString(FlagDocID)
+	if err != nil {
+		return err
+	}
+	if id == "" {
+		return nil
+	}
+	if t.DocID != "" {
+		return &errors.ExitError{
+			Err:      errors.New("Must not use --" + FlagDocID + " and pass document ID as part of the target"),
+			ExitCode: chttp.ExitFailedToInitialize,
+		}
+	}
+	t.DocID = id
 	return nil
 }
