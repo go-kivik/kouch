@@ -61,10 +61,7 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Target, error)
 	target := &kouch.Target{}
 	if len(args) > 0 {
 		if len(args) > 1 {
-			return nil, &errors.ExitError{
-				Err:      errors.New("Too many targets provided"),
-				ExitCode: chttp.ExitFailedToInitialize,
-			}
+			return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "Too many targets provided")
 		}
 		var err error
 		target, err = kouch.ParseAttachmentTarget(args[0])

@@ -12,6 +12,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kivik"
 	"github.com/go-kivik/kouch"
 )
@@ -139,6 +140,24 @@ func TestGetUUIDsOpts(t *testing.T) {
 				root:  "foo.com",
 				count: 1,
 			},
+		},
+		{
+			name: "root from command line",
+			conf: &kouch.Config{
+				DefaultContext: "foo",
+				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
+			},
+			args: []string{"--count", "4", "example.com:555"},
+			expected: &opts{
+				root:  "example.com:555",
+				count: 4,
+			},
+		},
+		{
+			name:   "too many arguments",
+			args:   []string{"foo", "bar"},
+			err:    "Too many targets provided",
+			status: chttp.ExitFailedToInitialize,
 		},
 	}
 	for _, test := range tests {
