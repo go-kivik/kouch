@@ -41,10 +41,6 @@ Target may be of the following formats:
 	return cmd
 }
 
-type getAttOpts struct {
-	kouch.Target
-}
-
 func attachmentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
 	opts, err := getAttachmentOpts(cmd, args)
@@ -60,9 +56,9 @@ func attachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
+func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Target, error) {
 	ctx := kouch.GetContext(cmd)
-	opts := &getAttOpts{}
+	target := &kouch.Target{}
 	if len(args) > 0 {
 		if len(args) > 1 {
 			return nil, &errors.ExitError{
@@ -71,41 +67,40 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 			}
 		}
 		var err error
-		target, err := kouch.ParseAttachmentTarget(args[0])
+		target, err = kouch.ParseAttachmentTarget(args[0])
 		if err != nil {
 			return nil, err
 		}
-		opts = &getAttOpts{*target}
 	}
 
-	if err := opts.Target.FilenameFromFlags(cmd.Flags()); err != nil {
+	if err := target.FilenameFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := opts.Target.DocIDFromFlags(cmd.Flags()); err != nil {
+	if err := target.DocIDFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := opts.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
+	if err := target.DatabaseFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if opts.Root == "" {
-			opts.Root = defCtx.Root
+		if target.Root == "" {
+			target.Root = defCtx.Root
 		}
 	}
 
-	return opts, nil
+	return target, nil
 }
 
-func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {
-	if err := validateTarget(&opts.Target); err != nil {
+func getAttachment(target *kouch.Target) (io.ReadCloser, error) {
+	if err := validateTarget(target); err != nil {
 		return nil, err
 	}
-	c, err := chttp.New(context.TODO(), opts.Root)
+	c, err := chttp.New(context.TODO(), target.Root)
 	if err != nil {
 		return nil, err
 	}
-	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(opts.Database), chttp.EncodeDocID(opts.DocID), url.QueryEscape(opts.Filename))
+	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(target.Database), chttp.EncodeDocID(target.DocID), url.QueryEscape(target.Filename))
 	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
