@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
@@ -51,11 +50,7 @@ Target may be of the following formats:
 }
 
 type getAttOpts struct {
-	url      string
-	root     string
-	db       string
-	id       string
-	filename string
+	kouch.Target
 }
 
 func attachmentCmd(cmd *cobra.Command, args []string) error {
@@ -84,10 +79,11 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 			}
 		}
 		var err error
-		opts, err = parseTarget(args[0])
+		target, err := kouch.ParseAttachmentTarget(args[0])
 		if err != nil {
 			return nil, err
 		}
+		opts = &getAttOpts{*target}
 	}
 
 	if err := opts.filenameFromFlags(cmd.Flags()); err != nil {
@@ -101,8 +97,8 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	}
 
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if opts.root == "" {
-			opts.root = defCtx.Root
+		if opts.Root == "" {
+			opts.Root = defCtx.Root
 		}
 	}
 
@@ -117,13 +113,13 @@ func (o *getAttOpts) filenameFromFlags(flags *pflag.FlagSet) error {
 	if fn == "" {
 		return nil
 	}
-	if o.filename != "" {
+	if o.Filename != "" {
 		return &errors.ExitError{
 			Err:      errors.New("Must not use --" + FlagFilename + " and pass separate filename"),
 			ExitCode: chttp.ExitFailedToInitialize,
 		}
 	}
-	o.filename = fn
+	o.Filename = fn
 	return nil
 }
 
@@ -135,13 +131,13 @@ func (o *getAttOpts) idFromFlags(flags *pflag.FlagSet) error {
 	if id == "" {
 		return nil
 	}
-	if o.id != "" {
+	if o.DocID != "" {
 		return &errors.ExitError{
 			Err:      errors.New("Must not use --" + FlagDocID + " and pass doc ID as part of the target"),
 			ExitCode: chttp.ExitFailedToInitialize,
 		}
 	}
-	o.id = id
+	o.DocID = id
 	return nil
 }
 
@@ -153,13 +149,13 @@ func (o *getAttOpts) dbFromFlags(flags *pflag.FlagSet) error {
 	if db == "" {
 		return nil
 	}
-	if o.db != "" {
+	if o.Database != "" {
 		return &errors.ExitError{
 			Err:      errors.New("Must not use --" + FlagDatabase + " and pass database as part of the target"),
 			ExitCode: chttp.ExitFailedToInitialize,
 		}
 	}
-	o.db = db
+	o.Database = db
 	return nil
 }
 
@@ -167,11 +163,11 @@ func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {
 	if err := opts.validate(); err != nil {
 		return nil, err
 	}
-	c, err := chttp.New(context.TODO(), opts.root)
+	c, err := chttp.New(context.TODO(), opts.Root)
 	if err != nil {
 		return nil, err
 	}
-	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(opts.db), chttp.EncodeDocID(opts.id), url.QueryEscape(opts.filename))
+	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(opts.Database), chttp.EncodeDocID(opts.DocID), url.QueryEscape(opts.Filename))
 	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
@@ -182,48 +178,17 @@ func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
-func parseTarget(target string) (*getAttOpts, error) {
-	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
-		url, err := url.Parse(target)
-		if err != nil {
-			return nil, &errors.ExitError{Err: err, ExitCode: chttp.ExitStatusURLMalformed}
-		}
-		opts, err := parseTarget(url.Path)
-		opts.root = fmt.Sprintf("%s://%s/", url.Scheme, url.Host)
-		return opts, err
-	}
-	if strings.HasPrefix(target, "/") {
-		parts := strings.SplitN(target, "/", 4)
-		if len(parts) < 4 {
-			return nil, errors.NewExitError(chttp.ExitStatusURLMalformed, "invalid target")
-		}
-		return &getAttOpts{
-			db:       parts[1],
-			id:       parts[2],
-			filename: parts[3],
-		}, nil
-	}
-	if strings.Contains(target, "/") {
-		parts := strings.SplitN(target, "/", 2)
-		return &getAttOpts{
-			id:       parts[0],
-			filename: parts[1],
-		}, nil
-	}
-	return &getAttOpts{filename: target}, nil
-}
-
 func (o *getAttOpts) validate() error {
-	if o.filename == "" {
+	if o.Filename == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No filename provided")
 	}
-	if o.id == "" {
+	if o.DocID == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No document ID provided")
 	}
-	if o.db == "" {
+	if o.Database == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No database name provided")
 	}
-	if o.root == "" {
+	if o.Root == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No root URL provided")
 	}
 	return nil
