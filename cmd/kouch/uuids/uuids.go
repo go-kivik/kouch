@@ -11,7 +11,6 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
-	"github.com/go-kivik/kouch/internal/errors"
 )
 
 func init() {
@@ -41,13 +40,7 @@ func getUUIDsOpts(cmd *cobra.Command, args []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
-	var root string
-	if len(args) > 0 {
-		if len(args) > 1 {
-			return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "Too many targets provided")
-		}
-		root = args[0]
-	}
+	root := kouch.GetTarget(ctx)
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil && root == "" {
 		root = defCtx.Root
 	}

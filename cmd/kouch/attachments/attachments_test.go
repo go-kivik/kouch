@@ -23,12 +23,6 @@ func TestGetAttachmentOpts(t *testing.T) {
 		status   int
 	}{
 		{
-			name:   "too many filenames",
-			args:   []string{"foo.txt", "bar.jpg"},
-			err:    "Too many targets provided",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
 			name:   "duplicate filenames",
 			args:   []string{"--" + kouch.FlagFilename, "foo.txt", "foo.txt"},
 			err:    "Must not use --" + kouch.FlagFilename + " and pass separate filename",
@@ -91,8 +85,12 @@ func TestGetAttachmentOpts(t *testing.T) {
 				test.conf = &kouch.Config{}
 			}
 			cmd := attCmd()
-			kouch.SetContext(kouch.SetConf(kouch.GetContext(cmd), test.conf), cmd)
 			cmd.ParseFlags(test.args)
+			ctx := kouch.GetContext(cmd)
+			if flags := cmd.Flags().Args(); len(flags) > 0 {
+				ctx = kouch.SetTarget(ctx, flags[0])
+			}
+			kouch.SetContext(kouch.SetConf(ctx, test.conf), cmd)
 			opts, err := getAttachmentOpts(cmd, cmd.Flags().Args())
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {

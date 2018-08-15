@@ -1,12 +1,16 @@
 package root
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 
 	_ "github.com/go-kivik/couchdb" // The CouchDB driver
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/config"
+	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/io"
 
 	// The individual sub-commands
@@ -34,17 +38,21 @@ func Run() {
 // Run initializes the root command, adds subordinate commands, then executes.
 func rootCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "kouch",
+		Use:           "kouch [options] [command] [target]",
 		Short:         "kouch is a command-line tool for interacting with CouchDB",
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := kouch.GetContext(cmd)
-			if err := io.RedirStderr(cmd.Flags()); err != nil {
+			ctx, err := setTarget(ctx, args)
+			if err != nil {
 				return err
 			}
-			ctx, err := verbose(ctx, cmd)
+			if e := io.RedirStderr(cmd.Flags()); e != nil {
+				return e
+			}
+			ctx, err = verbose(ctx, cmd)
 			if err != nil {
 				return err
 			}
@@ -75,4 +83,14 @@ func rootCmd(version string) *cobra.Command {
 
 	registry.AddSubcommands(cmd)
 	return cmd
+}
+
+func setTarget(ctx context.Context, args []string) (context.Context, error) {
+	if len(args) == 0 {
+		return ctx, nil
+	}
+	if len(args) > 1 {
+		return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "Too many targets provided")
+	}
+	return kouch.SetTarget(ctx, args[0]), nil
 }

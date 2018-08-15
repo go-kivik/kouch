@@ -57,15 +57,12 @@ func attachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Target, error) {
+func getAttachmentOpts(cmd *cobra.Command, _ []string) (*kouch.Target, error) {
 	ctx := kouch.GetContext(cmd)
 	t := &kouch.Target{}
-	if len(args) > 0 {
-		if len(args) > 1 {
-			return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "Too many targets provided")
-		}
+	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		t, err = target.Parse(target.Attachment, args[0])
+		t, err = target.Parse(target.Attachment, tgt)
 		if err != nil {
 			return nil, err
 		}

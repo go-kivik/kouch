@@ -12,7 +12,6 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kivik"
 	"github.com/go-kivik/kouch"
 )
@@ -153,12 +152,6 @@ func TestGetUUIDsOpts(t *testing.T) {
 				count: 4,
 			},
 		},
-		{
-			name:   "too many arguments",
-			args:   []string{"foo", "bar"},
-			err:    "Too many targets provided",
-			status: chttp.ExitFailedToInitialize,
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -166,8 +159,12 @@ func TestGetUUIDsOpts(t *testing.T) {
 				test.conf = &kouch.Config{}
 			}
 			cmd := uuidsCmd()
-			kouch.SetContext(kouch.SetConf(kouch.GetContext(cmd), test.conf), cmd)
 			cmd.ParseFlags(test.args)
+			ctx := kouch.GetContext(cmd)
+			if flags := cmd.Flags().Args(); len(flags) > 0 {
+				ctx = kouch.SetTarget(ctx, flags[0])
+			}
+			kouch.SetContext(kouch.SetConf(ctx, test.conf), cmd)
 			opts, err := getUUIDsOpts(cmd, cmd.Flags().Args())
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
