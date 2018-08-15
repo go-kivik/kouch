@@ -29,29 +29,46 @@ CouchDB server.`,
 	return cmd
 }
 
-func getUUIDsCmd(cmd *cobra.Command, _ []string) error {
+type opts struct {
+	root  string
+	count int
+}
+
+func getUUIDsOpts(cmd *cobra.Command, args []string) (*opts, error) {
 	ctx := kouch.GetContext(cmd)
 	count, err := cmd.Flags().GetInt("count")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defCtx, err := kouch.Conf(ctx).DefaultCtx()
+	var root string
+	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
+		root = defCtx.Root
+	}
+	return &opts{
+		root:  root,
+		count: count,
+	}, nil
+}
+
+func getUUIDsCmd(cmd *cobra.Command, args []string) error {
+	ctx := kouch.GetContext(cmd)
+	opts, err := getUUIDsOpts(cmd, args)
 	if err != nil {
 		return err
 	}
-	result, err := getUUIDs(ctx, defCtx.Root, count)
+	result, err := getUUIDs(ctx, opts)
 	if err != nil {
 		return err
 	}
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func getUUIDs(ctx context.Context, url string, count int) (io.ReadCloser, error) {
-	c, err := chttp.New(ctx, url)
+func getUUIDs(ctx context.Context, opts *opts) (io.ReadCloser, error) {
+	c, err := chttp.New(ctx, opts.root)
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.DoReq(ctx, http.MethodGet, fmt.Sprintf("/_uuids?count=%d", count), nil)
+	res, err := c.DoReq(ctx, http.MethodGet, fmt.Sprintf("/_uuids?count=%d", opts.count), nil)
 	if err != nil {
 		return nil, err
 	}
