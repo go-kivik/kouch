@@ -30,8 +30,8 @@ func TestGetAttachmentOpts(t *testing.T) {
 		},
 		{
 			name:   "duplicate filenames",
-			args:   []string{"--" + FlagFilename, "foo.txt", "foo.txt"},
-			err:    "Must not use --" + FlagFilename + " and pass separate filename",
+			args:   []string{"--" + kouch.FlagFilename, "foo.txt", "foo.txt"},
+			err:    "Must not use --" + kouch.FlagFilename + " and pass separate filename",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{

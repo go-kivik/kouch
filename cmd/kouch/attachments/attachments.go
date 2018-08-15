@@ -18,7 +18,6 @@ import (
 
 // Flags for necessary arguments
 const (
-	FlagFilename = "filename"
 	FlagDocID    = "id"
 	FlagDatabase = "database"
 )
@@ -36,14 +35,14 @@ func attCmd() *cobra.Command {
 
 Target may be of the following formats:
 
-  - {filename} -- The filename only. Alternately, the filename may be passed with the --` + FlagFilename + ` option, particularly for filenames with slashes.
+  - {filename} -- The filename only. Alternately, the filename may be passed with the --` + kouch.FlagFilename + ` option, particularly for filenames with slashes.
   - {id}/{filename} -- The document ID and filename.
   - /{db}/{id}/{filename} -- With leading slash, the database name, document ID, and filename.
   - http://host.com/{db}/{id}/{filename} -- A fully qualified URL, may include auth credentials.
 `,
 		RunE: attachmentCmd,
 	}
-	cmd.Flags().String(FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
+	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(FlagDocID, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
 	cmd.Flags().String(FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
 	return cmd
@@ -86,7 +85,7 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 		opts = &getAttOpts{*target}
 	}
 
-	if err := opts.filenameFromFlags(cmd.Flags()); err != nil {
+	if err := opts.Target.FilenameFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 	if err := opts.idFromFlags(cmd.Flags()); err != nil {
@@ -103,24 +102,6 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	}
 
 	return opts, nil
-}
-
-func (o *getAttOpts) filenameFromFlags(flags *pflag.FlagSet) error {
-	fn, err := flags.GetString(FlagFilename)
-	if err != nil {
-		return err
-	}
-	if fn == "" {
-		return nil
-	}
-	if o.Filename != "" {
-		return &errors.ExitError{
-			Err:      errors.New("Must not use --" + FlagFilename + " and pass separate filename"),
-			ExitCode: chttp.ExitFailedToInitialize,
-		}
-	}
-	o.Filename = fn
-	return nil
 }
 
 func (o *getAttOpts) idFromFlags(flags *pflag.FlagSet) error {

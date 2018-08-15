@@ -7,6 +7,11 @@ import (
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/spf13/pflag"
+)
+
+const (
+	FlagFilename = "filename"
 )
 
 // Target is a parsed target passed on the command line
@@ -51,4 +56,23 @@ func ParseAttachmentTarget(target string) (*Target, error) {
 		}, nil
 	}
 	return &Target{Filename: target}, nil
+}
+
+// FilenameFromFlags sets t.Filename from the passed flagset.
+func (t *Target) FilenameFromFlags(flags *pflag.FlagSet) error {
+	fn, err := flags.GetString(FlagFilename)
+	if err != nil {
+		return err
+	}
+	if fn == "" {
+		return nil
+	}
+	if t.Filename != "" {
+		return &errors.ExitError{
+			Err:      errors.New("Must not use --" + FlagFilename + " and pass separate filename"),
+			ExitCode: chttp.ExitFailedToInitialize,
+		}
+	}
+	t.Filename = fn
+	return nil
 }
