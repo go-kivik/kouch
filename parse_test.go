@@ -187,3 +187,64 @@ func TestDocIDFromFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestDatabaseFromFlags(t *testing.T) {
+	dbFlagSet := func() *pflag.FlagSet {
+		return flagSet(func(pf *pflag.FlagSet) {
+			pf.String(FlagDatabase, "", "db")
+		})
+	}
+	tests := []struct {
+		name     string
+		target   *Target
+		flags    *pflag.FlagSet
+		expected *Target
+		err      string
+	}{
+		{
+			name:     "no flags",
+			target:   &Target{},
+			flags:    dbFlagSet(),
+			expected: &Target{},
+		},
+		{
+			name:   "no flag defined",
+			target: &Target{},
+			flags:  flagSet(),
+			err:    "flag accessed but not defined: database",
+		},
+		{
+			name:   "id already set",
+			target: &Target{Database: "foo"},
+			flags: func() *pflag.FlagSet {
+				fs := dbFlagSet()
+				if err := fs.Set("database", "bar"); err != nil {
+					t.Fatal(err)
+				}
+				return fs
+			}(),
+			err: "Must not use --" + FlagDatabase + " and pass database as part of the target",
+		},
+		{
+			name:   "id set anew",
+			target: &Target{},
+			flags: func() *pflag.FlagSet {
+				fs := dbFlagSet()
+				if err := fs.Set("database", "bar"); err != nil {
+					t.Fatal(err)
+				}
+				return fs
+			}(),
+			expected: &Target{Database: "bar"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.target.DatabaseFromFlags(test.flags)
+			testy.Error(t, test.err, err)
+			if d := diff.Interface(test.expected, test.target); d != nil {
+				t.Error(d)
+			}
+		})
+	}
+}

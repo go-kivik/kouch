@@ -13,12 +13,6 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 	kio "github.com/go-kivik/kouch/io"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-)
-
-// Flags for necessary arguments
-const (
-	FlagDatabase = "database"
 )
 
 func init() {
@@ -43,7 +37,7 @@ Target may be of the following formats:
 	}
 	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(kouch.FlagDocID, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
-	cmd.Flags().String(FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
+	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
 	return cmd
 }
 
@@ -90,7 +84,7 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	if err := opts.Target.DocIDFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := opts.dbFromFlags(cmd.Flags()); err != nil {
+	if err := opts.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 
@@ -101,24 +95,6 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*getAttOpts, error) {
 	}
 
 	return opts, nil
-}
-
-func (o *getAttOpts) dbFromFlags(flags *pflag.FlagSet) error {
-	db, err := flags.GetString(FlagDatabase)
-	if err != nil {
-		return err
-	}
-	if db == "" {
-		return nil
-	}
-	if o.Database != "" {
-		return &errors.ExitError{
-			Err:      errors.New("Must not use --" + FlagDatabase + " and pass database as part of the target"),
-			ExitCode: chttp.ExitFailedToInitialize,
-		}
-	}
-	o.Database = db
-	return nil
 }
 
 func getAttachment(opts *getAttOpts) (io.ReadCloser, error) {

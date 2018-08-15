@@ -74,8 +74,8 @@ func TestGetAttachmentOpts(t *testing.T) {
 		},
 		{
 			name:   "db provided twice",
-			args:   []string{"/foo/123/foo.txt", "--" + FlagDatabase, "foo"},
-			err:    "Must not use --" + FlagDatabase + " and pass database as part of the target",
+			args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
+			err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{

@@ -13,6 +13,7 @@ import (
 const (
 	FlagFilename = "filename"
 	FlagDocID    = "id"
+	FlagDatabase = "database"
 )
 
 // Target is a parsed target passed on the command line
@@ -94,5 +95,24 @@ func (t *Target) DocIDFromFlags(flags *pflag.FlagSet) error {
 		}
 	}
 	t.DocID = id
+	return nil
+}
+
+// DatabaseFromFlags sets t.Database from the passed flagset.
+func (t *Target) DatabaseFromFlags(flags *pflag.FlagSet) error {
+	db, err := flags.GetString(FlagDatabase)
+	if err != nil {
+		return err
+	}
+	if db == "" {
+		return nil
+	}
+	if t.Database != "" {
+		return &errors.ExitError{
+			Err:      errors.New("Must not use --" + FlagDatabase + " and pass database as part of the target"),
+			ExitCode: chttp.ExitFailedToInitialize,
+		}
+	}
+	t.Database = db
 	return nil
 }
