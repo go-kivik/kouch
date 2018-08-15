@@ -39,19 +39,19 @@ func getUUIDsCmd(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	result, err := getUUIDs(defCtx.Root, count)
+	result, err := getUUIDs(ctx, defCtx.Root, count)
 	if err != nil {
 		return err
 	}
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func getUUIDs(url string, count int) (io.ReadCloser, error) {
-	c, err := chttp.New(context.TODO(), url)
+func getUUIDs(ctx context.Context, url string, count int) (io.ReadCloser, error) {
+	c, err := chttp.New(ctx, url)
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.DoReq(context.TODO(), http.MethodGet, fmt.Sprintf("/_uuids?count=%d", count), nil)
+	res, err := c.DoReq(ctx, http.MethodGet, fmt.Sprintf("/_uuids?count=%d", count), nil)
 	if err != nil {
 		return nil, err
 	}

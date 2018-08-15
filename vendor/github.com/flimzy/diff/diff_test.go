@@ -88,7 +88,7 @@ func TestTextSlices(t *testing.T) {
 func TestText(t *testing.T) {
 	tests := []struct {
 		name             string
-		expected, actual string
+		expected, actual interface{}
 		result           string
 	}{
 		{
@@ -101,6 +101,27 @@ func TestText(t *testing.T) {
 			expected: "foo\nbar",
 			actual:   "bar\nbar",
 			result:   "--- expected\n+++ actual\n@@ -1,2 +1,2 @@\n-foo\n bar\n+bar\n",
+		},
+		{
+			name:     "string vs []byte",
+			expected: "foo",
+			actual:   []byte("foo"),
+		},
+		{
+			name:     "invalid exp type",
+			expected: 123,
+			result:   "[diff] expected: input must be of type string, []byte, or io.Reader",
+		},
+		{
+			name:     "invalid act type",
+			expected: "123",
+			actual:   123,
+			result:   "[diff] actual: input must be of type string, []byte, or io.Reader",
+		},
+		{
+			name:     "string vs io.Reader",
+			expected: strings.NewReader("foo"),
+			actual:   "foo",
 		},
 	}
 	for _, test := range tests {
