@@ -20,8 +20,7 @@ var helpText = map[Scope]string{
   - http://localhost:5984/_users -- The '_users' database on localhost
   - example.com:5000/root/foo    -- The 'foo' database on example.com, with CouchDB served at the 'root/' path.
 
-Any special characters, in particular a slash, in the database name, _must_ be
-URL encoded.
+Any slashes in the database name, must be URL-encoded.
 `,
 	Document: `[target] may be a full or relative URL to the document. Examples:
 
@@ -29,11 +28,20 @@ URL encoded.
   - foo/bar                       -- Document 'bar' in the database 'foo' at the default Root URL
   - _design/bar                   -- Relative URL to a design document in the current database
   - _local/bar                    -- Relative URL to a non-replicating document in the current database
-  - foo/_design/bar               -- The 'bar' design doc in the foo database at the current Root URL
+  - foo/_design/bar               -- The 'bar' design doc in the 'foo' database at the current Root URL
   - http://localhost:5984/foo/bar -- Full URL
 
-Except for _design/ and _local/ documents, any slashes in a document ID _must_
-be URL encoded.
+Except for _design/ and _local/ documents, any slashes in a database name or document ID must be URL-encoded.
+`,
+	Attachment: `[target] may be a full or relative URL to the attachment. Examples:
+
+  - baz.txt                          -- Attachment 'baz.txt' from the current document
+  - bar/baz.jpg                      -- Attachment 'baz.jpg' from the 'bar' document in the current database
+  - foo/bar/baz.png                  -- Attachment 'baz.png' from the 'bar' doc in the 'foo' database at the current Root URL
+  - foo/_design/bar/baz.html         -- Attachment 'baz.html' from the 'bar' design doc in the 'foo' databasae at the current Root URL
+  - http://host.com/foo/bar/baz.html -- Full URL
+
+  Except for _design/ and _local/ documents, any slashes in a database name, document id, or filename must be URL-encoded.
 `,
 }
 

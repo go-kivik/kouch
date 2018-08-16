@@ -18,7 +18,7 @@ const (
 	Root Scope = iota
 	Database
 	Document
-	// Attachment
+	Attachment
 	// View
 	// Show
 	// List
@@ -31,11 +31,13 @@ const (
 func ScopeName(scope Scope) string {
 	switch scope {
 	case Root:
-		return "Root"
+		return "root"
 	case Database:
-		return "Database"
+		return "database"
 	case Document:
-		return "Document"
+		return "document"
+	case Attachment:
+		return "attachment"
 	}
 	return ""
 }
@@ -94,10 +96,40 @@ func Parse(scope Scope, src string) (*Target, error) {
 				Document: doc,
 			}, nil
 		}
-		database, document := chopDocument(src)
+		db, doc := chopDocument(src)
+		root, db := lastSegment(db)
 		return &Target{
-			Database: database,
-			Document: document,
+			Root:     root,
+			Database: db,
+			Document: doc,
+		}, nil
+	case Attachment:
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+			url, err := url.Parse(src)
+			if err != nil {
+				return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
+			}
+			doc, att := lastSegment(url.Path)
+			root, doc := chopDocument(doc)
+			root, db := lastSegment(root)
+			if att == "" || doc == "" || db == "" {
+				return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
+			}
+			return &Target{
+				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, root),
+				Database: db,
+				Document: doc,
+				Filename: att,
+			}, nil
+		}
+		doc, att := lastSegment(src)
+		db, doc := chopDocument(doc)
+		root, db := lastSegment(db)
+		return &Target{
+			Root:     root,
+			Database: db,
+			Document: doc,
+			Filename: att,
 		}, nil
 	}
 	return nil, errors.New("invalid scope")
