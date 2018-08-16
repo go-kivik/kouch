@@ -52,6 +52,10 @@ type Target struct {
 	Document string
 	// Filename is the attachment filename.
 	Filename string
+	// Username is the HTTP Basic Auth username
+	Username string
+	// Password is the HTTP Basic Auth password
+	Password string
 }
 
 // Parse parses src as a CouchDB target, according to the rules for scope.
@@ -61,6 +65,18 @@ func Parse(scope Scope, src string) (*Target, error) {
 	}
 	switch scope {
 	case Root:
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+			url, err := url.Parse(src)
+			if err != nil {
+				return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
+			}
+			pw, _ := url.User.Password()
+			return &Target{
+				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, url.Path),
+				Username: url.User.Username(),
+				Password: pw,
+			}, nil
+		}
 		return &Target{Root: src}, nil
 	case Database:
 		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
@@ -69,8 +85,11 @@ func Parse(scope Scope, src string) (*Target, error) {
 				return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
 			}
 			root, db := lastSegment(url.Path)
+			pw, _ := url.User.Password()
 			return &Target{
 				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, root),
+				Username: url.User.Username(),
+				Password: pw,
 				Database: db,
 			}, nil
 		}
@@ -90,10 +109,13 @@ func Parse(scope Scope, src string) (*Target, error) {
 			if doc == "" || db == "" {
 				return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
 			}
+			pw, _ := url.User.Password()
 			return &Target{
 				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, root),
 				Database: db,
 				Document: doc,
+				Username: url.User.Username(),
+				Password: pw,
 			}, nil
 		}
 		db, doc := chopDocument(src)
@@ -115,11 +137,14 @@ func Parse(scope Scope, src string) (*Target, error) {
 			if att == "" || doc == "" || db == "" {
 				return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
 			}
+			pw, _ := url.User.Password()
 			return &Target{
 				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, root),
 				Database: db,
 				Document: doc,
 				Filename: att,
+				Username: url.User.Username(),
+				Password: pw,
 			}, nil
 		}
 		doc, att := lastSegment(src)

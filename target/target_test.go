@@ -44,6 +44,12 @@ func TestParse(t *testing.T) {
 			expected: &Target{Root: "http://foo.com/"},
 		},
 		{
+			scope:    Root,
+			name:     "url with auth",
+			src:      "http://xxx:yyy@foo.com/",
+			expected: &Target{Root: "http://foo.com/", Username: "xxx", Password: "yyy"},
+		},
+		{
 			name:     "Simple root URL with path",
 			scope:    Root,
 			src:      "http://foo.com/db/",
@@ -72,6 +78,12 @@ func TestParse(t *testing.T) {
 			name:     "full url",
 			src:      "http://foo.com/dbname",
 			expected: &Target{Root: "http://foo.com", Database: "dbname"},
+		},
+		{
+			scope:    Database,
+			name:     "url with auth",
+			src:      "http://a:b@foo.com/dbname",
+			expected: &Target{Root: "http://foo.com", Username: "a", Password: "b", Database: "dbname"},
 		},
 		{
 			scope:  Database,
@@ -154,6 +166,12 @@ func TestParse(t *testing.T) {
 		},
 		{
 			scope:    Document,
+			name:     "url with auth",
+			src:      "http://foo:bar@localhost:5984/foo/bar",
+			expected: &Target{Root: "http://localhost:5984", Username: "foo", Password: "bar", Database: "foo", Document: "bar"},
+		},
+		{
+			scope:    Document,
 			name:     "no scheme",
 			src:      "localhost:5984/foo/bar",
 			expected: &Target{Root: "localhost:5984", Database: "foo", Document: "bar"},
@@ -220,6 +238,12 @@ func TestParse(t *testing.T) {
 			name:     "full url, no scheme",
 			src:      "foo.com:5984/foo/bar/baz.txt",
 			expected: &Target{Root: "foo.com:5984", Database: "foo", Document: "bar", Filename: "baz.txt"},
+		},
+		{
+			scope:    Attachment,
+			name:     "url with auth",
+			src:      "https://admin:abc123@localhost:5984/foo/bar/baz.pdf",
+			expected: &Target{Root: "https://localhost:5984", Username: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
 		},
 	}
 	for _, test := range tests {
