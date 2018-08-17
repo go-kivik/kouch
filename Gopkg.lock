@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/go-kivik/couchdb"
   packages = [".","chttp"]
-  revision = "a729235182c8a2ea5d2800e92517bc33ed6593bf"
+  revision = "bc23c48d81dfeaeea859d14224e144b8024e5a66"
 
 [[projects]]
   branch = "master"
