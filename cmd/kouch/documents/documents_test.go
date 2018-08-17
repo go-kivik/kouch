@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -36,11 +37,14 @@ func TestGetDocumentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"--database", "bar", "123"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "bar",
-				Document: "123",
-			}},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "123",
+				},
+				Values: &url.Values{},
+			},
 		},
 		{
 			name: "db included in target",
@@ -49,11 +53,14 @@ func TestGetDocumentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"/foo/123"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "foo",
-				Document: "123",
-			}},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "foo",
+					Document: "123",
+				},
+				Values: &url.Values{},
+			},
 		},
 		{
 			name:   "db provided twice",
@@ -64,11 +71,14 @@ func TestGetDocumentOpts(t *testing.T) {
 		{
 			name: "full url target",
 			args: []string{"http://foo.com/foo/123"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "http://foo.com",
-				Database: "foo",
-				Document: "123",
-			}},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "http://foo.com",
+					Database: "foo",
+					Document: "123",
+				},
+				Values: &url.Values{},
+			},
 		},
 		{
 			name: "if-none-match",
@@ -79,6 +89,7 @@ func TestGetDocumentOpts(t *testing.T) {
 					Database: "bar",
 					Document: "baz",
 				},
+				Values:      &url.Values{},
 				ifNoneMatch: "foo"},
 		},
 		{
@@ -90,7 +101,8 @@ func TestGetDocumentOpts(t *testing.T) {
 					Database: "bar",
 					Document: "baz",
 				},
-				rev: "foo",
+				Values: &url.Values{},
+				rev:    "foo",
 			},
 		},
 		{
@@ -100,6 +112,7 @@ func TestGetDocumentOpts(t *testing.T) {
 				Target: &kouch.Target{
 					Document: "baz",
 				},
+				Values:             &url.Values{},
 				includeAttachments: true,
 			},
 		},
@@ -110,7 +123,7 @@ func TestGetDocumentOpts(t *testing.T) {
 				Target: &kouch.Target{
 					Document: "baz",
 				},
-				includeAttEncoding: true,
+				Values: &url.Values{"att_encoding_info": []string{"true"}},
 			},
 		},
 	}
@@ -189,13 +202,13 @@ func TestGetDocument(t *testing.T) {
 	tests := []gdTest{
 		{
 			name:   "validation fails",
-			opts:   &opts{Target: &kouch.Target{}},
+			opts:   &opts{Target: &kouch.Target{}, Values: &url.Values{}},
 			err:    "No document ID provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name: "success",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}},
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}},
 			val: func(r *http.Request) error {
 				if r.URL.Path != "/foo/123" {
 					return errors.Errorf("Unexpected path: %s", r.URL.Path)
@@ -210,7 +223,7 @@ func TestGetDocument(t *testing.T) {
 		},
 		{
 			name: "slashes",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b"}},
+			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b"}, Values: &url.Values{}},
 			val: func(r *http.Request) error {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
 					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
@@ -225,8 +238,7 @@ func TestGetDocument(t *testing.T) {
 		},
 		{
 			name: "if-none-match",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
-				ifNoneMatch: "xyz"},
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, ifNoneMatch: "xyz"},
 			val: func(r *http.Request) error {
 				if r.URL.Path != "/foo/123" {
 					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
@@ -248,8 +260,7 @@ func TestGetDocument(t *testing.T) {
 		},
 		{
 			name: "rev",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
-				rev: "xyz"},
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, rev: "xyz"},
 			val: func(r *http.Request) error {
 				if r.URL.Path != "/foo/123" {
 					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
@@ -271,8 +282,7 @@ func TestGetDocument(t *testing.T) {
 		},
 		{
 			name: "include attachments",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
-				includeAttachments: true},
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, includeAttachments: true},
 			val: func(r *http.Request) error {
 				if r.URL.Path != "/foo/123" {
 					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
@@ -293,17 +303,18 @@ func TestGetDocument(t *testing.T) {
 			expected: "Test\ncontent\n",
 		},
 		{
-			name: "include attachment encoding",
+			name: "include query params",
 			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
-				includeAttEncoding: true},
+				Values: &url.Values{"foobar": []string{"baz"}},
+			},
 			val: func(r *http.Request) error {
 				if r.URL.Path != "/foo/123" {
 					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
 					fmt.Println(err)
 					return err
 				}
-				if val := r.URL.Query().Get("att_encoding_info"); val != "true" {
-					err := errors.Errorf("Unexpected attachments value: %s", val)
+				if val := r.URL.Query().Get("foobar"); val != "baz" {
+					err := errors.Errorf("Unexpected query value: %s", val)
 					fmt.Println(err)
 					return err
 				}
