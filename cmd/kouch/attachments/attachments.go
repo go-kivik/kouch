@@ -84,6 +84,12 @@ func getAttachmentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 		}
 	}
 
+	var err error
+	o.ifNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
+	if err != nil {
+		return nil, err
+	}
+
 	return o, nil
 }
 
@@ -96,7 +102,9 @@ func getAttachment(o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
+	res, err := c.DoReq(context.TODO(), http.MethodGet, path, &chttp.Options{
+		IfNoneMatch: o.ifNoneMatch,
+	})
 	if err != nil {
 		return nil, err
 	}

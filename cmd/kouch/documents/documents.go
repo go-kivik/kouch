@@ -93,6 +93,11 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 			opts.Root = defCtx.Root
 		}
 	}
+	var err error
+	opts.ifNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
+	if err != nil {
+		return nil, err
+	}
 
 	return opts, nil
 }
@@ -106,7 +111,9 @@ func getDocument(o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
+	res, err := c.DoReq(context.TODO(), http.MethodGet, path, &chttp.Options{
+		IfNoneMatch: o.ifNoneMatch,
+	})
 	if err != nil {
 		return nil, err
 	}

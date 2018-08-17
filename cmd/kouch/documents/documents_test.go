@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -68,6 +69,16 @@ func TestGetDocumentOpts(t *testing.T) {
 				Database: "foo",
 				Document: "123",
 			}},
+		},
+		{
+			name: "if-none-match",
+			args: []string{"--" + kouch.FlagIfNoneMatch, "foo", "foo.com/bar/baz"},
+			expected: &opts{Target: &kouch.Target{
+				Root:     "foo.com",
+				Database: "bar",
+				Document: "baz",
+			},
+				ifNoneMatch: "foo"},
 		},
 	}
 	for _, test := range tests {
@@ -170,6 +181,29 @@ func TestGetDocument(t *testing.T) {
 			val: func(r *http.Request) error {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
 					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
+				}
+				return nil
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Test\ncontent\n",
+		},
+		{
+			name: "if-none-match",
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
+				ifNoneMatch: "xyz"},
+			val: func(r *http.Request) error {
+				if r.URL.Path != "/foo/123" {
+					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
+					fmt.Println(err)
+					return err
+				}
+				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
+					err := errors.Errorf("Unexpected If-None-Match header: %s", inm)
+					fmt.Println(err)
+					return err
 				}
 				return nil
 			},

@@ -1,6 +1,7 @@
 package attachments
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -77,6 +78,16 @@ func TestGetAttachmentOpts(t *testing.T) {
 				Document: "123",
 				Filename: "foo.txt",
 			}},
+		},
+		{
+			name: "if none match",
+			args: []string{"--" + kouch.FlagIfNoneMatch, "xyz", "foo.txt"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Filename: "foo.txt",
+				},
+				ifNoneMatch: "xyz",
+			},
 		},
 	}
 	for _, test := range tests {
@@ -182,6 +193,28 @@ func TestGetAttachment(t *testing.T) {
 			val: func(r *http.Request) error {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
+				}
+				return nil
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Test\ncontent\n",
+		},
+		{
+			name: "if-none-match",
+			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, ifNoneMatch: "xyz"},
+			val: func(r *http.Request) error {
+				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
+					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
+					fmt.Println(err)
+					return err
+				}
+				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
+					err := errors.Errorf("Unexpected If-None-Match header: %s", inm)
+					fmt.Println(err)
+					return err
 				}
 				return nil
 			},
