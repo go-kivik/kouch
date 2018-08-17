@@ -32,7 +32,6 @@ const (
 )
 
 /* TODO:
-flagIncludeAttachments     = "attachments"
 flagIncludeAttEncoding     = "att-encoding"
 flagAttsSince              = "attachments-since"
 flagIncludeConflicts       = "conflicts"
@@ -62,6 +61,7 @@ func docCmd() *cobra.Command {
 	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
 	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
 	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
+	cmd.Flags().Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
 	return cmd
 }
 
@@ -80,8 +80,9 @@ func documentCmd(cmd *cobra.Command, args []string) error {
 
 type opts struct {
 	*kouch.Target
-	rev         string
-	ifNoneMatch string
+	rev                string
+	ifNoneMatch        string
+	includeAttachments bool
 }
 
 func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
@@ -118,6 +119,10 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
+	opts.includeAttachments, err = cmd.Flags().GetBool(flagIncludeAttachments)
+	if err != nil {
+		return nil, err
+	}
 
 	return opts, nil
 }
@@ -134,6 +139,9 @@ func getDocument(o *opts) (io.ReadCloser, error) {
 	query := &url.Values{}
 	if o.rev != "" {
 		query.Add("rev", o.rev)
+	}
+	if o.includeAttachments {
+		query.Add("attachments", "true")
 	}
 	if eq := query.Encode(); eq != "" {
 		path = path + "?" + eq

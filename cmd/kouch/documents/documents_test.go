@@ -73,22 +73,37 @@ func TestGetDocumentOpts(t *testing.T) {
 		{
 			name: "if-none-match",
 			args: []string{"--" + kouch.FlagIfNoneMatch, "foo", "foo.com/bar/baz"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "bar",
-				Document: "baz",
-			},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "baz",
+				},
 				ifNoneMatch: "foo"},
 		},
 		{
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "foo", "foo.com/bar/baz"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "bar",
-				Document: "baz",
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "baz",
+				},
+				rev: "foo",
 			},
-				rev: "foo"},
+		},
+		{
+			name: "include attachments",
+			args: []string{"--" + flagIncludeAttachments, "foo.com/bar/baz"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "baz",
+				},
+				includeAttachments: true,
+			},
 		},
 	}
 	for _, test := range tests {
@@ -235,6 +250,29 @@ func TestGetDocument(t *testing.T) {
 				}
 				if rev := r.URL.Query().Get("rev"); rev != "xyz" {
 					err := errors.Errorf("Unexpected revision: %s", rev)
+					fmt.Println(err)
+					return err
+				}
+				return nil
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Test\ncontent\n",
+		},
+		{
+			name: "include attachments",
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
+				includeAttachments: true},
+			val: func(r *http.Request) error {
+				if r.URL.Path != "/foo/123" {
+					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
+					fmt.Println(err)
+					return err
+				}
+				if val := r.URL.Query().Get("attachments"); val != "true" {
+					err := errors.Errorf("Unexpected attachments value: %s", val)
 					fmt.Println(err)
 					return err
 				}
