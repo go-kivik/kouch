@@ -44,13 +44,13 @@ func TestGetAttachmentOpts(t *testing.T) {
 			expected: &kouch.Target{
 				Root:     "foo.com",
 				Database: "bar",
-				DocID:    "123",
+				Document: "123",
 				Filename: "foo.txt",
 			},
 		},
 		{
 			name:   "doc ID provided twice",
-			args:   []string{"123/foo.txt", "--" + kouch.FlagDocID, "321"},
+			args:   []string{"123/foo.txt", "--" + kouch.FlagDocument, "321"},
 			err:    "Must not use --id and pass document ID as part of the target",
 			status: chttp.ExitFailedToInitialize,
 		},
@@ -64,7 +64,7 @@ func TestGetAttachmentOpts(t *testing.T) {
 			expected: &kouch.Target{
 				Root:     "foo.com",
 				Database: "foo",
-				DocID:    "123",
+				Document: "123",
 				Filename: "foo.txt",
 			},
 		},
@@ -78,9 +78,9 @@ func TestGetAttachmentOpts(t *testing.T) {
 			name: "full url target",
 			args: []string{"http://foo.com/foo/123/foo.txt"},
 			expected: &kouch.Target{
-				Root:     "http://foo.com/",
+				Root:     "http://foo.com",
 				Database: "foo",
-				DocID:    "123",
+				Document: "123",
 				Filename: "foo.txt",
 			},
 		},
@@ -123,19 +123,19 @@ func TestValidateTarget(t *testing.T) {
 		},
 		{
 			name:   "no database provided",
-			target: &kouch.Target{DocID: "123", Filename: "foo.txt"},
+			target: &kouch.Target{Document: "123", Filename: "foo.txt"},
 			err:    "No database name provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:   "no root url",
-			target: &kouch.Target{Database: "foo", DocID: "123", Filename: "foo.txt"},
+			target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"},
 			err:    "No root URL provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:   "valid",
-			target: &kouch.Target{Root: "xxx", Database: "foo", DocID: "123", Filename: "foo.txt"},
+			target: &kouch.Target{Root: "xxx", Database: "foo", Document: "123", Filename: "foo.txt"},
 		},
 	}
 	for _, test := range tests {
@@ -165,7 +165,7 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name:   "success",
-			target: &kouch.Target{Database: "foo", DocID: "123", Filename: "foo.txt"},
+			target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"},
 			val: func(r *http.Request) error {
 				if r.URL.Path != "/foo/123/foo.txt" {
 					return errors.Errorf("Unexpected path: %s", r.URL.Path)
@@ -180,7 +180,7 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name:   "slashes",
-			target: &kouch.Target{Database: "foo/ba r", DocID: "123/b", Filename: "foo/bar.txt"},
+			target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
 			val: func(r *http.Request) error {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)

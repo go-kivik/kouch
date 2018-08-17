@@ -39,3 +39,11 @@ func NewExitError(status int, fmt string, args ...interface{}) error {
 		ExitCode: status,
 	}
 }
+
+// WrapExitError wraps an existing error, with an exit status.
+func WrapExitError(status int, err error) error {
+	return &ExitError{
+		Err:      err,
+		ExitCode: status,
+	}
+}
