@@ -13,6 +13,7 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // Get-doc specific flags
@@ -32,7 +33,6 @@ const (
 )
 
 /* TODO:
-flagIncludeAttEncoding     = "att-encoding"
 flagAttsSince              = "attachments-since"
 flagIncludeConflicts       = "conflicts"
 flagIncludeDeletedConfligs = "deleted-conflicts"
@@ -62,6 +62,7 @@ func docCmd() *cobra.Command {
 	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
 	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
 	cmd.Flags().Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
+	cmd.Flags().Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
 	return cmd
 }
 
@@ -83,6 +84,13 @@ type opts struct {
 	rev                string
 	ifNoneMatch        string
 	includeAttachments bool
+	includeAttEncoding bool
+}
+
+func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
+	var err error
+	o.includeAttEncoding, err = f.GetBool(flagIncludeAttEncoding)
+	return err
 }
 
 func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
@@ -123,6 +131,9 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
+	if e := opts.setIncludeAttEncoding(cmd.Flags()); e != nil {
+		return nil, e
+	}
 
 	return opts, nil
 }
@@ -142,6 +153,9 @@ func getDocument(o *opts) (io.ReadCloser, error) {
 	}
 	if o.includeAttachments {
 		query.Add("attachments", "true")
+	}
+	if o.includeAttEncoding {
+		query.Add("att_encoding_info", "true")
 	}
 	if eq := query.Encode(); eq != "" {
 		path = path + "?" + eq

@@ -95,14 +95,22 @@ func TestGetDocumentOpts(t *testing.T) {
 		},
 		{
 			name: "include attachments",
-			args: []string{"--" + flagIncludeAttachments, "foo.com/bar/baz"},
+			args: []string{"--" + flagIncludeAttachments, "baz"},
 			expected: &opts{
 				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "bar",
 					Document: "baz",
 				},
 				includeAttachments: true,
+			},
+		},
+		{
+			name: "include attachment encoding",
+			args: []string{"--" + flagIncludeAttEncoding, "baz"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Document: "baz",
+				},
+				includeAttEncoding: true,
 			},
 		},
 	}
@@ -272,6 +280,29 @@ func TestGetDocument(t *testing.T) {
 					return err
 				}
 				if val := r.URL.Query().Get("attachments"); val != "true" {
+					err := errors.Errorf("Unexpected attachments value: %s", val)
+					fmt.Println(err)
+					return err
+				}
+				return nil
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Test\ncontent\n",
+		},
+		{
+			name: "include attachment encoding",
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
+				includeAttEncoding: true},
+			val: func(r *http.Request) error {
+				if r.URL.Path != "/foo/123" {
+					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
+					fmt.Println(err)
+					return err
+				}
+				if val := r.URL.Query().Get("att_encoding_info"); val != "true" {
 					err := errors.Errorf("Unexpected attachments value: %s", val)
 					fmt.Println(err)
 					return err
