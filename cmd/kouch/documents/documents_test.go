@@ -101,8 +101,9 @@ func TestGetDocumentOpts(t *testing.T) {
 					Database: "bar",
 					Document: "baz",
 				},
-				Values: &url.Values{},
-				rev:    "foo",
+				Values: &url.Values{
+					"rev": []string{"foo"},
+				},
 			},
 		},
 		{
@@ -247,28 +248,6 @@ func TestGetDocument(t *testing.T) {
 				}
 				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
 					err := errors.Errorf("Unexpected If-None-Match header: %s", inm)
-					fmt.Println(err)
-					return err
-				}
-				return nil
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "rev",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, rev: "xyz"},
-			val: func(r *http.Request) error {
-				if r.URL.Path != "/foo/123" {
-					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
-					fmt.Println(err)
-					return err
-				}
-				if rev := r.URL.Query().Get("rev"); rev != "xyz" {
-					err := errors.Errorf("Unexpected revision: %s", rev)
 					fmt.Println(err)
 					return err
 				}

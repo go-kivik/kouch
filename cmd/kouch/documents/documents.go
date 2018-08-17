@@ -82,7 +82,6 @@ func documentCmd(cmd *cobra.Command, args []string) error {
 type opts struct {
 	*kouch.Target
 	*url.Values
-	rev                string
 	ifNoneMatch        string
 	includeAttachments bool
 }
@@ -92,6 +91,17 @@ func newOpts() *opts {
 		Target: &kouch.Target{},
 		Values: &url.Values{},
 	}
+}
+
+func (o *opts) setRev(f *pflag.FlagSet) error {
+	v, err := f.GetString(kouch.FlagRev)
+	if err != nil {
+		return err
+	}
+	if v != "" {
+		o.Values.Add("rev", v)
+	}
+	return nil
 }
 
 func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
@@ -133,13 +143,12 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts.rev, err = cmd.Flags().GetString(kouch.FlagRev)
-	if err != nil {
-		return nil, err
-	}
 	opts.includeAttachments, err = cmd.Flags().GetBool(flagIncludeAttachments)
 	if err != nil {
 		return nil, err
+	}
+	if e := opts.setRev(cmd.Flags()); e != nil {
+		return nil, e
 	}
 	if e := opts.setIncludeAttEncoding(cmd.Flags()); e != nil {
 		return nil, e
@@ -158,9 +167,6 @@ func getDocument(o *opts) (io.ReadCloser, error) {
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
 	query := o.Values
-	if o.rev != "" {
-		query.Add("rev", o.rev)
-	}
 	if o.includeAttachments {
 		query.Add("attachments", "true")
 	}
