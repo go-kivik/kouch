@@ -11,7 +11,7 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
-	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/go-kivik/kouch/target"
 )
 
 func init() {
@@ -22,8 +22,8 @@ func uuidsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "uuids [target]",
 		Short: "Returns one or more server-generated UUIDs",
-		Long: `Returns one or more Universally Unique Identifiers (UUIDs) from the
-CouchDB server.`,
+		Long: "Returns Universally Unique Identifiers (UUIDs) from the CouchDB server.\n\n" +
+			target.HelpText(target.Root),
 		RunE: getUUIDsCmd,
 	}
 	cmd.Flags().IntP("count", "C", 1, "Number of UUIDs to return")
@@ -41,13 +41,7 @@ func getUUIDsOpts(cmd *cobra.Command, args []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
-	var root string
-	if len(args) > 0 {
-		if len(args) > 1 {
-			return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "Too many targets provided")
-		}
-		root = args[0]
-	}
+	root := kouch.GetTarget(ctx)
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil && root == "" {
 		root = defCtx.Root
 	}

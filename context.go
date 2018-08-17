@@ -18,6 +18,7 @@ var (
 	outputContextKey          = &contextKey{"output"}
 	outputProcessorContextKey = &contextKey{"outputer"}
 	configContextKey          = &contextKey{"config"}
+	targetContextKey          = &contextKey{"target"}
 )
 
 // Conf returns the context's current configuration struct, or panics if none is
@@ -61,6 +62,17 @@ func Verbose(ctx context.Context) bool {
 // SetVerbose returns a new context with the Verbose flag set to value.
 func SetVerbose(ctx context.Context, value bool) context.Context {
 	return context.WithValue(ctx, verboseContextKey, value)
+}
+
+// GetTarget returns the target argument from the context.
+func GetTarget(ctx context.Context) string {
+	target, _ := ctx.Value(targetContextKey).(string)
+	return target
+}
+
+// SetTarget returns a new context with the target flag set to target.
+func SetTarget(ctx context.Context, target string) context.Context {
+	return context.WithValue(ctx, targetContextKey, target)
 }
 
 type contexter interface {

@@ -11,7 +11,6 @@ import (
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/errors"
-	kio "github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -25,15 +24,8 @@ func attCmd() *cobra.Command {
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment",
-		Long: `Fetches a file attachment, and sends the content to --` + kio.FlagOutputFile + `.
-
-Target may be of the following formats:
-
-  - {filename} -- The filename only. Alternately, the filename may be passed with the --` + kouch.FlagFilename + ` option, particularly for filenames with slashes.
-  - {id}/{filename} -- The document ID and filename.
-  - /{db}/{id}/{filename} -- With leading slash, the database name, document ID, and filename.
-  - http://host.com/{db}/{id}/{filename} -- A fully qualified URL, may include auth credentials.
-`,
+		Long: "Fetches a file attachment.\n" +
+			target.HelpText(target.Attachment),
 		RunE: attachmentCmd,
 	}
 	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
@@ -57,15 +49,12 @@ func attachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Target, error) {
+func getAttachmentOpts(cmd *cobra.Command, _ []string) (*kouch.Target, error) {
 	ctx := kouch.GetContext(cmd)
 	t := &kouch.Target{}
-	if len(args) > 0 {
-		if len(args) > 1 {
-			return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "Too many targets provided")
-		}
+	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		t, err = target.Parse(target.Attachment, args[0])
+		t, err = target.Parse(target.Attachment, tgt)
 		if err != nil {
 			return nil, err
 		}
