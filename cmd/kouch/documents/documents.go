@@ -1,4 +1,4 @@
-package attachments
+package documents
 
 import (
 	"context"
@@ -16,53 +16,47 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"get"}, attCmd())
+	registry.Register([]string{"get"}, docCmd())
 }
 
-func attCmd() *cobra.Command {
+func docCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "attachment [target]",
-		Aliases: []string{"att"},
-		Short:   "Fetches a file attachment",
-		Long: "Fetches a file attachment.\n\n" +
-			target.HelpText(target.Attachment),
-		RunE: attachmentCmd,
+		Use:     "document [target]",
+		Aliases: []string{"doc"},
+		Short:   "Fetches a single document.",
+		Long: "Fetches a single document.\n\n" +
+			target.HelpText(target.Document),
+		RunE: documentCmd,
 	}
-	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
-	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
-	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
+	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
+	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
 	return cmd
 }
 
-func attachmentCmd(cmd *cobra.Command, args []string) error {
+func documentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := getAttachmentOpts(cmd, args)
+	opts, err := getDocumentOpts(cmd, args)
 	if err != nil {
 		return err
 	}
-	resp, err := getAttachment(opts)
+	result, err := getDocument(opts)
 	if err != nil {
 		return err
 	}
-	defer resp.Close()
-	_, err = io.Copy(kouch.Output(ctx), resp)
-	return err
+	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func getAttachmentOpts(cmd *cobra.Command, _ []string) (*kouch.Target, error) {
+func getDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Target, error) {
 	ctx := kouch.GetContext(cmd)
 	t := &kouch.Target{}
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		t, err = target.Parse(target.Attachment, tgt)
+		t, err = target.Parse(target.Document, tgt)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := t.FilenameFromFlags(cmd.Flags()); err != nil {
-		return nil, err
-	}
 	if err := t.DocumentFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
@@ -79,7 +73,7 @@ func getAttachmentOpts(cmd *cobra.Command, _ []string) (*kouch.Target, error) {
 	return t, nil
 }
 
-func getAttachment(t *kouch.Target) (io.ReadCloser, error) {
+func getDocument(t *kouch.Target) (io.ReadCloser, error) {
 	if err := validateTarget(t); err != nil {
 		return nil, err
 	}
@@ -87,7 +81,7 @@ func getAttachment(t *kouch.Target) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(t.Database), chttp.EncodeDocID(t.Document), url.QueryEscape(t.Filename))
+	path := fmt.Sprintf("/%s/%s", url.QueryEscape(t.Database), chttp.EncodeDocID(t.Document))
 	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
@@ -99,8 +93,8 @@ func getAttachment(t *kouch.Target) (io.ReadCloser, error) {
 }
 
 func validateTarget(t *kouch.Target) error {
-	if t.Filename == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No filename provided")
+	if t.Filename != "" {
+		panic("non-nil filename")
 	}
 	if t.Document == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No document ID provided")
