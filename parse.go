@@ -32,10 +32,8 @@ func (t *Target) DocumentFromFlags(flags *pflag.FlagSet) error {
 		return nil
 	}
 	if t.Document != "" {
-		return &errors.ExitError{
-			Err:      errors.New("Must not use --" + FlagDocument + " and pass document ID as part of the target"),
-			ExitCode: chttp.ExitFailedToInitialize,
-		}
+		return errors.NewExitError(chttp.ExitFailedToInitialize,
+			"Must not use --%s and pass document ID as part of the target", FlagDocument)
 	}
 	t.Document = id
 	return nil
@@ -51,10 +49,8 @@ func (t *Target) DatabaseFromFlags(flags *pflag.FlagSet) error {
 		return nil
 	}
 	if t.Database != "" {
-		return &errors.ExitError{
-			Err:      errors.New("Must not use --" + FlagDatabase + " and pass database as part of the target"),
-			ExitCode: chttp.ExitFailedToInitialize,
-		}
+		return errors.NewExitError(chttp.ExitFailedToInitialize,
+			"Must not use --%s and pass database as part of the target", FlagDatabase)
 	}
 	t.Database = db
 	return nil
