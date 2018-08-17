@@ -136,6 +136,13 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			scope:  Database,
+			name:   "missing db",
+			src:    "https://foo.com/",
+			err:    "incomplete target URL",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
 			scope:    Document,
 			name:     "doc id only",
 			src:      "bar",

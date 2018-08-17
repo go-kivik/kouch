@@ -58,104 +58,72 @@ type Target struct {
 	Password string
 }
 
+var errIncompleteURL = errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
+
+func (t *Target) validate() error {
+	parts := []string{t.Root, t.Database, t.Document, t.Filename}
+	test := strings.Trim(strings.Join(parts, "\t"), "\t")
+	if strings.Contains(test, "\t\t") {
+		// This means one of the inner elements is empty
+		return errIncompleteURL
+	}
+	return nil
+}
+
+func (t *Target) root(src string) (*Target, error) {
+	t.Root = t.Root + src
+	return t, t.validate()
+}
+
+func (t *Target) database(src string) (*Target, error) {
+	src, t.Database = lastSegment(src)
+	if t.Database == "" && t.Document == "" && t.Filename == "" {
+		return nil, errIncompleteURL
+	}
+	return t.root(src)
+}
+
+func (t *Target) document(src string) (*Target, error) {
+	src, t.Document = chopDocument(src)
+	if t.Document == "" && t.Filename == "" {
+		return nil, errIncompleteURL
+	}
+	return t.database(src)
+}
+
+func (t *Target) attachment(src string) (*Target, error) {
+	src, t.Filename = lastSegment(src)
+	if t.Filename == "" {
+		return nil, errIncompleteURL
+	}
+	return t.document(src)
+}
+
 // Parse parses src as a CouchDB target, according to the rules for scope.
 func Parse(scope Scope, src string) (*Target, error) {
+	target := &Target{}
 	if src == "" {
-		return &Target{}, nil
+		return target, nil
+	}
+	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+		url, err := url.Parse(src)
+		if err != nil {
+			return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
+		}
+		src = url.EscapedPath()
+		target.Root = fmt.Sprintf("%s://%s", url.Scheme, url.Host)
+		target.Username = url.User.Username()
+		target.Password, _ = url.User.Password()
 	}
 	switch scope {
 	case Root:
-		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			url, err := url.Parse(src)
-			if err != nil {
-				return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
-			}
-			pw, _ := url.User.Password()
-			return &Target{
-				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, url.Path),
-				Username: url.User.Username(),
-				Password: pw,
-			}, nil
-		}
-		return &Target{Root: src}, nil
+		return target.root(src)
 	case Database:
-		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			url, err := url.Parse(src)
-			if err != nil {
-				return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
-			}
-			root, db := lastSegment(url.Path)
-			pw, _ := url.User.Password()
-			return &Target{
-				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, root),
-				Username: url.User.Username(),
-				Password: pw,
-				Database: db,
-			}, nil
-		}
-		root, db := lastSegment(src)
-		return &Target{
-			Root:     root,
-			Database: db,
-		}, nil
+		return target.database(src)
 	case Document:
-		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			url, err := url.Parse(src)
-			if err != nil {
-				return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
-			}
-			root, doc := chopDocument(url.Path)
-			root, db := lastSegment(root)
-			if doc == "" || db == "" {
-				return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
-			}
-			pw, _ := url.User.Password()
-			return &Target{
-				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, root),
-				Database: db,
-				Document: doc,
-				Username: url.User.Username(),
-				Password: pw,
-			}, nil
-		}
-		db, doc := chopDocument(src)
-		root, db := lastSegment(db)
-		return &Target{
-			Root:     root,
-			Database: db,
-			Document: doc,
-		}, nil
+		return target.document(src)
 	case Attachment:
-		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			url, err := url.Parse(src)
-			if err != nil {
-				return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
-			}
-			doc, att := lastSegment(url.Path)
-			root, doc := chopDocument(doc)
-			root, db := lastSegment(root)
-			if att == "" || doc == "" || db == "" {
-				return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
-			}
-			pw, _ := url.User.Password()
-			return &Target{
-				Root:     fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, root),
-				Database: db,
-				Document: doc,
-				Filename: att,
-				Username: url.User.Username(),
-				Password: pw,
-			}, nil
-		}
-		doc, att := lastSegment(src)
-		db, doc := chopDocument(doc)
-		root, db := lastSegment(db)
-		return &Target{
-			Root:     root,
-			Database: db,
-			Document: doc,
-			Filename: att,
-		}, nil
+		return target.attachment(src)
 	}
 	return nil, errors.New("invalid scope")
 }
@@ -173,6 +141,6 @@ func chopDocument(src string) (string, string) {
 
 func lastSegment(src string) (string, string) {
 	parts := strings.Split(src, "/")
-	return strings.Join(parts[0:len(parts)-1], "/"),
-		parts[len(parts)-1]
+	l := len(parts)
+	return strings.Join(parts[0:l-1], "/"), parts[l-1]
 }
