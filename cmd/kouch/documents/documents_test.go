@@ -113,8 +113,9 @@ func TestGetDocumentOpts(t *testing.T) {
 				Target: &kouch.Target{
 					Document: "baz",
 				},
-				Values:             &url.Values{},
-				includeAttachments: true,
+				Values: &url.Values{
+					"attachments": []string{"true"},
+				},
 			},
 		},
 		{
@@ -248,28 +249,6 @@ func TestGetDocument(t *testing.T) {
 				}
 				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
 					err := errors.Errorf("Unexpected If-None-Match header: %s", inm)
-					fmt.Println(err)
-					return err
-				}
-				return nil
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "include attachments",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, includeAttachments: true},
-			val: func(r *http.Request) error {
-				if r.URL.Path != "/foo/123" {
-					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
-					fmt.Println(err)
-					return err
-				}
-				if val := r.URL.Query().Get("attachments"); val != "true" {
-					err := errors.Errorf("Unexpected attachments value: %s", val)
 					fmt.Println(err)
 					return err
 				}

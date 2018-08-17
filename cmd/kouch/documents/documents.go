@@ -82,8 +82,7 @@ func documentCmd(cmd *cobra.Command, args []string) error {
 type opts struct {
 	*kouch.Target
 	*url.Values
-	ifNoneMatch        string
-	includeAttachments bool
+	ifNoneMatch string
 }
 
 func newOpts() *opts {
@@ -95,24 +94,26 @@ func newOpts() *opts {
 
 func (o *opts) setRev(f *pflag.FlagSet) error {
 	v, err := f.GetString(kouch.FlagRev)
-	if err != nil {
-		return err
-	}
-	if v != "" {
+	if err == nil && v != "" {
 		o.Values.Add("rev", v)
 	}
-	return nil
+	return err
+}
+
+func (o *opts) setIncludeAttachments(f *pflag.FlagSet) error {
+	v, err := f.GetBool(flagIncludeAttachments)
+	if err == nil && v {
+		o.Values.Add("attachments", "true")
+	}
+	return err
 }
 
 func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
 	v, err := f.GetBool(flagIncludeAttEncoding)
-	if err != nil {
-		return err
-	}
-	if v {
+	if err == nil && v {
 		o.Values.Add("att_encoding_info", "true")
 	}
-	return nil
+	return err
 }
 
 func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
@@ -143,9 +144,8 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
-	opts.includeAttachments, err = cmd.Flags().GetBool(flagIncludeAttachments)
-	if err != nil {
-		return nil, err
+	if e := opts.setIncludeAttachments(cmd.Flags()); e != nil {
+		return nil, e
 	}
 	if e := opts.setRev(cmd.Flags()); e != nil {
 		return nil, e
@@ -167,9 +167,6 @@ func getDocument(o *opts) (io.ReadCloser, error) {
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
 	query := o.Values
-	if o.includeAttachments {
-		query.Add("attachments", "true")
-	}
 	if eq := query.Encode(); eq != "" {
 		path = path + "?" + eq
 	}
