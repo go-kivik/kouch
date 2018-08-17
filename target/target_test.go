@@ -18,24 +18,24 @@ func TestParse(t *testing.T) {
 		status   int
 	}{
 		{
-			name:     "blank input",
+			scope:  -1,
+			name:   "invalid scope",
+			src:    "xxx",
+			err:    "invalid scope",
+			status: 1,
+		},
+		{
+			scope:  lastScope + 1,
+			name:   "invalid scope",
+			src:    "xxx",
+			err:    "invalid scope",
+			status: 1,
+		},
+		{
 			scope:    Root,
+			name:     "blank input",
 			src:      "",
 			expected: &Target{},
-		},
-		{
-			name:   "invalid scope",
-			src:    "xxx",
-			scope:  -1,
-			err:    "invalid scope",
-			status: 1,
-		},
-		{
-			name:   "invalid scope",
-			src:    "xxx",
-			scope:  lastScope + 1,
-			err:    "invalid scope",
-			status: 1,
 		},
 		{
 			name:     "Simple root URL",
@@ -50,26 +50,33 @@ func TestParse(t *testing.T) {
 			expected: &Target{Root: "http://foo.com/", Username: "xxx", Password: "yyy"},
 		},
 		{
-			name:     "Simple root URL with path",
 			scope:    Root,
+			name:     "Simple root URL with path",
 			src:      "http://foo.com/db/",
 			expected: &Target{Root: "http://foo.com/db/"},
 		},
 		{
-			name:     "implicit scheme",
 			scope:    Root,
+			name:     "implicit scheme",
 			src:      "foo.com",
 			expected: &Target{Root: "foo.com"},
 		},
 		{
-			name:     "port number",
 			scope:    Root,
+			name:     "port number",
 			src:      "foo.com:5555",
 			expected: &Target{Root: "foo.com:5555"},
 		},
 		{
-			name:     "db only",
+			scope:  Root,
+			name:   "invalid url",
+			src:    "http://foo.com/%xx/",
+			err:    `parse http://foo.com/%xx/: invalid URL escape "%xx"`,
+			status: chttp.ExitStatusURLMalformed,
+		},
+		{
 			scope:    Database,
+			name:     "db only",
 			src:      "dbname",
 			expected: &Target{Database: "dbname"},
 		},
@@ -160,6 +167,12 @@ func TestParse(t *testing.T) {
 		},
 		{
 			scope:    Document,
+			name:     "odd chars",
+			src:      "foo/foo:bar@baz",
+			expected: &Target{Database: "foo", Document: "foo:bar@baz"},
+		},
+		{
+			scope:    Document,
 			name:     "full url",
 			src:      "http://localhost:5984/foo/bar",
 			expected: &Target{Root: "http://localhost:5984", Database: "foo", Document: "bar"},
@@ -244,6 +257,18 @@ func TestParse(t *testing.T) {
 			name:     "url with auth",
 			src:      "https://admin:abc123@localhost:5984/foo/bar/baz.pdf",
 			expected: &Target{Root: "https://localhost:5984", Username: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
+		},
+		{
+			scope:    Attachment,
+			name:     "odd chars",
+			src:      "dbname/foo:bar@baz/@1:2.txt",
+			expected: &Target{Database: "dbname", Document: "foo:bar@baz", Filename: "@1:2.txt"},
+		},
+		{
+			scope:    Attachment,
+			name:     "odd chars, filename only",
+			src:      "@1:2.txt",
+			expected: &Target{Filename: "@1:2.txt"},
 		},
 	}
 	for _, test := range tests {
