@@ -1,9 +1,10 @@
-package attachments
+package documents
 
 import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestGetAttachmentOpts(t *testing.T) {
+func TestGetDocumentOpts(t *testing.T) {
 	tests := []struct {
 		name     string
 		conf     *kouch.Config
@@ -24,9 +25,9 @@ func TestGetAttachmentOpts(t *testing.T) {
 		status   int
 	}{
 		{
-			name:   "duplicate filenames",
-			args:   []string{"--" + kouch.FlagFilename, "foo.txt", "foo.txt"},
-			err:    "Must not use --" + kouch.FlagFilename + " and pass separate filename",
+			name:   "duplicate id",
+			args:   []string{"--" + kouch.FlagDocument, "foo", "bar"},
+			err:    "Must not use --" + kouch.FlagDocument + " and pass document ID as part of the target",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
@@ -35,19 +36,15 @@ func TestGetAttachmentOpts(t *testing.T) {
 				DefaultContext: "foo",
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
-			args: []string{"123/foo.txt", "--database", "bar"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "bar",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
-		},
-		{
-			name:   "doc ID provided twice",
-			args:   []string{"123/foo.txt", "--" + kouch.FlagDocument, "321"},
-			err:    "Must not use --id and pass document ID as part of the target",
-			status: chttp.ExitFailedToInitialize,
+			args: []string{"--database", "bar", "123"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "123",
+				},
+				Values: &url.Values{},
+			},
 		},
 		{
 			name: "db included in target",
@@ -55,13 +52,15 @@ func TestGetAttachmentOpts(t *testing.T) {
 				DefaultContext: "foo",
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
-			args: []string{"/foo/123/foo.txt"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "foo",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
+			args: []string{"/foo/123"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "foo",
+					Document: "123",
+				},
+				Values: &url.Values{},
+			},
 		},
 		{
 			name:   "db provided twice",
@@ -71,32 +70,62 @@ func TestGetAttachmentOpts(t *testing.T) {
 		},
 		{
 			name: "full url target",
-			args: []string{"http://foo.com/foo/123/foo.txt"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "http://foo.com",
-				Database: "foo",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
-		},
-		{
-			name: "if none match",
-			args: []string{"--" + kouch.FlagIfNoneMatch, "xyz", "foo.txt"},
+			args: []string{"http://foo.com/foo/123"},
 			expected: &opts{
 				Target: &kouch.Target{
-					Filename: "foo.txt",
+					Root:     "http://foo.com",
+					Database: "foo",
+					Document: "123",
 				},
-				ifNoneMatch: "xyz",
+				Values: &url.Values{},
 			},
 		},
 		{
-			name: "rev",
-			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
+			name: "if-none-match",
+			args: []string{"--" + kouch.FlagIfNoneMatch, "foo", "foo.com/bar/baz"},
 			expected: &opts{
 				Target: &kouch.Target{
-					Filename: "foo.txt",
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "baz",
 				},
-				rev: "xyz",
+				Values:      &url.Values{},
+				ifNoneMatch: "foo"},
+		},
+		{
+			name: "rev",
+			args: []string{"--" + kouch.FlagRev, "foo", "foo.com/bar/baz"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "baz",
+				},
+				Values: &url.Values{
+					"rev": []string{"foo"},
+				},
+			},
+		},
+		{
+			name: "include attachments",
+			args: []string{"--" + flagIncludeAttachments, "baz"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Document: "baz",
+				},
+				Values: &url.Values{
+					"attachments": []string{"true"},
+				},
+			},
+		},
+		{
+			name: "include attachment encoding",
+			args: []string{"--" + flagIncludeAttEncoding, "baz"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Document: "baz",
+				},
+				Values: &url.Values{"att_encoding_info": []string{"true"}},
 			},
 		},
 	}
@@ -105,14 +134,17 @@ func TestGetAttachmentOpts(t *testing.T) {
 			if test.conf == nil {
 				test.conf = &kouch.Config{}
 			}
-			cmd := attCmd()
-			cmd.ParseFlags(test.args)
+			cmd := docCmd()
+			if err := cmd.ParseFlags(test.args); err != nil {
+				t.Fatal(err)
+			}
 			ctx := kouch.GetContext(cmd)
+			ctx = kouch.SetConf(ctx, test.conf)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {
 				ctx = kouch.SetTarget(ctx, flags[0])
 			}
-			kouch.SetContext(kouch.SetConf(ctx, test.conf), cmd)
-			opts, err := getAttachmentOpts(cmd, cmd.Flags().Args())
+			kouch.SetContext(ctx, cmd)
+			opts, err := getDocumentOpts(cmd, cmd.Flags().Args())
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)
@@ -129,32 +161,26 @@ func TestValidateTarget(t *testing.T) {
 		status int
 	}{
 		{
-			name:   "no filename",
-			target: &kouch.Target{},
-			err:    "No filename provided",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
 			name:   "no doc id",
-			target: &kouch.Target{Filename: "foo.txt"},
+			target: &kouch.Target{},
 			err:    "No document ID provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:   "no database provided",
-			target: &kouch.Target{Document: "123", Filename: "foo.txt"},
+			target: &kouch.Target{Document: "123"},
 			err:    "No database name provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:   "no root url",
-			target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"},
+			target: &kouch.Target{Database: "foo", Document: "123"},
 			err:    "No root URL provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:   "valid",
-			target: &kouch.Target{Root: "xxx", Database: "foo", Document: "123", Filename: "foo.txt"},
+			target: &kouch.Target{Root: "xxx", Database: "foo", Document: "123"},
 		},
 	}
 	for _, test := range tests {
@@ -165,8 +191,8 @@ func TestValidateTarget(t *testing.T) {
 	}
 }
 
-func TestGetAttachment(t *testing.T) {
-	type gaTest struct {
+func TestGetDocument(t *testing.T) {
+	type gdTest struct {
 		name     string
 		opts     *opts
 		resp     *http.Response
@@ -175,18 +201,18 @@ func TestGetAttachment(t *testing.T) {
 		err      string
 		status   int
 	}
-	tests := []gaTest{
+	tests := []gdTest{
 		{
 			name:   "validation fails",
-			opts:   &opts{Target: &kouch.Target{}},
-			err:    "No filename provided",
+			opts:   &opts{Target: &kouch.Target{}, Values: &url.Values{}},
+			err:    "No document ID provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name: "success",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"}},
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}},
 			val: func(r *http.Request) error {
-				if r.URL.Path != "/foo/123/foo.txt" {
+				if r.URL.Path != "/foo/123" {
 					return errors.Errorf("Unexpected path: %s", r.URL.Path)
 				}
 				return nil
@@ -199,9 +225,9 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "slashes",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}},
+			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b"}, Values: &url.Values{}},
 			val: func(r *http.Request) error {
-				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
+				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
 					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
 				}
 				return nil
@@ -214,9 +240,9 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "if-none-match",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, ifNoneMatch: "xyz"},
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, ifNoneMatch: "xyz"},
 			val: func(r *http.Request) error {
-				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
+				if r.URL.Path != "/foo/123" {
 					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
 					fmt.Println(err)
 					return err
@@ -235,16 +261,18 @@ func TestGetAttachment(t *testing.T) {
 			expected: "Test\ncontent\n",
 		},
 		{
-			name: "rev",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, rev: "xyz"},
+			name: "include query params",
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
+				Values: &url.Values{"foobar": []string{"baz"}},
+			},
 			val: func(r *http.Request) error {
-				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
+				if r.URL.Path != "/foo/123" {
 					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
 					fmt.Println(err)
 					return err
 				}
-				if rev := r.URL.Query().Get("rev"); rev != "xyz" {
-					err := errors.Errorf("Unexpected revision: %s", rev)
+				if val := r.URL.Query().Get("foobar"); val != "baz" {
+					err := errors.Errorf("Unexpected query value: %s", val)
 					fmt.Println(err)
 					return err
 				}
@@ -258,7 +286,7 @@ func TestGetAttachment(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		func(test gaTest) {
+		func(test gdTest) {
 			t.Run(test.name, func(t *testing.T) {
 				t.Parallel()
 				if test.resp != nil {
@@ -272,7 +300,7 @@ func TestGetAttachment(t *testing.T) {
 						test.opts.Root = s.URL
 					}
 				}
-				result, err := getAttachment(test.opts)
+				result, err := getDocument(test.opts)
 				testy.ExitStatusError(t, test.err, test.status, err)
 				defer result.Close()
 				content, err := ioutil.ReadAll(result)

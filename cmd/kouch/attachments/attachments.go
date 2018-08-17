@@ -24,13 +24,15 @@ func attCmd() *cobra.Command {
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment",
-		Long: "Fetches a file attachment.\n" +
+		Long: "Fetches a file attachment.\n\n" +
 			target.HelpText(target.Attachment),
 		RunE: attachmentCmd,
 	}
 	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
 	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
+	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the attachment, only if the MD5 digest does not match the one provided")
+	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves attachment from document of specified revision.")
 	return cmd
 }
 
@@ -49,46 +51,73 @@ func attachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func getAttachmentOpts(cmd *cobra.Command, _ []string) (*kouch.Target, error) {
+type opts struct {
+	*kouch.Target
+	rev         string
+	ifNoneMatch string
+}
+
+func getAttachmentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	ctx := kouch.GetContext(cmd)
-	t := &kouch.Target{}
+	o := &opts{
+		Target: &kouch.Target{},
+	}
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		t, err = target.Parse(target.Attachment, tgt)
+		o.Target, err = target.Parse(target.Attachment, tgt)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := t.FilenameFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.FilenameFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := t.DocumentFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DocumentFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := t.DatabaseFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if t.Root == "" {
-			t.Root = defCtx.Root
+		if o.Root == "" {
+			o.Root = defCtx.Root
 		}
 	}
 
-	return t, nil
-}
-
-func getAttachment(t *kouch.Target) (io.ReadCloser, error) {
-	if err := validateTarget(t); err != nil {
-		return nil, err
-	}
-	c, err := chttp.New(context.TODO(), t.Root)
+	var err error
+	o.ifNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
 	if err != nil {
 		return nil, err
 	}
-	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(t.Database), chttp.EncodeDocID(t.Document), url.QueryEscape(t.Filename))
-	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
+	o.rev, err = cmd.Flags().GetString(kouch.FlagRev)
+	if err != nil {
+		return nil, err
+	}
+
+	return o, nil
+}
+
+func getAttachment(o *opts) (io.ReadCloser, error) {
+	if err := validateTarget(o.Target); err != nil {
+		return nil, err
+	}
+	c, err := chttp.New(context.TODO(), o.Root)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
+	query := &url.Values{}
+	if o.rev != "" {
+		query.Add("rev", o.rev)
+	}
+	if eq := query.Encode(); eq != "" {
+		path = path + "?" + eq
+	}
+	res, err := c.DoReq(context.TODO(), http.MethodGet, path, &chttp.Options{
+		IfNoneMatch: o.ifNoneMatch,
+	})
 	if err != nil {
 		return nil, err
 	}
