@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
 )
 
@@ -42,25 +43,9 @@ func ScopeName(scope Scope) string {
 	return ""
 }
 
-// Target is a parsed target passed on the command line
-type Target struct {
-	// Root is the root URL.
-	Root string
-	// Database is the database name.
-	Database string
-	// DocID is the document ID.
-	Document string
-	// Filename is the attachment filename.
-	Filename string
-	// Username is the HTTP Basic Auth username
-	Username string
-	// Password is the HTTP Basic Auth password
-	Password string
-}
-
 var errIncompleteURL = errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
 
-func (t *Target) validate() error {
+func validate(t *kouch.Target) error {
 	parts := []string{t.Root, t.Database, t.Document, t.Filename}
 	test := strings.Trim(strings.Join(parts, "\t"), "\t")
 	if strings.Contains(test, "\t\t") {
@@ -70,38 +55,38 @@ func (t *Target) validate() error {
 	return nil
 }
 
-func (t *Target) root(src string) (*Target, error) {
+func root(t *kouch.Target, src string) (*kouch.Target, error) {
 	t.Root = t.Root + src
-	return t, t.validate()
+	return t, validate(t)
 }
 
-func (t *Target) database(src string) (*Target, error) {
+func database(t *kouch.Target, src string) (*kouch.Target, error) {
 	src, t.Database = lastSegment(src)
 	if t.Database == "" && t.Document == "" && t.Filename == "" {
 		return nil, errIncompleteURL
 	}
-	return t.root(src)
+	return root(t, src)
 }
 
-func (t *Target) document(src string) (*Target, error) {
+func document(t *kouch.Target, src string) (*kouch.Target, error) {
 	src, t.Document = chopDocument(src)
 	if t.Document == "" && t.Filename == "" {
 		return nil, errIncompleteURL
 	}
-	return t.database(src)
+	return database(t, src)
 }
 
-func (t *Target) attachment(src string) (*Target, error) {
+func attachment(t *kouch.Target, src string) (*kouch.Target, error) {
 	src, t.Filename = lastSegment(src)
 	if t.Filename == "" {
 		return nil, errIncompleteURL
 	}
-	return t.document(src)
+	return document(t, src)
 }
 
 // Parse parses src as a CouchDB target, according to the rules for scope.
-func Parse(scope Scope, src string) (*Target, error) {
-	target := &Target{}
+func Parse(scope Scope, src string) (*kouch.Target, error) {
+	target := &kouch.Target{}
 	if src == "" {
 		return target, nil
 	}
@@ -117,13 +102,13 @@ func Parse(scope Scope, src string) (*Target, error) {
 	}
 	switch scope {
 	case Root:
-		return target.root(src)
+		return root(target, src)
 	case Database:
-		return target.database(src)
+		return database(target, src)
 	case Document:
-		return target.document(src)
+		return document(target, src)
 	case Attachment:
-		return target.attachment(src)
+		return attachment(target, src)
 	}
 	return nil, errors.New("invalid scope")
 }

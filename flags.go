@@ -3,6 +3,6 @@ package kouch
 // Common command line flags
 const (
 	FlagFilename = "filename"
-	FlagDocID    = "id"
+	FlagDocument = "id"
 	FlagDatabase = "database"
 )

@@ -6,6 +6,7 @@ import (
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
 )
 
 func TestParse(t *testing.T) {
@@ -13,7 +14,7 @@ func TestParse(t *testing.T) {
 		name     string
 		scope    Scope
 		src      string
-		expected *Target
+		expected *kouch.Target
 		err      string
 		status   int
 	}{
@@ -35,37 +36,37 @@ func TestParse(t *testing.T) {
 			scope:    Root,
 			name:     "blank input",
 			src:      "",
-			expected: &Target{},
+			expected: &kouch.Target{},
 		},
 		{
 			name:     "Simple root URL",
 			scope:    Root,
 			src:      "http://foo.com/",
-			expected: &Target{Root: "http://foo.com/"},
+			expected: &kouch.Target{Root: "http://foo.com/"},
 		},
 		{
 			scope:    Root,
 			name:     "url with auth",
 			src:      "http://xxx:yyy@foo.com/",
-			expected: &Target{Root: "http://foo.com/", Username: "xxx", Password: "yyy"},
+			expected: &kouch.Target{Root: "http://foo.com/", Username: "xxx", Password: "yyy"},
 		},
 		{
 			scope:    Root,
 			name:     "Simple root URL with path",
 			src:      "http://foo.com/db/",
-			expected: &Target{Root: "http://foo.com/db/"},
+			expected: &kouch.Target{Root: "http://foo.com/db/"},
 		},
 		{
 			scope:    Root,
 			name:     "implicit scheme",
 			src:      "foo.com",
-			expected: &Target{Root: "foo.com"},
+			expected: &kouch.Target{Root: "foo.com"},
 		},
 		{
 			scope:    Root,
 			name:     "port number",
 			src:      "foo.com:5555",
-			expected: &Target{Root: "foo.com:5555"},
+			expected: &kouch.Target{Root: "foo.com:5555"},
 		},
 		{
 			scope:  Root,
@@ -78,19 +79,19 @@ func TestParse(t *testing.T) {
 			scope:    Database,
 			name:     "db only",
 			src:      "dbname",
-			expected: &Target{Database: "dbname"},
+			expected: &kouch.Target{Database: "dbname"},
 		},
 		{
 			scope:    Database,
 			name:     "full url",
 			src:      "http://foo.com/dbname",
-			expected: &Target{Root: "http://foo.com", Database: "dbname"},
+			expected: &kouch.Target{Root: "http://foo.com", Database: "dbname"},
 		},
 		{
 			scope:    Database,
 			name:     "url with auth",
 			src:      "http://a:b@foo.com/dbname",
-			expected: &Target{Root: "http://foo.com", Username: "a", Password: "b", Database: "dbname"},
+			expected: &kouch.Target{Root: "http://foo.com", Username: "a", Password: "b", Database: "dbname"},
 		},
 		{
 			scope:  Database,
@@ -103,7 +104,7 @@ func TestParse(t *testing.T) {
 			scope: Database,
 			name:  "subdir-hosted root, with db",
 			src:   "https://foo.com/root/dbname",
-			expected: &Target{
+			expected: &kouch.Target{
 				Root:     "https://foo.com/root",
 				Database: "dbname",
 			},
@@ -112,7 +113,7 @@ func TestParse(t *testing.T) {
 			scope: Database,
 			name:  "No scheme",
 			src:   "example.com:5000/foo",
-			expected: &Target{
+			expected: &kouch.Target{
 				Root:     "example.com:5000",
 				Database: "foo",
 			},
@@ -121,7 +122,7 @@ func TestParse(t *testing.T) {
 			scope: Database,
 			name:  "multiple slashes",
 			src:   "foo.com/foo/bar/baz",
-			expected: &Target{
+			expected: &kouch.Target{
 				Root:     "foo.com/foo/bar",
 				Database: "baz",
 			},
@@ -130,7 +131,7 @@ func TestParse(t *testing.T) {
 			scope: Database,
 			name:  "encoded slash in dbname",
 			src:   "foo.com/foo/bar%2Fbaz",
-			expected: &Target{
+			expected: &kouch.Target{
 				Root:     "foo.com/foo",
 				Database: "bar%2Fbaz",
 			},
@@ -146,55 +147,55 @@ func TestParse(t *testing.T) {
 			scope:    Document,
 			name:     "doc id only",
 			src:      "bar",
-			expected: &Target{Document: "bar"},
+			expected: &kouch.Target{Document: "bar"},
 		},
 		{
 			scope:    Document,
 			name:     "db/docid",
 			src:      "foo/bar",
-			expected: &Target{Database: "foo", Document: "bar"},
+			expected: &kouch.Target{Database: "foo", Document: "bar"},
 		},
 		{
 			scope:    Document,
 			name:     "relative design doc",
 			src:      "_design/bar",
-			expected: &Target{Document: "_design/bar"},
+			expected: &kouch.Target{Document: "_design/bar"},
 		},
 		{
 			scope:    Document,
 			name:     "relative local doc",
 			src:      "_local/bar",
-			expected: &Target{Document: "_local/bar"},
+			expected: &kouch.Target{Document: "_local/bar"},
 		},
 		{
 			scope:    Document,
 			name:     "relative design doc with db",
 			src:      "foo/_design/bar",
-			expected: &Target{Database: "foo", Document: "_design/bar"},
+			expected: &kouch.Target{Database: "foo", Document: "_design/bar"},
 		},
 		{
 			scope:    Document,
 			name:     "odd chars",
 			src:      "foo/foo:bar@baz",
-			expected: &Target{Database: "foo", Document: "foo:bar@baz"},
+			expected: &kouch.Target{Database: "foo", Document: "foo:bar@baz"},
 		},
 		{
 			scope:    Document,
 			name:     "full url",
 			src:      "http://localhost:5984/foo/bar",
-			expected: &Target{Root: "http://localhost:5984", Database: "foo", Document: "bar"},
+			expected: &kouch.Target{Root: "http://localhost:5984", Database: "foo", Document: "bar"},
 		},
 		{
 			scope:    Document,
 			name:     "url with auth",
 			src:      "http://foo:bar@localhost:5984/foo/bar",
-			expected: &Target{Root: "http://localhost:5984", Username: "foo", Password: "bar", Database: "foo", Document: "bar"},
+			expected: &kouch.Target{Root: "http://localhost:5984", Username: "foo", Password: "bar", Database: "foo", Document: "bar"},
 		},
 		{
 			scope:    Document,
 			name:     "no scheme",
 			src:      "localhost:5984/foo/bar",
-			expected: &Target{Root: "localhost:5984", Database: "foo", Document: "bar"},
+			expected: &kouch.Target{Root: "localhost:5984", Database: "foo", Document: "bar"},
 		},
 		{
 			scope:  Document,
@@ -214,37 +215,37 @@ func TestParse(t *testing.T) {
 			scope:    Attachment,
 			name:     "filename only",
 			src:      "baz.txt",
-			expected: &Target{Filename: "baz.txt"},
+			expected: &kouch.Target{Filename: "baz.txt"},
 		},
 		{
 			scope:    Attachment,
 			name:     "doc and filename",
 			src:      "bar/baz.jpg",
-			expected: &Target{Document: "bar", Filename: "baz.jpg"},
+			expected: &kouch.Target{Document: "bar", Filename: "baz.jpg"},
 		},
 		{
 			scope:    Attachment,
 			name:     "db, doc, filename",
 			src:      "foo/bar/baz.png",
-			expected: &Target{Database: "foo", Document: "bar", Filename: "baz.png"},
+			expected: &kouch.Target{Database: "foo", Document: "bar", Filename: "baz.png"},
 		},
 		{
 			scope:    Attachment,
 			name:     "db, design doc, filename",
 			src:      "foo/_design/bar/baz.html",
-			expected: &Target{Database: "foo", Document: "_design/bar", Filename: "baz.html"},
+			expected: &kouch.Target{Database: "foo", Document: "_design/bar", Filename: "baz.html"},
 		},
 		{
 			scope:    Attachment,
 			name:     "full url",
 			src:      "http://host.com/foo/bar/baz.html",
-			expected: &Target{Root: "http://host.com", Database: "foo", Document: "bar", Filename: "baz.html"},
+			expected: &kouch.Target{Root: "http://host.com", Database: "foo", Document: "bar", Filename: "baz.html"},
 		},
 		{
 			scope:    Attachment,
 			name:     "full url, subdir root",
 			src:      "http://host.com/couchdb/foo/bar/baz.html",
-			expected: &Target{Root: "http://host.com/couchdb", Database: "foo", Document: "bar", Filename: "baz.html"},
+			expected: &kouch.Target{Root: "http://host.com/couchdb", Database: "foo", Document: "bar", Filename: "baz.html"},
 		},
 		{
 			scope:  Attachment,
@@ -257,25 +258,25 @@ func TestParse(t *testing.T) {
 			scope:    Attachment,
 			name:     "full url, no scheme",
 			src:      "foo.com:5984/foo/bar/baz.txt",
-			expected: &Target{Root: "foo.com:5984", Database: "foo", Document: "bar", Filename: "baz.txt"},
+			expected: &kouch.Target{Root: "foo.com:5984", Database: "foo", Document: "bar", Filename: "baz.txt"},
 		},
 		{
 			scope:    Attachment,
 			name:     "url with auth",
 			src:      "https://admin:abc123@localhost:5984/foo/bar/baz.pdf",
-			expected: &Target{Root: "https://localhost:5984", Username: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
+			expected: &kouch.Target{Root: "https://localhost:5984", Username: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
 		},
 		{
 			scope:    Attachment,
 			name:     "odd chars",
 			src:      "dbname/foo:bar@baz/@1:2.txt",
-			expected: &Target{Database: "dbname", Document: "foo:bar@baz", Filename: "@1:2.txt"},
+			expected: &kouch.Target{Database: "dbname", Document: "foo:bar@baz", Filename: "@1:2.txt"},
 		},
 		{
 			scope:    Attachment,
 			name:     "odd chars, filename only",
 			src:      "@1:2.txt",
-			expected: &Target{Filename: "@1:2.txt"},
+			expected: &kouch.Target{Filename: "@1:2.txt"},
 		},
 	}
 	for _, test := range tests {
