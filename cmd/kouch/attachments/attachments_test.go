@@ -89,6 +89,16 @@ func TestGetAttachmentOpts(t *testing.T) {
 				ifNoneMatch: "xyz",
 			},
 		},
+		{
+			name: "rev",
+			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
+			expected: &opts{
+				Target: &kouch.Target{
+					Filename: "foo.txt",
+				},
+				rev: "xyz",
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -213,6 +223,28 @@ func TestGetAttachment(t *testing.T) {
 				}
 				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
 					err := errors.Errorf("Unexpected If-None-Match header: %s", inm)
+					fmt.Println(err)
+					return err
+				}
+				return nil
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Test\ncontent\n",
+		},
+		{
+			name: "rev",
+			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, rev: "xyz"},
+			val: func(r *http.Request) error {
+				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
+					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
+					fmt.Println(err)
+					return err
+				}
+				if rev := r.URL.Query().Get("rev"); rev != "xyz" {
+					err := errors.Errorf("Unexpected revision: %s", rev)
 					fmt.Println(err)
 					return err
 				}

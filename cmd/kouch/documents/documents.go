@@ -31,6 +31,20 @@ const (
 	flagRevsInfo               = "revs-info"
 )
 
+/* TODO:
+flagIncludeAttachments     = "attachments"
+flagIncludeAttEncoding     = "att-encoding"
+flagAttsSince              = "attachments-since"
+flagIncludeConflicts       = "conflicts"
+flagIncludeDeletedConfligs = "deleted-conflicts"
+flagForceLatest            = "latest"
+flagIncludeLocalSeq        = "local-seq"
+flagMeta                   = "meta"
+flagOpenRevs               = "open-revs"
+flagRevs                   = "revs"
+flagRevsInfo               = "revs-info"
+*/
+
 func init() {
 	registry.Register([]string{"get"}, docCmd())
 }
@@ -47,6 +61,7 @@ func docCmd() *cobra.Command {
 	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
 	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
 	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
+	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
 	return cmd
 }
 
@@ -65,6 +80,7 @@ func documentCmd(cmd *cobra.Command, args []string) error {
 
 type opts struct {
 	*kouch.Target
+	rev         string
 	ifNoneMatch string
 }
 
@@ -98,6 +114,10 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
+	opts.rev, err = cmd.Flags().GetString(kouch.FlagRev)
+	if err != nil {
+		return nil, err
+	}
 
 	return opts, nil
 }
@@ -111,6 +131,13 @@ func getDocument(o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
+	query := &url.Values{}
+	if o.rev != "" {
+		query.Add("rev", o.rev)
+	}
+	if eq := query.Encode(); eq != "" {
+		path = path + "?" + eq
+	}
 	res, err := c.DoReq(context.TODO(), http.MethodGet, path, &chttp.Options{
 		IfNoneMatch: o.ifNoneMatch,
 	})

@@ -6,4 +6,8 @@ const (
 	FlagDocument    = "id"
 	FlagDatabase    = "database"
 	FlagIfNoneMatch = "if-none-match"
+	FlagRev         = "rev"
+
+	// Short versions
+	FlagShortRev = "r"
 )
