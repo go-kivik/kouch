@@ -35,12 +35,12 @@ func TestGetAttachmentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"123/foo.txt", "--database", "bar"},
-			expected: &kouch.Target{
+			expected: &opts{Target: &kouch.Target{
 				Root:     "foo.com",
 				Database: "bar",
 				Document: "123",
 				Filename: "foo.txt",
-			},
+			}},
 		},
 		{
 			name:   "doc ID provided twice",
@@ -55,12 +55,12 @@ func TestGetAttachmentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"/foo/123/foo.txt"},
-			expected: &kouch.Target{
+			expected: &opts{Target: &kouch.Target{
 				Root:     "foo.com",
 				Database: "foo",
 				Document: "123",
 				Filename: "foo.txt",
-			},
+			}},
 		},
 		{
 			name:   "db provided twice",
@@ -71,12 +71,12 @@ func TestGetAttachmentOpts(t *testing.T) {
 		{
 			name: "full url target",
 			args: []string{"http://foo.com/foo/123/foo.txt"},
-			expected: &kouch.Target{
+			expected: &opts{Target: &kouch.Target{
 				Root:     "http://foo.com",
 				Database: "foo",
 				Document: "123",
 				Filename: "foo.txt",
-			},
+			}},
 		},
 	}
 	for _, test := range tests {
@@ -147,7 +147,7 @@ func TestValidateTarget(t *testing.T) {
 func TestGetAttachment(t *testing.T) {
 	type gaTest struct {
 		name     string
-		target   *kouch.Target
+		opts     *opts
 		resp     *http.Response
 		val      testy.RequestValidator
 		expected string
@@ -157,13 +157,13 @@ func TestGetAttachment(t *testing.T) {
 	tests := []gaTest{
 		{
 			name:   "validation fails",
-			target: &kouch.Target{},
+			opts:   &opts{Target: &kouch.Target{}},
 			err:    "No filename provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
-			name:   "success",
-			target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"},
+			name: "success",
+			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"}},
 			val: func(r *http.Request) error {
 				if r.URL.Path != "/foo/123/foo.txt" {
 					return errors.Errorf("Unexpected path: %s", r.URL.Path)
@@ -177,8 +177,8 @@ func TestGetAttachment(t *testing.T) {
 			expected: "Test\ncontent\n",
 		},
 		{
-			name:   "slashes",
-			target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
+			name: "slashes",
+			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}},
 			val: func(r *http.Request) error {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
@@ -200,14 +200,14 @@ func TestGetAttachment(t *testing.T) {
 					if test.val != nil {
 						s := testy.ServeResponseValidator(test.resp, test.val)
 						defer s.Close()
-						test.target.Root = s.URL
+						test.opts.Root = s.URL
 					} else {
 						s := testy.ServeResponse(test.resp)
 						defer s.Close()
-						test.target.Root = s.URL
+						test.opts.Root = s.URL
 					}
 				}
-				result, err := getAttachment(test.target)
+				result, err := getAttachment(test.opts)
 				testy.ExitStatusError(t, test.err, test.status, err)
 				defer result.Close()
 				content, err := ioutil.ReadAll(result)

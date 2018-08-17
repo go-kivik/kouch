@@ -15,6 +15,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Get-doc specific flags
+const (
+	flagIncludeAttachments     = "attachments"
+	flagIncludeAttEncoding     = "att-encoding"
+	flagAttsSince              = "attachments-since"
+	flagIncludeConflicts       = "conflicts"
+	flagIncludeDeletedConfligs = "deleted-conflicts"
+	flagForceLatest            = "latest"
+	flagIncludeLocalSeq        = "local-seq"
+	flagMeta                   = "meta"
+	flagOpenRevs               = "open-revs"
+	flagRev                    = "rev"
+	flagRevs                   = "revs"
+	flagRevsInfo               = "revs-info"
+)
+
 func init() {
 	registry.Register([]string{"get"}, docCmd())
 }
@@ -30,6 +46,7 @@ func docCmd() *cobra.Command {
 	}
 	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
 	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
+	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
 	return cmd
 }
 
@@ -46,42 +63,49 @@ func documentCmd(cmd *cobra.Command, args []string) error {
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func getDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Target, error) {
+type opts struct {
+	*kouch.Target
+	ifNoneMatch string
+}
+
+func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	ctx := kouch.GetContext(cmd)
-	t := &kouch.Target{}
+	opts := &opts{
+		Target: &kouch.Target{},
+	}
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		t, err = target.Parse(target.Document, tgt)
+		opts.Target, err = target.Parse(target.Document, tgt)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := t.DocumentFromFlags(cmd.Flags()); err != nil {
+	if err := opts.Target.DocumentFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := t.DatabaseFromFlags(cmd.Flags()); err != nil {
+	if err := opts.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if t.Root == "" {
-			t.Root = defCtx.Root
+		if opts.Root == "" {
+			opts.Root = defCtx.Root
 		}
 	}
 
-	return t, nil
+	return opts, nil
 }
 
-func getDocument(t *kouch.Target) (io.ReadCloser, error) {
-	if err := validateTarget(t); err != nil {
+func getDocument(o *opts) (io.ReadCloser, error) {
+	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
-	c, err := chttp.New(context.TODO(), t.Root)
+	c, err := chttp.New(context.TODO(), o.Root)
 	if err != nil {
 		return nil, err
 	}
-	path := fmt.Sprintf("/%s/%s", url.QueryEscape(t.Database), chttp.EncodeDocID(t.Document))
+	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
 	res, err := c.DoReq(context.TODO(), http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
