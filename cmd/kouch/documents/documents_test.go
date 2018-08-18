@@ -101,31 +101,31 @@ func TestGetDocumentOpts(t *testing.T) {
 					Database: "bar",
 					Document: "baz",
 				},
-				Values: &url.Values{
-					"rev": []string{"foo"},
-				},
+				Values: &url.Values{"rev": []string{"foo"}},
 			},
 		},
 		{
 			name: "include attachments",
 			args: []string{"--" + flagIncludeAttachments, "baz"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Document: "baz",
-				},
-				Values: &url.Values{
-					"attachments": []string{"true"},
-				},
+				Target: &kouch.Target{Document: "baz"},
+				Values: &url.Values{paramIncludeAttachments: []string{"true"}},
 			},
 		},
 		{
 			name: "include attachment encoding",
 			args: []string{"--" + flagIncludeAttEncoding, "baz"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Document: "baz",
-				},
-				Values: &url.Values{"att_encoding_info": []string{"true"}},
+				Target: &kouch.Target{Document: "baz"},
+				Values: &url.Values{paramIncludeAttEncoding: []string{"true"}},
+			},
+		},
+		{
+			name: "attachments since",
+			args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{paramAttsSince: []string{`["foo","bar","baz"]`}},
 			},
 		},
 	}

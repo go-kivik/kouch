@@ -13,7 +13,6 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // Get-doc specific flags
@@ -32,8 +31,14 @@ const (
 	flagRevsInfo               = "revs-info"
 )
 
+// query parameter names
+const (
+	paramIncludeAttachments = "attachments"
+	paramIncludeAttEncoding = "att-encoding"
+	paramAttsSince          = "atts_since"
+)
+
 /* TODO:
-flagAttsSince              = "attachments-since"
 flagIncludeConflicts       = "conflicts"
 flagIncludeDeletedConfligs = "deleted-conflicts"
 flagForceLatest            = "latest"
@@ -59,10 +64,12 @@ func docCmd() *cobra.Command {
 	}
 	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
 	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
-	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
 	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
+	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
+
 	cmd.Flags().Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
 	cmd.Flags().Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
+	cmd.Flags().StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
 	return cmd
 }
 
@@ -77,43 +84,6 @@ func documentCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
-}
-
-type opts struct {
-	*kouch.Target
-	*url.Values
-	ifNoneMatch string
-}
-
-func newOpts() *opts {
-	return &opts{
-		Target: &kouch.Target{},
-		Values: &url.Values{},
-	}
-}
-
-func (o *opts) setRev(f *pflag.FlagSet) error {
-	v, err := f.GetString(kouch.FlagRev)
-	if err == nil && v != "" {
-		o.Values.Add("rev", v)
-	}
-	return err
-}
-
-func (o *opts) setIncludeAttachments(f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagIncludeAttachments)
-	if err == nil && v {
-		o.Values.Add("attachments", "true")
-	}
-	return err
-}
-
-func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagIncludeAttEncoding)
-	if err == nil && v {
-		o.Values.Add("att_encoding_info", "true")
-	}
-	return err
 }
 
 func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
@@ -151,6 +121,9 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 		return nil, e
 	}
 	if e := opts.setIncludeAttEncoding(cmd.Flags()); e != nil {
+		return nil, e
+	}
+	if e := opts.setAttsSince(cmd.Flags()); e != nil {
 		return nil, e
 	}
 
