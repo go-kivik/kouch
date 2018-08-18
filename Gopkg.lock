@@ -23,13 +23,19 @@
   branch = "master"
   name = "github.com/go-kivik/couchdb"
   packages = [".","chttp"]
-  revision = "e0946d1311e76d80a20752d5ce89b1eb384c7ca9"
+  revision = "cb3beb0bf016aeee776cca22ee2f99a6dc0353f3"
 
 [[projects]]
   branch = "master"
   name = "github.com/go-kivik/kivik"
   packages = [".","driver","errors"]
   revision = "60c35f428a167679f4139d4ad59d97a5aaf8081c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/icza/dyno"
+  packages = ["."]
+  revision = "0c96289f9585a8af1ebfcee94d52b4f6cfaf9f0d"
 
 [[projects]]
   name = "github.com/imdario/mergo"
@@ -88,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "153e15c0efe2fbead3c2e0a8e1ab10a923fe0154b22339b7c9c82b3c89e37837"
+  inputs-digest = "c7ae9aa5d0fd29d7712f0f260d61da7ff8d7f6498aca12ad7d3092fa056282f6"
   solver-name = "gps-cdcl"
   solver-version = 1
