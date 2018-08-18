@@ -91,6 +91,22 @@ func TestPutDocumentOpts(t *testing.T) {
 				Values:     &url.Values{},
 			},
 		},
+		{
+			name: "batch",
+			args: []string{"--" + flagBatch, "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{param(flagBatch): []string{"ok"}},
+			},
+		},
+		{
+			name: "new edits",
+			args: []string{"--" + flagNewEdits + "=false", "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{param(flagNewEdits): []string{"false"}},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

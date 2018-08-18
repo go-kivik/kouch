@@ -15,22 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Get-doc specific flags
-const (
-	flagIncludeAttachments      = "attachments"
-	flagIncludeAttEncoding      = "att-encoding-info"
-	flagAttsSince               = "atts-since"
-	flagIncludeConflicts        = "conflicts"
-	flagIncludeDeletedConflicts = "deleted-conflicts"
-	flagForceLatest             = "latest"
-	flagIncludeLocalSeq         = "local-seq"
-	flagMeta                    = "meta"
-	flagOpenRevs                = "open-revs"
-	flagRev                     = "rev"
-	flagRevs                    = "revs"
-	flagRevsInfo                = "revs-info"
-)
-
 func init() {
 	registry.Register([]string{"get"}, getDocCmd())
 }

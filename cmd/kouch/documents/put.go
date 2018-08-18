@@ -27,6 +27,9 @@ func putDocCmd() *cobra.Command {
 	f.String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
 	f.StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
 	f.Bool(kouch.FlagFullCommit, false, "Overrides server’s commit policy.")
+
+	f.Bool(flagBatch, false, "Store document in batch mode.")
+	f.Bool(flagNewEdits, true, "When disabled, prevents insertion of conflicting documents.")
 	return cmd
 }
 
@@ -59,6 +62,12 @@ func putDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 		}
 	}
 	if e := opts.setRev(cmd.Flags()); e != nil {
+		return nil, e
+	}
+	if e := opts.setBatch(cmd.Flags()); e != nil {
+		return nil, e
+	}
+	if e := opts.setBool(cmd.Flags(), flagNewEdits); e != nil {
 		return nil, e
 	}
 
