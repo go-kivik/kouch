@@ -1,8 +1,10 @@
 package io
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
@@ -10,14 +12,13 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/icza/dyno"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
-	// FlagOutputFile specifies where to write output.
-	FlagOutputFile   = "output"
-	flagOutputFormat = "output-format"
 	// flagClobber indicates whether output files should be overwritten
 	flagClobber = "force"
 	flagStderr  = "stderr"
@@ -56,15 +57,19 @@ func AddFlags(flags *pflag.FlagSet) {
 		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
 	}
 	sort.Strings(formats)
-	flags.StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
-	flags.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
+	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
 	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
 	flags.String(flagStderr, "", `Where to redirect stderr (use "-" for stdout)`)
+
+	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP request body data. Prefix with '@' to specify a filename.")
+	flags.String(kouch.FlagDataJSON, "", "HTTP request body data, in JSON format.")
+	flags.String(kouch.FlagDataYAML, "", "HTTP request body data, in YAML format.")
 }
 
 // SelectOutput returns an io.Writer for the output.
 func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
-	output, err := cmd.Flags().GetString(FlagOutputFile)
+	output, err := cmd.Flags().GetString(kouch.FlagOutputFile)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +91,7 @@ func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
 // SelectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
 func SelectOutputProcessor(cmd *cobra.Command) (kouch.OutputProcessor, error) {
-	name, err := cmd.Flags().GetString(flagOutputFormat)
+	name, err := cmd.Flags().GetString(kouch.FlagOutputFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -135,4 +140,71 @@ func RedirStderr(flags *pflag.FlagSet) error {
 	}
 	os.Stderr = f
 	return nil
+}
+
+// whichInput returns the input flag which was set, and the flag value
+func whichInput(cmd *cobra.Command) (flag, value string, err error) {
+	var found int
+	for _, f := range []string{kouch.FlagData, kouch.FlagDataJSON, kouch.FlagDataYAML} {
+		v, err := cmd.Flags().GetString(f)
+		if err != nil {
+			return "", "", err
+		}
+		if v != "" {
+			found++
+			flag = f
+			value = v
+		}
+	}
+	if found > 1 {
+		return "", "", errors.NewExitError(chttp.ExitFailedToInitialize, "Only one data option may be provided")
+	}
+	return flag, value, nil
+}
+
+// SelectInput returns an io.ReadCloser for the input.
+func SelectInput(cmd *cobra.Command) (io.ReadCloser, error) {
+	flag, data, err := whichInput(cmd)
+	if err != nil {
+		return nil, err
+	}
+	if data == "" {
+		// Default to stdin
+		return os.Stdin, nil
+	}
+	var in io.ReadCloser
+	if data[0] == '@' {
+		var err error
+		in, err = os.Open(data[1:])
+		if err != nil {
+			return nil, errors.WrapExitError(chttp.ExitReadError, err)
+		}
+	} else {
+		in = ioutil.NopCloser(strings.NewReader(data))
+	}
+	if flag == kouch.FlagData {
+		return in, nil
+	}
+	var i interface{}
+	defer in.Close()
+	switch flag {
+	case kouch.FlagDataJSON:
+		if err := json.NewDecoder(in).Decode(&i); err != nil {
+			return nil, errors.WrapExitError(chttp.ExitPostError, err)
+		}
+	case kouch.FlagDataYAML:
+		var j interface{}
+		if err := yaml.NewDecoder(in).Decode(&j); err != nil {
+			return nil, errors.WrapExitError(chttp.ExitPostError, err)
+		}
+		i = dyno.ConvertMapI2MapS(j)
+	default:
+		panic("Unknown flag: " + flag)
+	}
+	r, w := io.Pipe()
+	go func() {
+		err := json.NewEncoder(w).Encode(i)
+		w.CloseWithError(err)
+	}()
+	return r, nil
 }

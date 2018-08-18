@@ -16,7 +16,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
+	testOptions(t, []string{"data", "data-json", "data-yaml", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {
@@ -101,14 +101,14 @@ func TestSelectOutput(t *testing.T) {
 			f.Close()
 			return soTest{
 				name:    "overwrite error",
-				args:    []string{"--" + FlagOutputFile, f.Name()},
+				args:    []string{"--" + kouch.FlagOutputFile, f.Name()},
 				err:     "^open /tmp/overwrite\\d+: file exists$",
 				cleanup: func() { _ = os.Remove(f.Name()) },
 			}
 		}(),
 		{
 			name: "Missing parent dir",
-			args: []string{"--" + FlagOutputFile, "./foo/bar/baz"},
+			args: []string{"--" + kouch.FlagOutputFile, "./foo/bar/baz"},
 			err:  "open ./foo/bar/baz: no such file or directory",
 		},
 		func() soTest {
@@ -119,7 +119,7 @@ func TestSelectOutput(t *testing.T) {
 			f.Close()
 			return soTest{
 				name:         "clobber",
-				args:         []string{"--" + FlagOutputFile, f.Name(), "--force"},
+				args:         []string{"--" + kouch.FlagOutputFile, f.Name(), "--force"},
 				expectedName: f.Name(),
 				cleanup:      func() { _ = os.Remove(f.Name()) },
 			}
@@ -250,6 +250,110 @@ func TestRedirStderr(t *testing.T) {
 					t.Errorf("Unexpected filename: %s", filename)
 				}
 			})
+		})
+	}
+}
+
+func TestSelectInput(t *testing.T) {
+	type siTest struct {
+		name     string
+		args     []string
+		err      string
+		status   int
+		expected string
+		cleanup  func()
+	}
+	tests := []siTest{
+		func() siTest {
+			stdin := os.Stdin
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatal(err)
+			}
+			os.Stdin = r
+			go func() {
+				w.Write([]byte("stdin data"))
+				w.Close()
+			}()
+			return siTest{
+				name:     "defaults",
+				expected: "stdin data",
+				cleanup:  func() { os.Stdin = stdin },
+			}
+		}(),
+		{
+			name:     "input string",
+			args:     []string{"--" + kouch.FlagData, "some data"},
+			expected: "some data",
+		},
+		func() siTest {
+			f, err := ioutil.TempFile("", "overwrite")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, e := f.Write([]byte("file data")); e != nil {
+				t.Fatal(e)
+			}
+			f.Close()
+			return siTest{
+				name:     "read from file",
+				args:     []string{"--" + kouch.FlagData, "@" + f.Name()},
+				expected: "file data",
+				cleanup:  func() { _ = os.Remove(f.Name()) },
+			}
+		}(),
+		{
+			name:   "read from missing file",
+			args:   []string{"--" + kouch.FlagData, "@missingfile.txt"},
+			err:    "open missingfile.txt: no such file or directory",
+			status: chttp.ExitReadError,
+		},
+		{
+			name:   "too much data",
+			args:   []string{"--" + kouch.FlagData, "foo", "--" + kouch.FlagDataJSON, "bar"},
+			err:    "Only one data option may be provided",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name:   "invalid json input",
+			args:   []string{"--" + kouch.FlagDataJSON, "invalid"},
+			err:    "invalid character 'i' looking for beginning of value",
+			status: chttp.ExitPostError,
+		},
+		{
+			name:     "json input",
+			args:     []string{"--" + kouch.FlagDataJSON, `{ "_id": "foo" }`},
+			expected: `{"_id":"foo"}`,
+		},
+		{
+			name:   "invalid yaml input",
+			args:   []string{"--" + kouch.FlagDataYAML, `{]}`},
+			err:    "yaml: did not find expected node content",
+			status: chttp.ExitPostError,
+		},
+		{
+			name:     "yaml input",
+			args:     []string{"--" + kouch.FlagDataYAML, `_id: foo`},
+			expected: `{"_id":"foo"}`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.cleanup != nil {
+				defer test.cleanup()
+			}
+			cmd := &cobra.Command{}
+			AddFlags(cmd.PersistentFlags())
+			cmd.ParseFlags(test.args)
+			f, err := SelectInput(cmd)
+			testy.ExitStatusError(t, test.err, test.status, err)
+			content, err := ioutil.ReadAll(f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if d := diff.Text(test.expected, content); d != nil {
+				t.Error(d)
+			}
 		})
 	}
 }

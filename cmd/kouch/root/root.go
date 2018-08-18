@@ -72,6 +72,13 @@ func rootCmd(version string) *cobra.Command {
 				return err
 			}
 			ctx = kouch.SetConf(ctx, conf)
+
+			input, err := io.SelectInput(cmd)
+			if err != nil {
+				return err
+			}
+			ctx = kouch.SetInput(ctx, input)
+
 			kouch.SetContext(ctx, cmd)
 			return nil
 		},
