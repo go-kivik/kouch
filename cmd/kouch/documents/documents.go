@@ -13,6 +13,7 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // Get-doc specific flags
@@ -114,17 +115,17 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
-	if e := opts.setIncludeAttachments(cmd.Flags()); e != nil {
-		return nil, e
+
+	optFuncs := []func(*pflag.FlagSet) error{
+		opts.setRev,
+		opts.setIncludeAttachments,
+		opts.setIncludeAttEncoding,
+		opts.setAttsSince,
 	}
-	if e := opts.setRev(cmd.Flags()); e != nil {
-		return nil, e
-	}
-	if e := opts.setIncludeAttEncoding(cmd.Flags()); e != nil {
-		return nil, e
-	}
-	if e := opts.setAttsSince(cmd.Flags()); e != nil {
-		return nil, e
+	for _, fn := range optFuncs {
+		if e := fn(cmd.Flags()); e != nil {
+			return nil, e
+		}
 	}
 
 	return opts, nil
