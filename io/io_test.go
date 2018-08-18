@@ -16,7 +16,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"data", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
+	testOptions(t, []string{"data", "data-json", "data-yaml", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {
@@ -307,6 +307,34 @@ func TestSelectInput(t *testing.T) {
 			args:   []string{"--" + kouch.FlagData, "@missingfile.txt"},
 			err:    "open missingfile.txt: no such file or directory",
 			status: chttp.ExitReadError,
+		},
+		{
+			name:   "too much data",
+			args:   []string{"--" + kouch.FlagData, "foo", "--" + kouch.FlagDataJSON, "bar"},
+			err:    "Only one data option may be provided",
+			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name:   "invalid json input",
+			args:   []string{"--" + kouch.FlagDataJSON, "invalid"},
+			err:    "invalid character 'i' looking for beginning of value",
+			status: chttp.ExitPostError,
+		},
+		{
+			name:     "json input",
+			args:     []string{"--" + kouch.FlagDataJSON, `{ "_id": "foo" }`},
+			expected: `{"_id":"foo"}`,
+		},
+		{
+			name:   "invalid yaml input",
+			args:   []string{"--" + kouch.FlagDataYAML, `{]}`},
+			err:    "yaml: did not find expected node content",
+			status: chttp.ExitPostError,
+		},
+		{
+			name:     "yaml input",
+			args:     []string{"--" + kouch.FlagDataYAML, `_id: foo`},
+			expected: `{"_id":"foo"}`,
 		},
 	}
 	for _, test := range tests {
