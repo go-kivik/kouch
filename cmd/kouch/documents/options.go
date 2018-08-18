@@ -21,6 +21,14 @@ func newOpts() *opts {
 	}
 }
 
+func (o *opts) setBool(f *pflag.FlagSet, flagName, paramName string) error {
+	v, err := f.GetBool(flagName)
+	if err == nil && v {
+		o.Values.Add(paramName, "true")
+	}
+	return err
+}
+
 func (o *opts) setRev(f *pflag.FlagSet) error {
 	v, err := f.GetString(kouch.FlagRev)
 	if err == nil && v != "" {
@@ -30,19 +38,11 @@ func (o *opts) setRev(f *pflag.FlagSet) error {
 }
 
 func (o *opts) setIncludeAttachments(f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagIncludeAttachments)
-	if err == nil && v {
-		o.Values.Add(paramIncludeAttachments, "true")
-	}
-	return err
+	return o.setBool(f, flagIncludeAttachments, paramIncludeAttachments)
 }
 
 func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagIncludeAttEncoding)
-	if err == nil && v {
-		o.Values.Add(paramIncludeAttEncoding, "true")
-	}
-	return err
+	return o.setBool(f, flagIncludeAttEncoding, paramIncludeAttEncoding)
 }
 
 func (o *opts) setAttsSince(f *pflag.FlagSet) error {
@@ -58,9 +58,9 @@ func (o *opts) setAttsSince(f *pflag.FlagSet) error {
 }
 
 func (o *opts) setIncludeConflicts(f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagIncludeConflicts)
-	if err == nil && v {
-		o.Values.Add(paramIncludeConflicts, "true")
-	}
-	return err
+	return o.setBool(f, flagIncludeConflicts, paramIncludeConflicts)
+}
+
+func (o *opts) setIncludeDeletedConflicts(f *pflag.FlagSet) error {
+	return o.setBool(f, flagIncludeDeletedConflicts, paramIncludeDeletedConflicts)
 }

@@ -18,30 +18,30 @@ import (
 
 // Get-doc specific flags
 const (
-	flagIncludeAttachments     = "attachments"
-	flagIncludeAttEncoding     = "att-encoding"
-	flagAttsSince              = "attachments-since"
-	flagIncludeConflicts       = "conflicts"
-	flagIncludeDeletedConfligs = "deleted-conflicts"
-	flagForceLatest            = "latest"
-	flagIncludeLocalSeq        = "local-seq"
-	flagMeta                   = "meta"
-	flagOpenRevs               = "open-revs"
-	flagRev                    = "rev"
-	flagRevs                   = "revs"
-	flagRevsInfo               = "revs-info"
+	flagIncludeAttachments      = "attachments"
+	flagIncludeAttEncoding      = "att-encoding"
+	flagAttsSince               = "attachments-since"
+	flagIncludeConflicts        = "conflicts"
+	flagIncludeDeletedConflicts = "deleted-conflicts"
+	flagForceLatest             = "latest"
+	flagIncludeLocalSeq         = "local-seq"
+	flagMeta                    = "meta"
+	flagOpenRevs                = "open-revs"
+	flagRev                     = "rev"
+	flagRevs                    = "revs"
+	flagRevsInfo                = "revs-info"
 )
 
 // query parameter names
 const (
-	paramIncludeAttachments = "attachments"
-	paramIncludeAttEncoding = "att-encoding"
-	paramAttsSince          = "atts_since"
-	paramIncludeConflicts   = "conflicts"
+	paramIncludeAttachments      = "attachments"
+	paramIncludeAttEncoding      = "att-encoding"
+	paramAttsSince               = "atts_since"
+	paramIncludeConflicts        = "conflicts"
+	paramIncludeDeletedConflicts = "deleted_conflicts"
 )
 
 /* TODO:
-flagIncludeDeletedConfligs = "deleted-conflicts"
 flagForceLatest            = "latest"
 flagIncludeLocalSeq        = "local-seq"
 flagMeta                   = "meta"
@@ -63,15 +63,17 @@ func docCmd() *cobra.Command {
 			target.HelpText(target.Document),
 		RunE: documentCmd,
 	}
-	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
-	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
-	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
-	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
+	f := cmd.Flags()
+	f.String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
+	f.String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
+	f.StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
+	f.String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
 
-	cmd.Flags().Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
-	cmd.Flags().Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
-	cmd.Flags().StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
-	cmd.Flags().Bool(flagIncludeConflicts, false, "Include document conflicts information.")
+	f.Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
+	f.Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
+	f.StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
+	f.Bool(flagIncludeConflicts, false, "Include document conflicts information.")
+	f.Bool(flagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
 	return cmd
 }
 
@@ -123,6 +125,7 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 		opts.setIncludeAttEncoding,
 		opts.setAttsSince,
 		opts.setIncludeConflicts,
+		opts.setIncludeDeletedConflicts,
 	}
 	for _, fn := range optFuncs {
 		if e := fn(cmd.Flags()); e != nil {

@@ -129,11 +129,19 @@ func TestGetDocumentOpts(t *testing.T) {
 			},
 		},
 		{
-			name: "conflictx",
+			name: "conflicts",
 			args: []string{"--" + flagIncludeConflicts, "docid"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "docid"},
 				Values: &url.Values{paramIncludeConflicts: []string{"true"}},
+			},
+		},
+		{
+			name: "delete conflicts",
+			args: []string{"--" + flagIncludeDeletedConflicts, "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{paramIncludeDeletedConflicts: []string{"true"}},
 			},
 		},
 	}
