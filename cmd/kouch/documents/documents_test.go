@@ -144,6 +144,14 @@ func TestGetDocumentOpts(t *testing.T) {
 				Values: &url.Values{paramIncludeDeletedConflicts: []string{"true"}},
 			},
 		},
+		{
+			name: "latest",
+			args: []string{"--" + flagForceLatest, "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{paramForceLatest: []string{"true"}},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

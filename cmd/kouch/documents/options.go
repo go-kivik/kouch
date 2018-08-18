@@ -64,3 +64,7 @@ func (o *opts) setIncludeConflicts(f *pflag.FlagSet) error {
 func (o *opts) setIncludeDeletedConflicts(f *pflag.FlagSet) error {
 	return o.setBool(f, flagIncludeDeletedConflicts, paramIncludeDeletedConflicts)
 }
+
+func (o *opts) setForceLatest(f *pflag.FlagSet) error {
+	return o.setBool(f, flagForceLatest, paramForceLatest)
+}

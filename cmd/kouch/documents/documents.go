@@ -39,10 +39,10 @@ const (
 	paramAttsSince               = "atts_since"
 	paramIncludeConflicts        = "conflicts"
 	paramIncludeDeletedConflicts = "deleted_conflicts"
+	paramForceLatest             = "latest"
 )
 
 /* TODO:
-flagForceLatest            = "latest"
 flagIncludeLocalSeq        = "local-seq"
 flagMeta                   = "meta"
 flagOpenRevs               = "open-revs"
@@ -74,6 +74,7 @@ func docCmd() *cobra.Command {
 	f.StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
 	f.Bool(flagIncludeConflicts, false, "Include document conflicts information.")
 	f.Bool(flagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
+	f.Bool(flagForceLatest, false, `Force retrieving latest “leaf” revision, no matter what rev was requested.`)
 	return cmd
 }
 
@@ -126,6 +127,7 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 		opts.setAttsSince,
 		opts.setIncludeConflicts,
 		opts.setIncludeDeletedConflicts,
+		opts.setForceLatest,
 	}
 	for _, fn := range optFuncs {
 		if e := fn(cmd.Flags()); e != nil {
