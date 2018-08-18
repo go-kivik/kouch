@@ -14,31 +14,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	flagContentType = "content-type"
+)
+
 func init() {
-	registry.Register([]string{"get"}, getAttCmd())
+	registry.Register([]string{"put"}, putAttCmd())
 }
 
-func getAttCmd() *cobra.Command {
+func putAttCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
-		Short:   "Fetches a file attachment.",
-		Long: "Fetches a file attachment.\n\n" +
+		Short:   "Upload an attachment.",
+		Long: "Upload the supplied content as an attachment to the specified document\n\n" +
 			target.HelpText(target.Attachment),
-		RunE: getAttachmentCmd,
+		RunE: putAttachmentCmd,
 	}
 	addCommonFlags(cmd.Flags())
-	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the attachment, only if the MD5 digest does not match the one provided")
+
+	cmd.Flags().String(flagContentType, "", "Attachment MIME type.")
+
 	return cmd
 }
 
-func getAttachmentCmd(cmd *cobra.Command, args []string) error {
+func putAttachmentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := getAttachmentOpts(cmd, args)
+	opts, err := putAttachmentOpts(cmd, args)
 	if err != nil {
 		return err
 	}
-	resp, err := getAttachment(opts)
+	resp, err := putAttachment(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -47,19 +53,19 @@ func getAttachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
+func putAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
 	o, err := commonOpts(cmd, args)
 	if err != nil {
 		return nil, err
 	}
-	o.Options.IfNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
+	o.Options.ContentType, err = cmd.Flags().GetString(flagContentType)
 	if err != nil {
 		return nil, err
 	}
 	return o, nil
 }
 
-func getAttachment(o *kouch.Options) (io.ReadCloser, error) {
+func putAttachment(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
@@ -68,7 +74,7 @@ func getAttachment(o *kouch.Options) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	res, err := c.DoReq(context.TODO(), http.MethodGet, path, o.Options)
+	res, err := c.DoReq(context.TODO(), http.MethodPut, path, o.Options)
 	if err != nil {
 		return nil, err
 	}
