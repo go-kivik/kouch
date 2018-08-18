@@ -12,6 +12,7 @@ const (
 	FlagFilename     = "filename"
 	FlagDocument     = "id"
 	FlagDatabase     = "database"
+	FlagFullCommit   = "full-commit"
 	FlagIfNoneMatch  = "if-none-match"
 	FlagRev          = "rev"
 

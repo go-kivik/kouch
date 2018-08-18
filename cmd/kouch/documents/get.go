@@ -32,17 +32,17 @@ const (
 )
 
 func init() {
-	registry.Register([]string{"get"}, docCmd())
+	registry.Register([]string{"get"}, getDocCmd())
 }
 
-func docCmd() *cobra.Command {
+func getDocCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "document [target]",
 		Aliases: []string{"doc"},
 		Short:   "Fetches a single document.",
 		Long: "Fetches a single document.\n\n" +
 			target.HelpText(target.Document),
-		RunE: documentCmd,
+		RunE: getDocumentCmd,
 	}
 	f := cmd.Flags()
 	f.String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
@@ -64,7 +64,7 @@ func docCmd() *cobra.Command {
 	return cmd
 }
 
-func documentCmd(cmd *cobra.Command, args []string) error {
+func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
 	opts, err := getDocumentOpts(cmd, args)
 	if err != nil {

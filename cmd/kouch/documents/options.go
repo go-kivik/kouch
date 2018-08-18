@@ -17,6 +17,7 @@ type opts struct {
 	*kouch.Target
 	*url.Values
 	ifNoneMatch string
+	fullCommit  bool
 }
 
 func newOpts() *opts {
