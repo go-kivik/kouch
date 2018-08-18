@@ -10,7 +10,6 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
-	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -49,12 +48,6 @@ func attachmentCmd(cmd *cobra.Command, args []string) error {
 	defer resp.Close()
 	_, err = io.Copy(kouch.Output(ctx), resp)
 	return err
-}
-
-type opts struct {
-	*kouch.Target
-	rev         string
-	ifNoneMatch string
 }
 
 func getAttachmentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
@@ -125,20 +118,4 @@ func getAttachment(o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return res.Body, nil
-}
-
-func validateTarget(t *kouch.Target) error {
-	if t.Filename == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No filename provided")
-	}
-	if t.Document == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No document ID provided")
-	}
-	if t.Database == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No database name provided")
-	}
-	if t.Root == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No root URL provided")
-	}
-	return nil
 }
