@@ -13,36 +13,23 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // Get-doc specific flags
 const (
-	flagIncludeAttachments     = "attachments"
-	flagIncludeAttEncoding     = "att-encoding"
-	flagAttsSince              = "attachments-since"
-	flagIncludeConflicts       = "conflicts"
-	flagIncludeDeletedConfligs = "deleted-conflicts"
-	flagForceLatest            = "latest"
-	flagIncludeLocalSeq        = "local-seq"
-	flagMeta                   = "meta"
-	flagOpenRevs               = "open-revs"
-	flagRev                    = "rev"
-	flagRevs                   = "revs"
-	flagRevsInfo               = "revs-info"
+	flagIncludeAttachments      = "attachments"
+	flagIncludeAttEncoding      = "att-encoding-info"
+	flagAttsSince               = "atts-since"
+	flagIncludeConflicts        = "conflicts"
+	flagIncludeDeletedConflicts = "deleted-conflicts"
+	flagForceLatest             = "latest"
+	flagIncludeLocalSeq         = "local-seq"
+	flagMeta                    = "meta"
+	flagOpenRevs                = "open-revs"
+	flagRev                     = "rev"
+	flagRevs                    = "revs"
+	flagRevsInfo                = "revs-info"
 )
-
-/* TODO:
-flagAttsSince              = "attachments-since"
-flagIncludeConflicts       = "conflicts"
-flagIncludeDeletedConfligs = "deleted-conflicts"
-flagForceLatest            = "latest"
-flagIncludeLocalSeq        = "local-seq"
-flagMeta                   = "meta"
-flagOpenRevs               = "open-revs"
-flagRevs                   = "revs"
-flagRevsInfo               = "revs-info"
-*/
 
 func init() {
 	registry.Register([]string{"get"}, docCmd())
@@ -57,12 +44,23 @@ func docCmd() *cobra.Command {
 			target.HelpText(target.Document),
 		RunE: documentCmd,
 	}
-	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
-	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
-	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
-	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
-	cmd.Flags().Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
-	cmd.Flags().Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
+	f := cmd.Flags()
+	f.String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}.")
+	f.String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
+	f.StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
+	f.String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
+
+	f.Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
+	f.Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
+	f.StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
+	f.Bool(flagIncludeConflicts, false, "Include document conflicts information.")
+	f.Bool(flagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
+	f.Bool(flagForceLatest, false, `Force retrieving latest “leaf” revision, no matter what rev was requested.`)
+	f.Bool(flagIncludeLocalSeq, false, "Include last update sequence for the document.")
+	f.Bool(flagMeta, false, "Same as: --"+flagIncludeConflicts+" --"+flagIncludeDeletedConflicts+" --"+flagRevsInfo)
+	f.StringSlice(flagOpenRevs, nil, "Retrieve documents of specified leaf revisions. May use the value 'all' to return all leaf revisions.")
+	f.Bool(flagRevs, false, "Include list of all known document revisions.")
+	f.Bool(flagRevsInfo, false, "Include detailed information for all known document revisions")
 	return cmd
 }
 
@@ -77,43 +75,6 @@ func documentCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
-}
-
-type opts struct {
-	*kouch.Target
-	*url.Values
-	ifNoneMatch string
-}
-
-func newOpts() *opts {
-	return &opts{
-		Target: &kouch.Target{},
-		Values: &url.Values{},
-	}
-}
-
-func (o *opts) setRev(f *pflag.FlagSet) error {
-	v, err := f.GetString(kouch.FlagRev)
-	if err == nil && v != "" {
-		o.Values.Add("rev", v)
-	}
-	return err
-}
-
-func (o *opts) setIncludeAttachments(f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagIncludeAttachments)
-	if err == nil && v {
-		o.Values.Add("attachments", "true")
-	}
-	return err
-}
-
-func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagIncludeAttEncoding)
-	if err == nil && v {
-		o.Values.Add("att_encoding_info", "true")
-	}
-	return err
 }
 
 func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
@@ -144,14 +105,23 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
-	if e := opts.setIncludeAttachments(cmd.Flags()); e != nil {
-		return nil, e
-	}
 	if e := opts.setRev(cmd.Flags()); e != nil {
 		return nil, e
 	}
-	if e := opts.setIncludeAttEncoding(cmd.Flags()); e != nil {
-		return nil, e
+	for _, flag := range []string{flagAttsSince, flagOpenRevs} {
+		if e := opts.setStringSlice(cmd.Flags(), flag); e != nil {
+			return nil, e
+		}
+	}
+
+	for _, flag := range []string{
+		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
+		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
+		flagMeta, flagRevs, flagRevsInfo,
+	} {
+		if e := opts.setBool(cmd.Flags(), flag); e != nil {
+			return nil, e
+		}
 	}
 
 	return opts, nil

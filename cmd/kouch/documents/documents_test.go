@@ -16,14 +16,15 @@ import (
 )
 
 func TestGetDocumentOpts(t *testing.T) {
-	tests := []struct {
+	type gdoTest struct {
 		name     string
 		conf     *kouch.Config
 		args     []string
 		expected interface{}
 		err      string
 		status   int
-	}{
+	}
+	tests := []gdoTest{
 		{
 			name:   "duplicate id",
 			args:   []string{"--" + kouch.FlagDocument, "foo", "bar"},
@@ -101,33 +102,39 @@ func TestGetDocumentOpts(t *testing.T) {
 					Database: "bar",
 					Document: "baz",
 				},
-				Values: &url.Values{
-					"rev": []string{"foo"},
-				},
+				Values: &url.Values{"rev": []string{"foo"}},
 			},
 		},
 		{
-			name: "include attachments",
-			args: []string{"--" + flagIncludeAttachments, "baz"},
+			name: "attachments since",
+			args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Document: "baz",
-				},
-				Values: &url.Values{
-					"attachments": []string{"true"},
-				},
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
 			},
 		},
 		{
-			name: "include attachment encoding",
-			args: []string{"--" + flagIncludeAttEncoding, "baz"},
+			name: "open revs",
+			args: []string{"--" + flagOpenRevs, "foo,bar,baz", "docid"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Document: "baz",
-				},
-				Values: &url.Values{"att_encoding_info": []string{"true"}},
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{param(flagOpenRevs): []string{`["foo","bar","baz"]`}},
 			},
 		},
+	}
+	for _, flag := range []string{
+		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
+		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
+		flagMeta, flagRevs, flagRevsInfo,
+	} {
+		tests = append(tests, gdoTest{
+			name: flag,
+			args: []string{"--" + flag, "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{param(flag): []string{"true"}},
+			},
+		})
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
