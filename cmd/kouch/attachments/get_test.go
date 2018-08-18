@@ -24,62 +24,6 @@ func TestGetAttachmentOpts(t *testing.T) {
 		status   int
 	}{
 		{
-			name:   "duplicate filenames",
-			args:   []string{"--" + kouch.FlagFilename, "foo.txt", "foo.txt"},
-			err:    "Must not use --" + kouch.FlagFilename + " and pass separate filename",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name: "id from target",
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
-			},
-			args: []string{"123/foo.txt", "--database", "bar"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "bar",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
-		},
-		{
-			name:   "doc ID provided twice",
-			args:   []string{"123/foo.txt", "--" + kouch.FlagDocument, "321"},
-			err:    "Must not use --id and pass document ID as part of the target",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name: "db included in target",
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
-			},
-			args: []string{"/foo/123/foo.txt"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "foo",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
-		},
-		{
-			name:   "db provided twice",
-			args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
-			err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name: "full url target",
-			args: []string{"http://foo.com/foo/123/foo.txt"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "http://foo.com",
-				Database: "foo",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
-		},
-		{
 			name: "if none match",
 			args: []string{"--" + kouch.FlagIfNoneMatch, "xyz", "foo.txt"},
 			expected: &opts{
