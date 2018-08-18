@@ -19,6 +19,7 @@ var (
 	outputProcessorContextKey = &contextKey{"outputer"}
 	configContextKey          = &contextKey{"config"}
 	targetContextKey          = &contextKey{"target"}
+	inputContextKey           = &contextKey{"input"}
 )
 
 // Conf returns the context's current configuration struct, or panics if none is
@@ -51,6 +52,16 @@ func Output(ctx context.Context) io.Writer {
 // SetOutput returns a new context with the output set to w.
 func SetOutput(ctx context.Context, w io.Writer) context.Context {
 	return context.WithValue(ctx, outputContextKey, w)
+}
+
+// Input returns the context's current input, or panics if none is set.
+func Input(ctx context.Context) io.ReadCloser {
+	return ctx.Value(inputContextKey).(io.ReadCloser)
+}
+
+// SetInput returns a new context with the input set to w.
+func SetInput(ctx context.Context, w io.ReadCloser) context.Context {
+	return context.WithValue(ctx, inputContextKey, w)
 }
 
 // Verbose returns the verbosity flag of the context.
