@@ -19,8 +19,8 @@ import (
 // Get-doc specific flags
 const (
 	flagIncludeAttachments      = "attachments"
-	flagIncludeAttEncoding      = "att-encoding"
-	flagAttsSince               = "attachments-since"
+	flagIncludeAttEncoding      = "att-encoding-info"
+	flagAttsSince               = "atts-since"
 	flagIncludeConflicts        = "conflicts"
 	flagIncludeDeletedConflicts = "deleted-conflicts"
 	flagForceLatest             = "latest"
@@ -30,16 +30,6 @@ const (
 	flagRev                     = "rev"
 	flagRevs                    = "revs"
 	flagRevsInfo                = "revs-info"
-)
-
-// query parameter names
-const (
-	paramIncludeAttachments      = "attachments"
-	paramIncludeAttEncoding      = "att-encoding"
-	paramAttsSince               = "atts_since"
-	paramIncludeConflicts        = "conflicts"
-	paramIncludeDeletedConflicts = "deleted_conflicts"
-	paramForceLatest             = "latest"
 )
 
 /* TODO:

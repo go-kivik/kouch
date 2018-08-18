@@ -3,10 +3,15 @@ package documents
 import (
 	"encoding/json"
 	"net/url"
+	"strings"
 
 	"github.com/go-kivik/kouch"
 	"github.com/spf13/pflag"
 )
+
+func param(flagName string) string {
+	return strings.Replace(flagName, "-", "_", -1)
+}
 
 type opts struct {
 	*kouch.Target
@@ -21,10 +26,10 @@ func newOpts() *opts {
 	}
 }
 
-func (o *opts) setBool(f *pflag.FlagSet, flagName, paramName string) error {
+func (o *opts) setBool(f *pflag.FlagSet, flagName string) error {
 	v, err := f.GetBool(flagName)
 	if err == nil && v {
-		o.Values.Add(paramName, "true")
+		o.Values.Add(param(flagName), "true")
 	}
 	return err
 }
@@ -38,11 +43,11 @@ func (o *opts) setRev(f *pflag.FlagSet) error {
 }
 
 func (o *opts) setIncludeAttachments(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeAttachments, paramIncludeAttachments)
+	return o.setBool(f, flagIncludeAttachments)
 }
 
 func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeAttEncoding, paramIncludeAttEncoding)
+	return o.setBool(f, flagIncludeAttEncoding)
 }
 
 func (o *opts) setAttsSince(f *pflag.FlagSet) error {
@@ -52,19 +57,19 @@ func (o *opts) setAttsSince(f *pflag.FlagSet) error {
 		if e != nil {
 			return e
 		}
-		o.Values.Add(paramAttsSince, string(enc))
+		o.Values.Add(param(flagAttsSince), string(enc))
 	}
 	return err
 }
 
 func (o *opts) setIncludeConflicts(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeConflicts, paramIncludeConflicts)
+	return o.setBool(f, flagIncludeConflicts)
 }
 
 func (o *opts) setIncludeDeletedConflicts(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeDeletedConflicts, paramIncludeDeletedConflicts)
+	return o.setBool(f, flagIncludeDeletedConflicts)
 }
 
 func (o *opts) setForceLatest(f *pflag.FlagSet) error {
-	return o.setBool(f, flagForceLatest, paramForceLatest)
+	return o.setBool(f, flagForceLatest)
 }

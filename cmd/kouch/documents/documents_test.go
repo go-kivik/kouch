@@ -109,7 +109,7 @@ func TestGetDocumentOpts(t *testing.T) {
 			args: []string{"--" + flagIncludeAttachments, "baz"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "baz"},
-				Values: &url.Values{paramIncludeAttachments: []string{"true"}},
+				Values: &url.Values{param(flagIncludeAttachments): []string{"true"}},
 			},
 		},
 		{
@@ -117,7 +117,7 @@ func TestGetDocumentOpts(t *testing.T) {
 			args: []string{"--" + flagIncludeAttEncoding, "baz"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "baz"},
-				Values: &url.Values{paramIncludeAttEncoding: []string{"true"}},
+				Values: &url.Values{param(flagIncludeAttEncoding): []string{"true"}},
 			},
 		},
 		{
@@ -125,7 +125,7 @@ func TestGetDocumentOpts(t *testing.T) {
 			args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{paramAttsSince: []string{`["foo","bar","baz"]`}},
+				Values: &url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
 			},
 		},
 		{
@@ -133,7 +133,7 @@ func TestGetDocumentOpts(t *testing.T) {
 			args: []string{"--" + flagIncludeConflicts, "docid"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{paramIncludeConflicts: []string{"true"}},
+				Values: &url.Values{param(flagIncludeConflicts): []string{"true"}},
 			},
 		},
 		{
@@ -141,7 +141,7 @@ func TestGetDocumentOpts(t *testing.T) {
 			args: []string{"--" + flagIncludeDeletedConflicts, "docid"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{paramIncludeDeletedConflicts: []string{"true"}},
+				Values: &url.Values{param(flagIncludeDeletedConflicts): []string{"true"}},
 			},
 		},
 		{
@@ -149,7 +149,7 @@ func TestGetDocumentOpts(t *testing.T) {
 			args: []string{"--" + flagForceLatest, "docid"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{paramForceLatest: []string{"true"}},
+				Values: &url.Values{param(flagForceLatest): []string{"true"}},
 			},
 		},
 	}
