@@ -23,7 +23,7 @@ func attCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
-		Short:   "Fetches a file attachment",
+		Short:   "Fetches a file attachment.",
 		Long: "Fetches a file attachment.\n\n" +
 			target.HelpText(target.Attachment),
 		RunE: attachmentCmd,

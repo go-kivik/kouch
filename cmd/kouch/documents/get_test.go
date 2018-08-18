@@ -141,7 +141,7 @@ func TestGetDocumentOpts(t *testing.T) {
 			if test.conf == nil {
 				test.conf = &kouch.Config{}
 			}
-			cmd := docCmd()
+			cmd := getDocCmd()
 			if err := cmd.ParseFlags(test.args); err != nil {
 				t.Fatal(err)
 			}

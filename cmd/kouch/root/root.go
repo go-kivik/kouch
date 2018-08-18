@@ -13,11 +13,14 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/io"
 
+	// Top-level sub-commands
+	_ "github.com/go-kivik/kouch/cmd/kouch/get"
+	_ "github.com/go-kivik/kouch/cmd/kouch/put"
+
 	// The individual sub-commands
 	_ "github.com/go-kivik/kouch/cmd/kouch/attachments"
 	_ "github.com/go-kivik/kouch/cmd/kouch/config"
 	_ "github.com/go-kivik/kouch/cmd/kouch/documents"
-	_ "github.com/go-kivik/kouch/cmd/kouch/get"
 	_ "github.com/go-kivik/kouch/cmd/kouch/uuids"
 )
 
