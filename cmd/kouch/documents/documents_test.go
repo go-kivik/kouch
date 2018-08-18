@@ -113,10 +113,19 @@ func TestGetDocumentOpts(t *testing.T) {
 				Values: &url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
 			},
 		},
+		{
+			name: "open revs",
+			args: []string{"--" + flagOpenRevs, "foo,bar,baz", "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{param(flagOpenRevs): []string{`["foo","bar","baz"]`}},
+			},
+		},
 	}
 	for _, flag := range []string{
 		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
 		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
+		flagMeta, flagRevs, flagRevsInfo,
 	} {
 		tests = append(tests, gdoTest{
 			name: flag,

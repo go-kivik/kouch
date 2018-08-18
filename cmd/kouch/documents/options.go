@@ -34,22 +34,22 @@ func (o *opts) setBool(f *pflag.FlagSet, flagName string) error {
 	return err
 }
 
-func (o *opts) setRev(f *pflag.FlagSet) error {
-	v, err := f.GetString(kouch.FlagRev)
-	if err == nil && v != "" {
-		o.Values.Add("rev", v)
-	}
-	return err
-}
-
-func (o *opts) setAttsSince(f *pflag.FlagSet) error {
-	v, err := f.GetStringSlice(flagAttsSince)
+func (o *opts) setStringSlice(f *pflag.FlagSet, flagName string) error {
+	v, err := f.GetStringSlice(flagName)
 	if err == nil && len(v) > 0 {
 		enc, e := json.Marshal(v)
 		if e != nil {
 			return e
 		}
-		o.Values.Add(param(flagAttsSince), string(enc))
+		o.Values.Add(param(flagName), string(enc))
+	}
+	return err
+}
+
+func (o *opts) setRev(f *pflag.FlagSet) error {
+	v, err := f.GetString(kouch.FlagRev)
+	if err == nil && v != "" {
+		o.Values.Add("rev", v)
 	}
 	return err
 }

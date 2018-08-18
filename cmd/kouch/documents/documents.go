@@ -31,13 +31,6 @@ const (
 	flagRevsInfo                = "revs-info"
 )
 
-/* TODO:
-flagMeta                   = "meta"
-flagOpenRevs               = "open-revs"
-flagRevs                   = "revs"
-flagRevsInfo               = "revs-info"
-*/
-
 func init() {
 	registry.Register([]string{"get"}, docCmd())
 }
@@ -64,6 +57,10 @@ func docCmd() *cobra.Command {
 	f.Bool(flagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
 	f.Bool(flagForceLatest, false, `Force retrieving latest “leaf” revision, no matter what rev was requested.`)
 	f.Bool(flagIncludeLocalSeq, false, "Include last update sequence for the document.")
+	f.Bool(flagMeta, false, "Same as: --"+flagIncludeConflicts+" --"+flagIncludeDeletedConflicts+" --"+flagRevsInfo)
+	f.StringSlice(flagOpenRevs, nil, "Retrieve documents of specified leaf revisions. May use the value 'all' to return all leaf revisions.")
+	f.Bool(flagRevs, false, "Include list of all known document revisions.")
+	f.Bool(flagRevsInfo, false, "Include detailed information for all known document revisions")
 	return cmd
 }
 
@@ -111,13 +108,16 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if e := opts.setRev(cmd.Flags()); e != nil {
 		return nil, e
 	}
-	if e := opts.setAttsSince(cmd.Flags()); e != nil {
-		return nil, e
+	for _, flag := range []string{flagAttsSince, flagOpenRevs} {
+		if e := opts.setStringSlice(cmd.Flags(), flag); e != nil {
+			return nil, e
+		}
 	}
 
 	for _, flag := range []string{
 		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
 		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
+		flagMeta, flagRevs, flagRevsInfo,
 	} {
 		if e := opts.setBool(cmd.Flags(), flag); e != nil {
 			return nil, e
