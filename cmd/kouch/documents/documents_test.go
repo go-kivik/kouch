@@ -128,6 +128,14 @@ func TestGetDocumentOpts(t *testing.T) {
 				Values: &url.Values{paramAttsSince: []string{`["foo","bar","baz"]`}},
 			},
 		},
+		{
+			name: "conflictx",
+			args: []string{"--" + flagIncludeConflicts, "docid"},
+			expected: &opts{
+				Target: &kouch.Target{Document: "docid"},
+				Values: &url.Values{paramIncludeConflicts: []string{"true"}},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

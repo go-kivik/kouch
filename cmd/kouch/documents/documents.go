@@ -37,10 +37,10 @@ const (
 	paramIncludeAttachments = "attachments"
 	paramIncludeAttEncoding = "att-encoding"
 	paramAttsSince          = "atts_since"
+	paramIncludeConflicts   = "conflicts"
 )
 
 /* TODO:
-flagIncludeConflicts       = "conflicts"
 flagIncludeDeletedConfligs = "deleted-conflicts"
 flagForceLatest            = "latest"
 flagIncludeLocalSeq        = "local-seq"
@@ -71,6 +71,7 @@ func docCmd() *cobra.Command {
 	cmd.Flags().Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
 	cmd.Flags().Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
 	cmd.Flags().StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
+	cmd.Flags().Bool(flagIncludeConflicts, false, "Include document conflicts information.")
 	return cmd
 }
 
@@ -121,6 +122,7 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 		opts.setIncludeAttachments,
 		opts.setIncludeAttEncoding,
 		opts.setAttsSince,
+		opts.setIncludeConflicts,
 	}
 	for _, fn := range optFuncs {
 		if e := fn(cmd.Flags()); e != nil {

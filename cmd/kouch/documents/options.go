@@ -56,3 +56,11 @@ func (o *opts) setAttsSince(f *pflag.FlagSet) error {
 	}
 	return err
 }
+
+func (o *opts) setIncludeConflicts(f *pflag.FlagSet) error {
+	v, err := f.GetBool(flagIncludeConflicts)
+	if err == nil && v {
+		o.Values.Add(paramIncludeConflicts, "true")
+	}
+	return err
+}
