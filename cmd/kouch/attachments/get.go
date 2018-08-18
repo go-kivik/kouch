@@ -15,17 +15,17 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"get"}, attCmd())
+	registry.Register([]string{"get"}, getAttCmd())
 }
 
-func attCmd() *cobra.Command {
+func getAttCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment.",
 		Long: "Fetches a file attachment.\n\n" +
 			target.HelpText(target.Attachment),
-		RunE: attachmentCmd,
+		RunE: getAttachmentCmd,
 	}
 	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
@@ -35,7 +35,7 @@ func attCmd() *cobra.Command {
 	return cmd
 }
 
-func attachmentCmd(cmd *cobra.Command, args []string) error {
+func getAttachmentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
 	opts, err := getAttachmentOpts(cmd, args)
 	if err != nil {
