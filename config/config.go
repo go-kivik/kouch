@@ -30,7 +30,7 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	root, err := cmd.Flags().GetString(flagServerRoot)
+	root, err := cmd.Flags().GetString(kouch.FlagServerRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 }
 
 func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
-	cfgFile, err := cmd.Flags().GetString(flagConfigFile)
+	cfgFile, err := cmd.Flags().GetString(kouch.FlagConfigFile)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
 
 // AddFlags adds command line flags for global config options.
 func AddFlags(flags *pflag.FlagSet) {
-	flags.String(flagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
-	flags.StringP(flagServerRoot, "r", "", "The root URL")
+	flags.String(kouch.FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
+	flags.StringP(kouch.FlagServerRoot, kouch.FlagShortServerRoot, "", "The root URL")
 	flags.String(flagContext, "", "The named context to use")
 }

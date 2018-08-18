@@ -101,14 +101,14 @@ func TestSelectOutput(t *testing.T) {
 			f.Close()
 			return soTest{
 				name:    "overwrite error",
-				args:    []string{"--" + FlagOutputFile, f.Name()},
+				args:    []string{"--" + kouch.FlagOutputFile, f.Name()},
 				err:     "^open /tmp/overwrite\\d+: file exists$",
 				cleanup: func() { _ = os.Remove(f.Name()) },
 			}
 		}(),
 		{
 			name: "Missing parent dir",
-			args: []string{"--" + FlagOutputFile, "./foo/bar/baz"},
+			args: []string{"--" + kouch.FlagOutputFile, "./foo/bar/baz"},
 			err:  "open ./foo/bar/baz: no such file or directory",
 		},
 		func() soTest {
@@ -119,7 +119,7 @@ func TestSelectOutput(t *testing.T) {
 			f.Close()
 			return soTest{
 				name:         "clobber",
-				args:         []string{"--" + FlagOutputFile, f.Name(), "--force"},
+				args:         []string{"--" + kouch.FlagOutputFile, f.Name(), "--force"},
 				expectedName: f.Name(),
 				cleanup:      func() { _ = os.Remove(f.Name()) },
 			}

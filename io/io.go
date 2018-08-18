@@ -19,9 +19,6 @@ import (
 )
 
 const (
-	// FlagOutputFile specifies where to write output.
-	FlagOutputFile   = "output"
-	flagOutputFormat = "output-format"
 	// flagClobber indicates whether output files should be overwritten
 	flagClobber = "force"
 	flagStderr  = "stderr"
@@ -60,8 +57,8 @@ func AddFlags(flags *pflag.FlagSet) {
 		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
 	}
 	sort.Strings(formats)
-	flags.StringP(flagOutputFormat, "F", defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
-	flags.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
+	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
 	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
 	flags.String(flagStderr, "", `Where to redirect stderr (use "-" for stdout)`)
 
@@ -72,7 +69,7 @@ func AddFlags(flags *pflag.FlagSet) {
 
 // SelectOutput returns an io.Writer for the output.
 func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
-	output, err := cmd.Flags().GetString(FlagOutputFile)
+	output, err := cmd.Flags().GetString(kouch.FlagOutputFile)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +91,7 @@ func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
 // SelectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
 func SelectOutputProcessor(cmd *cobra.Command) (kouch.OutputProcessor, error) {
-	name, err := cmd.Flags().GetString(flagOutputFormat)
+	name, err := cmd.Flags().GetString(kouch.FlagOutputFormat)
 	if err != nil {
 		return nil, err
 	}

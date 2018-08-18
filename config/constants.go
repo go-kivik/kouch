@@ -5,11 +5,7 @@ const (
 	// home directory.
 	homeDir = ".kouch"
 
-	// flagConfigFile is the commandline flag used to set the global config
-	// file.
-	flagConfigFile = "kouchconfig"
-	flagServerRoot = "root"
-	flagContext    = "context"
+	flagContext = "context"
 
 	dynamicContextName = "$dynamic$"
 )
