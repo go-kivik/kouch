@@ -1,15 +1,21 @@
 package documents
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/pkg/errors"
 )
 
 func TestPutDocumentOpts(t *testing.T) {
@@ -135,6 +141,7 @@ func TestPutDocumentOpts(t *testing.T) {
 func TestPutDocument(t *testing.T) {
 	type pdTest struct {
 		name     string
+		content  io.ReadCloser
 		opts     *opts
 		resp     *http.Response
 		val      testy.RequestValidator
@@ -148,6 +155,33 @@ func TestPutDocument(t *testing.T) {
 			opts:   &opts{Target: &kouch.Target{}, Values: &url.Values{}},
 			err:    "No document ID provided",
 			status: chttp.ExitFailedToInitialize,
+		},
+		{
+			name:    "success",
+			content: ioutil.NopCloser(strings.NewReader(`{"_id":"oink"}`)),
+			opts:    &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}},
+			val: func(r *http.Request) error {
+				if r.Method != "PUT" {
+					return errors.Errorf("Unexpected method: %s", r.Method)
+				}
+				if r.URL.Path != "/foo/123" {
+					return errors.Errorf("Unexpected path: %s", r.URL.Path)
+				}
+				if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+					return errors.Errorf("Unexpected Content-Type: %s", ct)
+				}
+				var doc interface{}
+				if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
+					fmt.Printf("json err: %s\n", err)
+					return err
+				}
+				return nil
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(strings.NewReader(`{"ok":true,"id":"bar","rev":"1-967a00dff5e02add41819138abb3284d"}`)),
+			},
+			expected: `{"ok":true,"id":"bar","rev":"1-967a00dff5e02add41819138abb3284d"}`,
 		},
 	}
 	for _, test := range tests {
@@ -165,7 +199,11 @@ func TestPutDocument(t *testing.T) {
 						test.opts.Root = s.URL
 					}
 				}
-				result, err := putDocument(test.opts)
+				ctx := context.Background()
+				if test.content != nil {
+					ctx = kouch.SetInput(ctx, test.content)
+				}
+				result, err := putDocument(ctx, test.opts)
 				testy.ExitStatusError(t, test.err, test.status, err)
 				defer result.Close()
 				content, err := ioutil.ReadAll(result)

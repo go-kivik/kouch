@@ -1,8 +1,13 @@
 package documents
 
 import (
+	"context"
+	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/target"
@@ -76,41 +81,38 @@ func putDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 
 func putDocumentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := getDocumentOpts(cmd, args)
+	opts, err := putDocumentOpts(cmd, args)
 	if err != nil {
 		return err
 	}
-	result, err := putDocument(opts)
+	result, err := putDocument(ctx, opts)
 	if err != nil {
 		return err
 	}
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func putDocument(o *opts) (io.ReadCloser, error) {
+func putDocument(ctx context.Context, o *opts) (io.ReadCloser, error) {
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
-	return nil, nil
-	/*
-		c, err := chttp.New(context.TODO(), o.Root)
-		if err != nil {
-			return nil, err
-		}
-		path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-		query := o.Values
-		if eq := query.Encode(); eq != "" {
-			path = path + "?" + eq
-		}
-		res, err := c.DoReq(context.TODO(), http.MethodGet, path, &chttp.Options{
-			IfNoneMatch: o.ifNoneMatch,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if err = chttp.ResponseError(res); err != nil {
-			return nil, err
-		}
-		return res.Body, nil
-	*/
+	c, err := chttp.New(context.TODO(), o.Root)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
+	query := o.Values
+	if eq := query.Encode(); eq != "" {
+		path = path + "?" + eq
+	}
+	res, err := c.DoReq(ctx, http.MethodPut, path, &chttp.Options{
+		Body: kouch.Input(ctx),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err = chttp.ResponseError(res); err != nil {
+		return nil, err
+	}
+	return res.Body, nil
 }
