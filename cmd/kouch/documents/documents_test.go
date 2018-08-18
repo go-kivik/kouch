@@ -16,14 +16,15 @@ import (
 )
 
 func TestGetDocumentOpts(t *testing.T) {
-	tests := []struct {
+	type gdoTest struct {
 		name     string
 		conf     *kouch.Config
 		args     []string
 		expected interface{}
 		err      string
 		status   int
-	}{
+	}
+	tests := []gdoTest{
 		{
 			name:   "duplicate id",
 			args:   []string{"--" + kouch.FlagDocument, "foo", "bar"},
@@ -105,22 +106,6 @@ func TestGetDocumentOpts(t *testing.T) {
 			},
 		},
 		{
-			name: "include attachments",
-			args: []string{"--" + flagIncludeAttachments, "baz"},
-			expected: &opts{
-				Target: &kouch.Target{Document: "baz"},
-				Values: &url.Values{param(flagIncludeAttachments): []string{"true"}},
-			},
-		},
-		{
-			name: "include attachment encoding",
-			args: []string{"--" + flagIncludeAttEncoding, "baz"},
-			expected: &opts{
-				Target: &kouch.Target{Document: "baz"},
-				Values: &url.Values{param(flagIncludeAttEncoding): []string{"true"}},
-			},
-		},
-		{
 			name: "attachments since",
 			args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
 			expected: &opts{
@@ -128,30 +113,19 @@ func TestGetDocumentOpts(t *testing.T) {
 				Values: &url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
 			},
 		},
-		{
-			name: "conflicts",
-			args: []string{"--" + flagIncludeConflicts, "docid"},
+	}
+	for _, flag := range []string{
+		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
+		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
+	} {
+		tests = append(tests, gdoTest{
+			name: flag,
+			args: []string{"--" + flag, "docid"},
 			expected: &opts{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flagIncludeConflicts): []string{"true"}},
+				Values: &url.Values{param(flag): []string{"true"}},
 			},
-		},
-		{
-			name: "delete conflicts",
-			args: []string{"--" + flagIncludeDeletedConflicts, "docid"},
-			expected: &opts{
-				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flagIncludeDeletedConflicts): []string{"true"}},
-			},
-		},
-		{
-			name: "latest",
-			args: []string{"--" + flagForceLatest, "docid"},
-			expected: &opts{
-				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flagForceLatest): []string{"true"}},
-			},
-		},
+		})
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

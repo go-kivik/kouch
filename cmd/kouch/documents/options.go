@@ -42,14 +42,6 @@ func (o *opts) setRev(f *pflag.FlagSet) error {
 	return err
 }
 
-func (o *opts) setIncludeAttachments(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeAttachments)
-}
-
-func (o *opts) setIncludeAttEncoding(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeAttEncoding)
-}
-
 func (o *opts) setAttsSince(f *pflag.FlagSet) error {
 	v, err := f.GetStringSlice(flagAttsSince)
 	if err == nil && len(v) > 0 {
@@ -60,16 +52,4 @@ func (o *opts) setAttsSince(f *pflag.FlagSet) error {
 		o.Values.Add(param(flagAttsSince), string(enc))
 	}
 	return err
-}
-
-func (o *opts) setIncludeConflicts(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeConflicts)
-}
-
-func (o *opts) setIncludeDeletedConflicts(f *pflag.FlagSet) error {
-	return o.setBool(f, flagIncludeDeletedConflicts)
-}
-
-func (o *opts) setForceLatest(f *pflag.FlagSet) error {
-	return o.setBool(f, flagForceLatest)
 }

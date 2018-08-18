@@ -13,7 +13,6 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // Get-doc specific flags
@@ -33,7 +32,6 @@ const (
 )
 
 /* TODO:
-flagIncludeLocalSeq        = "local-seq"
 flagMeta                   = "meta"
 flagOpenRevs               = "open-revs"
 flagRevs                   = "revs"
@@ -65,6 +63,7 @@ func docCmd() *cobra.Command {
 	f.Bool(flagIncludeConflicts, false, "Include document conflicts information.")
 	f.Bool(flagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
 	f.Bool(flagForceLatest, false, `Force retrieving latest “leaf” revision, no matter what rev was requested.`)
+	f.Bool(flagIncludeLocalSeq, false, "Include last update sequence for the document.")
 	return cmd
 }
 
@@ -109,18 +108,18 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	optFuncs := []func(*pflag.FlagSet) error{
-		opts.setRev,
-		opts.setIncludeAttachments,
-		opts.setIncludeAttEncoding,
-		opts.setAttsSince,
-		opts.setIncludeConflicts,
-		opts.setIncludeDeletedConflicts,
-		opts.setForceLatest,
+	if e := opts.setRev(cmd.Flags()); e != nil {
+		return nil, e
 	}
-	for _, fn := range optFuncs {
-		if e := fn(cmd.Flags()); e != nil {
+	if e := opts.setAttsSince(cmd.Flags()); e != nil {
+		return nil, e
+	}
+
+	for _, flag := range []string{
+		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
+		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
+	} {
+		if e := opts.setBool(cmd.Flags(), flag); e != nil {
 			return nil, e
 		}
 	}
