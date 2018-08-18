@@ -8,3 +8,7 @@ install:
 script:
   - gometalinter.v2 --config .linter.json
   - go test -race ./...
+  - ./script/codecov.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
