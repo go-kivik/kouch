@@ -16,7 +16,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
+	testOptions(t, []string{"data", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {
@@ -250,6 +250,82 @@ func TestRedirStderr(t *testing.T) {
 					t.Errorf("Unexpected filename: %s", filename)
 				}
 			})
+		})
+	}
+}
+
+func TestSelectInput(t *testing.T) {
+	type siTest struct {
+		name     string
+		args     []string
+		err      string
+		status   int
+		expected string
+		cleanup  func()
+	}
+	tests := []siTest{
+		func() siTest {
+			stdin := os.Stdin
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatal(err)
+			}
+			os.Stdin = r
+			go func() {
+				w.Write([]byte("stdin data"))
+				w.Close()
+			}()
+			return siTest{
+				name:     "defaults",
+				expected: "stdin data",
+				cleanup:  func() { os.Stdin = stdin },
+			}
+		}(),
+		{
+			name:     "input string",
+			args:     []string{"--" + kouch.FlagData, "some data"},
+			expected: "some data",
+		},
+		func() siTest {
+			f, err := ioutil.TempFile("", "overwrite")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, e := f.Write([]byte("file data")); e != nil {
+				t.Fatal(e)
+			}
+			f.Close()
+			return siTest{
+				name:     "read from file",
+				args:     []string{"--" + kouch.FlagData, "@" + f.Name()},
+				expected: "file data",
+				cleanup:  func() { _ = os.Remove(f.Name()) },
+			}
+		}(),
+		{
+			name:   "read from missing file",
+			args:   []string{"--" + kouch.FlagData, "@missingfile.txt"},
+			err:    "open missingfile.txt: no such file or directory",
+			status: chttp.ExitReadError,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.cleanup != nil {
+				defer test.cleanup()
+			}
+			cmd := &cobra.Command{}
+			AddFlags(cmd.PersistentFlags())
+			cmd.ParseFlags(test.args)
+			f, err := SelectInput(cmd)
+			testy.ExitStatusError(t, test.err, test.status, err)
+			content, err := ioutil.ReadAll(f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if d := diff.Text(test.expected, content); d != nil {
+				t.Error(d)
+			}
 		})
 	}
 }

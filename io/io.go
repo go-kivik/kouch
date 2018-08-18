@@ -3,6 +3,7 @@ package io
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
@@ -60,6 +61,7 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.StringP(FlagOutputFile, "o", "-", "Output destination. Use '-' for stdout")
 	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
 	flags.String(flagStderr, "", `Where to redirect stderr (use "-" for stdout)`)
+	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP POST/PUT data. Prefix with '@' to specify a filename.")
 }
 
 // SelectOutput returns an io.Writer for the output.
@@ -135,4 +137,21 @@ func RedirStderr(flags *pflag.FlagSet) error {
 	}
 	os.Stderr = f
 	return nil
+}
+
+// SelectInput returns an io.ReadCloser for the input.
+func SelectInput(cmd *cobra.Command) (io.ReadCloser, error) {
+	data, err := cmd.Flags().GetString(kouch.FlagData)
+	if err != nil {
+		return nil, err
+	}
+	if data == "" || data == "-" {
+		// Default to stdin
+		return os.Stdin, nil
+	}
+	if data[0] == '@' {
+		f, err := os.Open(data[1:])
+		return f, errors.WrapExitError(chttp.ExitReadError, err)
+	}
+	return ioutil.NopCloser(strings.NewReader(data)), nil
 }

@@ -2,6 +2,7 @@ package kouch
 
 // Common command line flags
 const (
+	FlagData        = "data"
 	FlagFilename    = "filename"
 	FlagDocument    = "id"
 	FlagDatabase    = "database"
@@ -9,5 +10,6 @@ const (
 	FlagRev         = "rev"
 
 	// Short versions
-	FlagShortRev = "r"
+	FlagShortData = "d"
+	FlagShortRev  = "r"
 )
