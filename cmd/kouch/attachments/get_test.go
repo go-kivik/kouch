@@ -3,6 +3,7 @@ package attachments
 import (
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -25,20 +26,18 @@ func TestGetAttachmentOpts(t *testing.T) {
 			name: "if none match",
 			args: []string{"--" + kouch.FlagIfNoneMatch, "xyz", "foo.txt"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Filename: "foo.txt",
-				},
-				ifNoneMatch: "xyz",
+				Target:  &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{IfNoneMatch: "xyz"},
 			},
 		},
 		{
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Filename: "foo.txt",
+				Target: &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{
+					Query: url.Values{"rev": []string{"xyz"}},
 				},
-				rev: "xyz",
 			},
 		},
 	}
@@ -110,7 +109,10 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "if-none-match",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, ifNoneMatch: "xyz"},
+			opts: &opts{
+				Target:  &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
+				Options: &chttp.Options{IfNoneMatch: "xyz"},
+			},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)
@@ -127,7 +129,12 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "rev",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, rev: "xyz"},
+			opts: &opts{
+				Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
+				Options: &chttp.Options{
+					Query: url.Values{"rev": []string{"xyz"}},
+				},
+			},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)
