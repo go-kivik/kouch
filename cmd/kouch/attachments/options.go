@@ -61,7 +61,6 @@ func commonOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 		}
 	}
 
-	var err error
 	rev, err := cmd.Flags().GetString(kouch.FlagRev)
 	if err != nil {
 		return nil, err

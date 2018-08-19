@@ -16,6 +16,7 @@ import (
 )
 
 func TestPutAttachmentOpts(t *testing.T) {
+	input := ioutil.NopCloser(strings.NewReader(""))
 	tests := []struct {
 		name     string
 		conf     *kouch.Config
@@ -31,6 +32,7 @@ func TestPutAttachmentOpts(t *testing.T) {
 				Target: &kouch.Target{Filename: "foo.txt"},
 				Options: &chttp.Options{
 					Query: url.Values{"rev": []string{"xyz"}},
+					Body:  input,
 				},
 			},
 		},
@@ -39,7 +41,7 @@ func TestPutAttachmentOpts(t *testing.T) {
 			args: []string{"--" + flagContentType, "image/oink", "foo.txt"},
 			expected: &kouch.Options{
 				Target:  &kouch.Target{Filename: "foo.txt"},
-				Options: &chttp.Options{ContentType: "image/oink"},
+				Options: &chttp.Options{ContentType: "image/oink", Body: input},
 			},
 		},
 	}
@@ -51,6 +53,7 @@ func TestPutAttachmentOpts(t *testing.T) {
 			cmd := putAttCmd()
 			cmd.ParseFlags(test.args)
 			ctx := kouch.GetContext(cmd)
+			ctx = kouch.SetInput(ctx, input)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {
 				ctx = kouch.SetTarget(ctx, flags[0])
 			}
@@ -84,17 +87,28 @@ func TestPutAttachment(t *testing.T) {
 		},
 		{
 			name: "success",
-			opts: &kouch.Options{Target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"}},
+			opts: &kouch.Options{
+				Target:  &kouch.Target{Database: "foo", Document: "oink", Filename: "foo.txt"},
+				Options: &chttp.Options{Body: ioutil.NopCloser(strings.NewReader("test data"))},
+			},
 			val: func(t *testing.T, r *http.Request) {
-				if r.URL.Path != "/foo/123/foo.txt" {
+				if r.URL.Path != "/foo/oink/foo.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)
+				}
+				defer r.Body.Close()
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if d := diff.Text("test data", body); d != nil {
+					t.Errorf("Unexpected body: %s", d)
 				}
 			},
 			resp: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+				Body:       ioutil.NopCloser(strings.NewReader(`{"ok":true,"id":"oink","rev":"3-13438fbeeac7271383a42b57511f03ea"}`)),
 			},
-			expected: "Test\ncontent\n",
+			expected: `{"ok":true,"id":"oink","rev":"3-13438fbeeac7271383a42b57511f03ea"}`,
 		},
 		{
 			name: "slashes",
@@ -102,48 +116,6 @@ func TestPutAttachment(t *testing.T) {
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.RawPath)
-				}
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "if-none-match",
-			opts: &kouch.Options{
-				Target:  &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
-				Options: &chttp.Options{IfNoneMatch: "xyz"},
-			},
-			val: func(t *testing.T, r *http.Request) {
-				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
-					t.Errorf("Unexpected path: %s", r.URL.Path)
-				}
-				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
-					t.Errorf("Unexpected If-None-Match header: %s", inm)
-				}
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "rev",
-			opts: &kouch.Options{
-				Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
-				Options: &chttp.Options{
-					Query: url.Values{"rev": []string{"xyz"}},
-				},
-			},
-			val: func(t *testing.T, r *http.Request) {
-				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
-					t.Errorf("Unexpected path: %s", r.URL.Path)
-				}
-				if rev := r.URL.Query().Get("rev"); rev != "xyz" {
-					t.Errorf("Unexpected revision: %s", rev)
 				}
 			},
 			resp: &http.Response{

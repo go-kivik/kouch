@@ -58,6 +58,7 @@ func putAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Options, error
 	if err != nil {
 		return nil, err
 	}
+	o.Options.Body = kouch.Input(kouch.GetContext(cmd))
 	o.Options.ContentType, err = cmd.Flags().GetString(flagContentType)
 	if err != nil {
 		return nil, err
