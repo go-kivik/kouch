@@ -50,7 +50,7 @@ func getAttachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func getAttachmentOpts(cmd *cobra.Command, args []string) (*opts, error) {
+func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
 	o, err := commonOpts(cmd, args)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*opts, error) {
 	return o, nil
 }
 
-func getAttachment(o *opts) (io.ReadCloser, error) {
+func getAttachment(o *kouch.Options) (io.ReadCloser, error) {
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}

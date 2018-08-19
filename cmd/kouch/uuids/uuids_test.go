@@ -7,11 +7,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"testing"
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kivik"
 	"github.com/go-kivik/kouch"
 )
@@ -62,33 +64,39 @@ func TestGetUUIDs(t *testing.T) {
 	type guTest struct {
 		name     string
 		ctx      context.Context
-		opts     *opts
+		opts     *kouch.Options
 		expected string
 		err      string
 		cleanup  func()
 	}
 	tests := []guTest{
 		func() guTest {
-			url, close := uuidServer(&uuidResponse{count: 1})
+			addr, close := uuidServer(&uuidResponse{count: 1})
 			return guTest{
-				name:     "defaults",
-				opts:     &opts{root: url, count: 1},
+				name: "defaults",
+				opts: &kouch.Options{
+					Target:  &kouch.Target{Root: addr},
+					Options: &chttp.Options{Query: url.Values{"count": []string{"1"}}},
+				},
 				expected: `{"uuids":["3cd2f787fc320c6654befd3a4a004df6"]}`,
 				cleanup:  close,
 			}
 		}(),
 		func() guTest {
-			url, close := uuidServer(&uuidResponse{count: 3})
+			addr, close := uuidServer(&uuidResponse{count: 3})
 			return guTest{
-				name:     "3 uuids",
-				opts:     &opts{root: url, count: 3},
+				name: "3 uuids",
+				opts: &kouch.Options{
+					Target:  &kouch.Target{Root: addr},
+					Options: &chttp.Options{Query: url.Values{"count": []string{"3"}}},
+				},
 				expected: `{"uuids":["3cd2f787fc320c6654befd3a4a004df6","3cd2f787fc320c6654befd3a4a005c10","3cd2f787fc320c6654befd3a4a00624e"]}`,
 				cleanup:  close,
 			}
 		}(),
 		{
 			name: "invalid url",
-			opts: &opts{root: "http://%xxfoo.com/"},
+			opts: &kouch.Options{Target: &kouch.Target{Root: "http://%xxfoo.com/"}},
 			err:  `parse http://%xxfoo.com/: invalid URL escape "%xx"`,
 		},
 	}
@@ -120,14 +128,19 @@ func TestGetUUIDsOpts(t *testing.T) {
 		name     string
 		conf     *kouch.Config
 		args     []string
-		expected *opts
+		expected *kouch.Options
 		err      string
 		status   int
 	}{
 		{
-			name:     "count specified",
-			args:     []string{"--count", "123"},
-			expected: &opts{count: 123},
+			name: "count specified",
+			args: []string{"--count", "123"},
+			expected: &kouch.Options{
+				Target: &kouch.Target{},
+				Options: &chttp.Options{
+					Query: url.Values{"count": []string{"123"}},
+				},
+			},
 		},
 		{
 			name: "root from context",
@@ -135,9 +148,9 @@ func TestGetUUIDsOpts(t *testing.T) {
 				DefaultContext: "foo",
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
-			expected: &opts{
-				root:  "foo.com",
-				count: 1,
+			expected: &kouch.Options{
+				Target:  &kouch.Target{Root: "foo.com"},
+				Options: &chttp.Options{},
 			},
 		},
 		{
@@ -147,9 +160,9 @@ func TestGetUUIDsOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"--count", "4", "example.com:555"},
-			expected: &opts{
-				root:  "example.com:555",
-				count: 4,
+			expected: &kouch.Options{
+				Target:  &kouch.Target{Root: "example.com:555"},
+				Options: &chttp.Options{Query: url.Values{"count": []string{"4"}}},
 			},
 		},
 	}

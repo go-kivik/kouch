@@ -38,45 +38,45 @@ func putDocCmd() *cobra.Command {
 	return cmd
 }
 
-func putDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
+func putDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
-	opts := newOpts()
+	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		opts.Target, err = target.Parse(target.Document, tgt)
+		o.Target, err = target.Parse(target.Document, tgt)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := opts.Target.DocumentFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DocumentFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := opts.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 	var err error
-	opts.fullCommit, err = cmd.Flags().GetBool(kouch.FlagFullCommit)
+	o.Options.FullCommit, err = cmd.Flags().GetBool(kouch.FlagFullCommit)
 	if err != nil {
 		return nil, err
 	}
 
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if opts.Root == "" {
-			opts.Root = defCtx.Root
+		if o.Root == "" {
+			o.Root = defCtx.Root
 		}
 	}
-	if e := opts.setRev(cmd.Flags()); e != nil {
+	if e := o.SetParamString(cmd.Flags(), kouch.FlagRev); e != nil {
 		return nil, e
 	}
-	if e := opts.setBatch(cmd.Flags()); e != nil {
+	if e := setBatch(o, cmd.Flags()); e != nil {
 		return nil, e
 	}
-	if e := opts.setBool(cmd.Flags(), flagNewEdits); e != nil {
+	if e := o.SetParamBool(cmd.Flags(), flagNewEdits); e != nil {
 		return nil, e
 	}
 
-	return opts, nil
+	return o, nil
 }
 
 func putDocumentCmd(cmd *cobra.Command, args []string) error {
@@ -92,7 +92,7 @@ func putDocumentCmd(cmd *cobra.Command, args []string) error {
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func putDocument(ctx context.Context, o *opts) (io.ReadCloser, error) {
+func putDocument(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
@@ -101,13 +101,7 @@ func putDocument(ctx context.Context, o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	query := o.Values
-	if eq := query.Encode(); eq != "" {
-		path = path + "?" + eq
-	}
-	res, err := c.DoReq(ctx, http.MethodPut, path, &chttp.Options{
-		Body: kouch.Input(ctx),
-	})
+	res, err := c.DoReq(ctx, http.MethodPut, path, o.Options)
 	if err != nil {
 		return nil, err
 	}

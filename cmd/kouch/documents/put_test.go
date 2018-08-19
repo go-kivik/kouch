@@ -3,7 +3,6 @@ package documents
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -39,13 +38,13 @@ func TestPutDocumentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"--database", "bar", "123"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "bar",
 					Document: "123",
 				},
-				Values: &url.Values{},
+				Options: &chttp.Options{},
 			},
 		},
 		{
@@ -55,13 +54,13 @@ func TestPutDocumentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"/foo/123"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "foo",
 					Document: "123",
 				},
-				Values: &url.Values{},
+				Options: &chttp.Options{},
 			},
 		},
 		{
@@ -73,42 +72,47 @@ func TestPutDocumentOpts(t *testing.T) {
 		{
 			name: "full url target",
 			args: []string{"http://foo.com/foo/123"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "http://foo.com",
 					Database: "foo",
 					Document: "123",
 				},
-				Values: &url.Values{},
+				Options: &chttp.Options{},
 			},
 		},
 		{
 			name: "full commit",
 			args: []string{"http://foo.com/foo/123", "--" + kouch.FlagFullCommit},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "http://foo.com",
 					Database: "foo",
 					Document: "123",
 				},
-				fullCommit: true,
-				Values:     &url.Values{},
+				Options: &chttp.Options{
+					FullCommit: true,
+				},
 			},
 		},
 		{
 			name: "batch",
 			args: []string{"--" + flagBatch, "docid"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flagBatch): []string{"ok"}},
+				Options: &chttp.Options{
+					Query: url.Values{param(flagBatch): []string{"ok"}},
+				},
 			},
 		},
 		{
 			name: "new edits",
 			args: []string{"--" + flagNewEdits + "=false", "docid"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flagNewEdits): []string{"false"}},
+				Options: &chttp.Options{
+					Query: url.Values{param(flagNewEdits): []string{"false"}},
+				},
 			},
 		},
 	}
@@ -139,8 +143,7 @@ func TestPutDocumentOpts(t *testing.T) {
 func TestPutDocument(t *testing.T) {
 	type pdTest struct {
 		name     string
-		content  io.ReadCloser
-		opts     *opts
+		opts     *kouch.Options
 		resp     *http.Response
 		val      testy.RequestValidator
 		expected string
@@ -150,14 +153,16 @@ func TestPutDocument(t *testing.T) {
 	tests := []pdTest{
 		{
 			name:   "validation fails",
-			opts:   &opts{Target: &kouch.Target{}, Values: &url.Values{}},
+			opts:   &kouch.Options{Target: &kouch.Target{}},
 			err:    "No document ID provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
-			name:    "success",
-			content: ioutil.NopCloser(strings.NewReader(`{"_id":"oink"}`)),
-			opts:    &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}},
+			name: "success",
+			opts: &kouch.Options{
+				Target:  &kouch.Target{Database: "foo", Document: "123"},
+				Options: &chttp.Options{Body: ioutil.NopCloser(strings.NewReader(`{"_id":"oink"}`))},
+			},
 			val: func(t *testing.T, r *http.Request) {
 				if r.Method != "PUT" {
 					t.Errorf("Unexpected method: %s", r.Method)
@@ -196,9 +201,6 @@ func TestPutDocument(t *testing.T) {
 					}
 				}
 				ctx := context.Background()
-				if test.content != nil {
-					ctx = kouch.SetInput(ctx, test.content)
-				}
 				result, err := putDocument(ctx, test.opts)
 				testy.ExitStatusError(t, test.err, test.status, err)
 				defer result.Close()

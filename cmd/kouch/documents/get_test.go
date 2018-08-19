@@ -36,13 +36,13 @@ func TestGetDocumentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"--database", "bar", "123"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "bar",
 					Document: "123",
 				},
-				Values: &url.Values{},
+				Options: &chttp.Options{},
 			},
 		},
 		{
@@ -52,13 +52,13 @@ func TestGetDocumentOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"/foo/123"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "foo",
 					Document: "123",
 				},
-				Values: &url.Values{},
+				Options: &chttp.Options{},
 			},
 		},
 		{
@@ -70,53 +70,59 @@ func TestGetDocumentOpts(t *testing.T) {
 		{
 			name: "full url target",
 			args: []string{"http://foo.com/foo/123"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "http://foo.com",
 					Database: "foo",
 					Document: "123",
 				},
-				Values: &url.Values{},
+				Options: &chttp.Options{},
 			},
 		},
 		{
 			name: "if-none-match",
 			args: []string{"--" + kouch.FlagIfNoneMatch, "foo", "foo.com/bar/baz"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "bar",
 					Document: "baz",
 				},
-				Values:      &url.Values{},
-				ifNoneMatch: "foo"},
+				Options: &chttp.Options{IfNoneMatch: "foo"},
+			},
 		},
 		{
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "foo", "foo.com/bar/baz"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "bar",
 					Document: "baz",
 				},
-				Values: &url.Values{"rev": []string{"foo"}},
+				Options: &chttp.Options{
+					Query: url.Values{"rev": []string{"foo"}},
+				},
 			},
 		},
 		{
 			name: "attachments since",
 			args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
+				Options: &chttp.Options{
+					Query: url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
+				},
 			},
 		},
 		{
 			name: "open revs",
 			args: []string{"--" + flagOpenRevs, "foo,bar,baz", "docid"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flagOpenRevs): []string{`["foo","bar","baz"]`}},
+				Options: &chttp.Options{
+					Query: url.Values{param(flagOpenRevs): []string{`["foo","bar","baz"]`}},
+				},
 			},
 		},
 	}
@@ -128,9 +134,11 @@ func TestGetDocumentOpts(t *testing.T) {
 		tests = append(tests, gdoTest{
 			name: flag,
 			args: []string{"--" + flag, "docid"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{Document: "docid"},
-				Values: &url.Values{param(flag): []string{"true"}},
+				Options: &chttp.Options{
+					Query: url.Values{param(flag): []string{"true"}},
+				},
 			},
 		})
 	}
@@ -199,7 +207,7 @@ func TestValidateTarget(t *testing.T) {
 func TestGetDocument(t *testing.T) {
 	type gdTest struct {
 		name     string
-		opts     *opts
+		opts     *kouch.Options
 		resp     *http.Response
 		val      testy.RequestValidator
 		expected string
@@ -209,13 +217,13 @@ func TestGetDocument(t *testing.T) {
 	tests := []gdTest{
 		{
 			name:   "validation fails",
-			opts:   &opts{Target: &kouch.Target{}, Values: &url.Values{}},
+			opts:   &kouch.Options{Target: &kouch.Target{}},
 			err:    "No document ID provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name: "success",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}},
+			opts: &kouch.Options{Target: &kouch.Target{Database: "foo", Document: "123"}},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)
@@ -229,7 +237,7 @@ func TestGetDocument(t *testing.T) {
 		},
 		{
 			name: "slashes",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b"}, Values: &url.Values{}},
+			opts: &kouch.Options{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b"}},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
 					t.Errorf("Unexpected path: %s", r.URL.RawPath)
@@ -243,7 +251,10 @@ func TestGetDocument(t *testing.T) {
 		},
 		{
 			name: "if-none-match",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, ifNoneMatch: "xyz"},
+			opts: &kouch.Options{
+				Target:  &kouch.Target{Database: "foo", Document: "123"},
+				Options: &chttp.Options{IfNoneMatch: "xyz"},
+			},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)
@@ -260,8 +271,11 @@ func TestGetDocument(t *testing.T) {
 		},
 		{
 			name: "include query params",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
-				Values: &url.Values{"foobar": []string{"baz"}},
+			opts: &kouch.Options{
+				Target: &kouch.Target{Database: "foo", Document: "123"},
+				Options: &chttp.Options{
+					Query: url.Values{"foobar": []string{"baz"}},
+				},
 			},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123" {

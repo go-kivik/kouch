@@ -2,9 +2,10 @@ package uuids
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/spf13/cobra"
 
@@ -30,25 +31,31 @@ func uuidsCmd() *cobra.Command {
 	return cmd
 }
 
-type opts struct {
-	root  string
-	count int
-}
-
-func getUUIDsOpts(cmd *cobra.Command, args []string) (*opts, error) {
+func getUUIDsOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
+	o := kouch.NewOptions()
+	if tgt := kouch.GetTarget(ctx); tgt != "" {
+		var err error
+		o.Target, err = target.Parse(target.Root, tgt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
+		if o.Root == "" {
+			o.Root = defCtx.Root
+		}
+	}
+
 	count, err := cmd.Flags().GetInt("count")
 	if err != nil {
 		return nil, err
 	}
-	root := kouch.GetTarget(ctx)
-	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil && root == "" {
-		root = defCtx.Root
+	if count != 1 {
+		o.Options.Query = url.Values{"count": []string{strconv.Itoa(count)}}
 	}
-	return &opts{
-		root:  root,
-		count: count,
-	}, nil
+	return o, nil
 }
 
 func getUUIDsCmd(cmd *cobra.Command, args []string) error {
@@ -64,12 +71,12 @@ func getUUIDsCmd(cmd *cobra.Command, args []string) error {
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func getUUIDs(ctx context.Context, opts *opts) (io.ReadCloser, error) {
-	c, err := chttp.New(ctx, opts.root)
+func getUUIDs(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
+	c, err := chttp.New(ctx, o.Target.Root)
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.DoReq(ctx, http.MethodGet, fmt.Sprintf("/_uuids?count=%d", opts.count), nil)
+	res, err := c.DoReq(ctx, http.MethodGet, "/_uuids", o.Options)
 	if err != nil {
 		return nil, err
 	}
