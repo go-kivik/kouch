@@ -76,7 +76,7 @@ func TestCommonOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"123/foo.txt", "--database", "bar"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "bar",
@@ -99,7 +99,7 @@ func TestCommonOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"/foo/123/foo.txt"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "foo.com",
 					Database: "foo",
@@ -118,7 +118,7 @@ func TestCommonOpts(t *testing.T) {
 		{
 			name: "full url target",
 			args: []string{"http://foo.com/foo/123/foo.txt"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{
 					Root:     "http://foo.com",
 					Database: "foo",
@@ -131,7 +131,7 @@ func TestCommonOpts(t *testing.T) {
 		{
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{Filename: "foo.txt"},
 				Options: &chttp.Options{
 					Query: url.Values{"rev": []string{"xyz"}},

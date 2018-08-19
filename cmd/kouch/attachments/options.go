@@ -10,18 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type opts struct {
-	*kouch.Target
-	*chttp.Options
-}
-
-func newOpts() *opts {
-	return &opts{
-		Target:  &kouch.Target{},
-		Options: &chttp.Options{},
-	}
-}
-
 func validateTarget(t *kouch.Target) error {
 	if t.Filename == "" {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No filename provided")
@@ -38,9 +26,9 @@ func validateTarget(t *kouch.Target) error {
 	return nil
 }
 
-func commonOpts(cmd *cobra.Command, _ []string) (*opts, error) {
+func commonOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
-	o := newOpts()
+	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
 		o.Target, err = target.Parse(target.Attachment, tgt)

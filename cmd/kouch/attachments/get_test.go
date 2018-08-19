@@ -25,7 +25,7 @@ func TestGetAttachmentOpts(t *testing.T) {
 		{
 			name: "if none match",
 			args: []string{"--" + kouch.FlagIfNoneMatch, "xyz", "foo.txt"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target:  &kouch.Target{Filename: "foo.txt"},
 				Options: &chttp.Options{IfNoneMatch: "xyz"},
 			},
@@ -33,7 +33,7 @@ func TestGetAttachmentOpts(t *testing.T) {
 		{
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
-			expected: &opts{
+			expected: &kouch.Options{
 				Target: &kouch.Target{Filename: "foo.txt"},
 				Options: &chttp.Options{
 					Query: url.Values{"rev": []string{"xyz"}},
@@ -65,7 +65,7 @@ func TestGetAttachmentOpts(t *testing.T) {
 func TestGetAttachment(t *testing.T) {
 	type gaTest struct {
 		name     string
-		opts     *opts
+		opts     *kouch.Options
 		resp     *http.Response
 		val      testy.RequestValidator
 		expected string
@@ -75,13 +75,13 @@ func TestGetAttachment(t *testing.T) {
 	tests := []gaTest{
 		{
 			name:   "validation fails",
-			opts:   &opts{Target: &kouch.Target{}},
+			opts:   &kouch.Options{Target: &kouch.Target{}},
 			err:    "No filename provided",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name: "success",
-			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"}},
+			opts: &kouch.Options{Target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"}},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123/foo.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)
@@ -95,7 +95,7 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "slashes",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}},
+			opts: &kouch.Options{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.RawPath)
@@ -109,7 +109,7 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "if-none-match",
-			opts: &opts{
+			opts: &kouch.Options{
 				Target:  &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
 				Options: &chttp.Options{IfNoneMatch: "xyz"},
 			},
@@ -129,7 +129,7 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "rev",
-			opts: &opts{
+			opts: &kouch.Options{
 				Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
 				Options: &chttp.Options{
 					Query: url.Values{"rev": []string{"xyz"}},
