@@ -27,11 +27,8 @@ func getAttCmd() *cobra.Command {
 			target.HelpText(target.Attachment),
 		RunE: getAttachmentCmd,
 	}
-	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
-	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
-	cmd.Flags().String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
+	addCommonFlags(cmd.Flags())
 	cmd.Flags().String(kouch.FlagIfNoneMatch, "", "Optionally fetch the attachment, only if the MD5 digest does not match the one provided")
-	cmd.Flags().StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves attachment from document of specified revision.")
 	return cmd
 }
 

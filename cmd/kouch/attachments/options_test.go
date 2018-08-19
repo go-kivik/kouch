@@ -8,6 +8,7 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/spf13/cobra"
 )
 
 func TestValidateTarget(t *testing.T) {
@@ -144,7 +145,8 @@ func TestCommonOpts(t *testing.T) {
 			if test.conf == nil {
 				test.conf = &kouch.Config{}
 			}
-			cmd := getAttCmd()
+			cmd := &cobra.Command{}
+			addCommonFlags(cmd.Flags())
 			cmd.ParseFlags(test.args)
 			ctx := kouch.GetContext(cmd)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {
