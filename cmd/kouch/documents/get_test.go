@@ -1,7 +1,6 @@
 package documents
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -12,7 +11,6 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/pkg/errors"
 )
 
 func TestGetDocumentOpts(t *testing.T) {
@@ -218,11 +216,10 @@ func TestGetDocument(t *testing.T) {
 		{
 			name: "success",
 			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123" {
-					return errors.Errorf("Unexpected path: %s", r.URL.Path)
+					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -233,11 +230,10 @@ func TestGetDocument(t *testing.T) {
 		{
 			name: "slashes",
 			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b"}, Values: &url.Values{}},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
-					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
+					t.Errorf("Unexpected path: %s", r.URL.RawPath)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -248,18 +244,13 @@ func TestGetDocument(t *testing.T) {
 		{
 			name: "if-none-match",
 			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}, ifNoneMatch: "xyz"},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123" {
-					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
 				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
-					err := errors.Errorf("Unexpected If-None-Match header: %s", inm)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected If-None-Match header: %s", inm)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -272,18 +263,13 @@ func TestGetDocument(t *testing.T) {
 			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123"},
 				Values: &url.Values{"foobar": []string{"baz"}},
 			},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123" {
-					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
 				if val := r.URL.Query().Get("foobar"); val != "baz" {
-					err := errors.Errorf("Unexpected query value: %s", val)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected query value: %s", val)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -298,7 +284,7 @@ func TestGetDocument(t *testing.T) {
 				t.Parallel()
 				if test.resp != nil {
 					if test.val != nil {
-						s := testy.ServeResponseValidator(test.resp, test.val)
+						s := testy.ServeResponseValidator(t, test.resp, test.val)
 						defer s.Close()
 						test.opts.Root = s.URL
 					} else {

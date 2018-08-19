@@ -10,23 +10,22 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
-	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	registry.Register([]string{"get"}, attCmd())
+	registry.Register([]string{"get"}, getAttCmd())
 }
 
-func attCmd() *cobra.Command {
+func getAttCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "attachment [target]",
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment.",
 		Long: "Fetches a file attachment.\n\n" +
 			target.HelpText(target.Attachment),
-		RunE: attachmentCmd,
+		RunE: getAttachmentCmd,
 	}
 	cmd.Flags().String(kouch.FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	cmd.Flags().String(kouch.FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
@@ -36,7 +35,7 @@ func attCmd() *cobra.Command {
 	return cmd
 }
 
-func attachmentCmd(cmd *cobra.Command, args []string) error {
+func getAttachmentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
 	opts, err := getAttachmentOpts(cmd, args)
 	if err != nil {
@@ -51,51 +50,15 @@ func attachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-type opts struct {
-	*kouch.Target
-	rev         string
-	ifNoneMatch string
-}
-
-func getAttachmentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
-	ctx := kouch.GetContext(cmd)
-	o := &opts{
-		Target: &kouch.Target{},
-	}
-	if tgt := kouch.GetTarget(ctx); tgt != "" {
-		var err error
-		o.Target, err = target.Parse(target.Attachment, tgt)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := o.Target.FilenameFromFlags(cmd.Flags()); err != nil {
+func getAttachmentOpts(cmd *cobra.Command, args []string) (*opts, error) {
+	o, err := commonOpts(cmd, args)
+	if err != nil {
 		return nil, err
 	}
-	if err := o.Target.DocumentFromFlags(cmd.Flags()); err != nil {
-		return nil, err
-	}
-	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
-		return nil, err
-	}
-
-	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if o.Root == "" {
-			o.Root = defCtx.Root
-		}
-	}
-
-	var err error
 	o.ifNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
 	if err != nil {
 		return nil, err
 	}
-	o.rev, err = cmd.Flags().GetString(kouch.FlagRev)
-	if err != nil {
-		return nil, err
-	}
-
 	return o, nil
 }
 
@@ -125,20 +88,4 @@ func getAttachment(o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return res.Body, nil
-}
-
-func validateTarget(t *kouch.Target) error {
-	if t.Filename == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No filename provided")
-	}
-	if t.Document == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No document ID provided")
-	}
-	if t.Database == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No database name provided")
-	}
-	if t.Root == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No root URL provided")
-	}
-	return nil
 }
