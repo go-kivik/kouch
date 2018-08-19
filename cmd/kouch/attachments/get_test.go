@@ -3,6 +3,7 @@ package attachments
 import (
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -33,9 +34,10 @@ func TestGetAttachmentOpts(t *testing.T) {
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
 			expected: &opts{
-				Target:  &kouch.Target{Filename: "foo.txt"},
-				Options: &chttp.Options{},
-				rev:     "xyz",
+				Target: &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{
+					Query: url.Values{"rev": []string{"xyz"}},
+				},
 			},
 		},
 	}
@@ -127,7 +129,12 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "rev",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, rev: "xyz"},
+			opts: &opts{
+				Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
+				Options: &chttp.Options{
+					Query: url.Values{"rev": []string{"xyz"}},
+				},
+			},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)

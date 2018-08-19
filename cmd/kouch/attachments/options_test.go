@@ -1,6 +1,7 @@
 package attachments
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/flimzy/diff"
@@ -131,9 +132,10 @@ func TestCommonOpts(t *testing.T) {
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
 			expected: &opts{
-				Target:  &kouch.Target{Filename: "foo.txt"},
-				Options: &chttp.Options{},
-				rev:     "xyz",
+				Target: &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{
+					Query: url.Values{"rev": []string{"xyz"}},
+				},
 			},
 		},
 	}

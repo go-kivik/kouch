@@ -1,6 +1,8 @@
 package attachments
 
 import (
+	"net/url"
+
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
@@ -11,7 +13,6 @@ import (
 type opts struct {
 	*kouch.Target
 	*chttp.Options
-	rev string
 }
 
 func newOpts() *opts {
@@ -65,9 +66,12 @@ func commonOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	}
 
 	var err error
-	o.rev, err = cmd.Flags().GetString(kouch.FlagRev)
+	rev, err := cmd.Flags().GetString(kouch.FlagRev)
 	if err != nil {
 		return nil, err
+	}
+	if rev != "" {
+		o.Options.Query = url.Values{"rev": []string{rev}}
 	}
 
 	return o, nil

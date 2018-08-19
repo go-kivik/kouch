@@ -71,13 +71,6 @@ func getAttachment(o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	query := &url.Values{}
-	if o.rev != "" {
-		query.Add("rev", o.rev)
-	}
-	if eq := query.Encode(); eq != "" {
-		path = path + "?" + eq
-	}
 	res, err := c.DoReq(context.TODO(), http.MethodGet, path, o.Options)
 	if err != nil {
 		return nil, err
