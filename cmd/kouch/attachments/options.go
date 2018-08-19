@@ -10,8 +10,15 @@ import (
 
 type opts struct {
 	*kouch.Target
-	rev         string
-	ifNoneMatch string
+	*chttp.Options
+	rev string
+}
+
+func newOpts() *opts {
+	return &opts{
+		Target:  &kouch.Target{},
+		Options: &chttp.Options{},
+	}
 }
 
 func validateTarget(t *kouch.Target) error {
@@ -32,9 +39,7 @@ func validateTarget(t *kouch.Target) error {
 
 func commonOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 	ctx := kouch.GetContext(cmd)
-	o := &opts{
-		Target: &kouch.Target{},
-	}
+	o := newOpts()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
 		o.Target, err = target.Parse(target.Attachment, tgt)

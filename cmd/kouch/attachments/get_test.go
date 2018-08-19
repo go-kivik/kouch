@@ -25,20 +25,17 @@ func TestGetAttachmentOpts(t *testing.T) {
 			name: "if none match",
 			args: []string{"--" + kouch.FlagIfNoneMatch, "xyz", "foo.txt"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Filename: "foo.txt",
-				},
-				ifNoneMatch: "xyz",
+				Target:  &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{IfNoneMatch: "xyz"},
 			},
 		},
 		{
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Filename: "foo.txt",
-				},
-				rev: "xyz",
+				Target:  &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{},
+				rev:     "xyz",
 			},
 		},
 	}
@@ -110,7 +107,10 @@ func TestGetAttachment(t *testing.T) {
 		},
 		{
 			name: "if-none-match",
-			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, ifNoneMatch: "xyz"},
+			opts: &opts{
+				Target:  &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
+				Options: &chttp.Options{IfNoneMatch: "xyz"},
+			},
 			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)

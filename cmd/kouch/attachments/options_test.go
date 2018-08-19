@@ -75,12 +75,15 @@ func TestCommonOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"123/foo.txt", "--database", "bar"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "bar",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "bar",
+					Document: "123",
+					Filename: "foo.txt",
+				},
+				Options: &chttp.Options{},
+			},
 		},
 		{
 			name:   "doc ID provided twice",
@@ -95,12 +98,15 @@ func TestCommonOpts(t *testing.T) {
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 			},
 			args: []string{"/foo/123/foo.txt"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "foo.com",
-				Database: "foo",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "foo.com",
+					Database: "foo",
+					Document: "123",
+					Filename: "foo.txt",
+				},
+				Options: &chttp.Options{},
+			},
 		},
 		{
 			name:   "db provided twice",
@@ -111,21 +117,23 @@ func TestCommonOpts(t *testing.T) {
 		{
 			name: "full url target",
 			args: []string{"http://foo.com/foo/123/foo.txt"},
-			expected: &opts{Target: &kouch.Target{
-				Root:     "http://foo.com",
-				Database: "foo",
-				Document: "123",
-				Filename: "foo.txt",
-			}},
+			expected: &opts{
+				Target: &kouch.Target{
+					Root:     "http://foo.com",
+					Database: "foo",
+					Document: "123",
+					Filename: "foo.txt",
+				},
+				Options: &chttp.Options{},
+			},
 		},
 		{
 			name: "rev",
 			args: []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
 			expected: &opts{
-				Target: &kouch.Target{
-					Filename: "foo.txt",
-				},
-				rev: "xyz",
+				Target:  &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{},
+				rev:     "xyz",
 			},
 		},
 	}
