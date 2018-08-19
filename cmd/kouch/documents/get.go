@@ -61,39 +61,39 @@ func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
+func getDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
-	opts := newOpts()
+	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		opts.Target, err = target.Parse(target.Document, tgt)
+		o.Target, err = target.Parse(target.Document, tgt)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := opts.Target.DocumentFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DocumentFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
-	if err := opts.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
 		return nil, err
 	}
 
 	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if opts.Root == "" {
-			opts.Root = defCtx.Root
+		if o.Root == "" {
+			o.Root = defCtx.Root
 		}
 	}
 	var err error
-	opts.ifNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
+	o.Options.IfNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
 	if err != nil {
 		return nil, err
 	}
-	if e := opts.setRev(cmd.Flags()); e != nil {
+	if e := o.SetParamString(cmd.Flags(), kouch.FlagRev); e != nil {
 		return nil, e
 	}
 	for _, flag := range []string{flagAttsSince, flagOpenRevs} {
-		if e := opts.setStringSlice(cmd.Flags(), flag); e != nil {
+		if e := o.SetParamStringSlice(cmd.Flags(), flag); e != nil {
 			return nil, e
 		}
 	}
@@ -103,15 +103,15 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*opts, error) {
 		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
 		flagMeta, flagRevs, flagRevsInfo,
 	} {
-		if e := opts.setBool(cmd.Flags(), flag); e != nil {
+		if e := o.SetParamBool(cmd.Flags(), flag); e != nil {
 			return nil, e
 		}
 	}
 
-	return opts, nil
+	return o, nil
 }
 
-func getDocument(o *opts) (io.ReadCloser, error) {
+func getDocument(o *kouch.Options) (io.ReadCloser, error) {
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
@@ -120,13 +120,7 @@ func getDocument(o *opts) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	query := o.Values
-	if eq := query.Encode(); eq != "" {
-		path = path + "?" + eq
-	}
-	res, err := c.DoReq(context.TODO(), http.MethodGet, path, &chttp.Options{
-		IfNoneMatch: o.ifNoneMatch,
-	})
+	res, err := c.DoReq(context.TODO(), http.MethodGet, path, o.Options)
 	if err != nil {
 		return nil, err
 	}
