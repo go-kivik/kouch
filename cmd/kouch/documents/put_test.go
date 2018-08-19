@@ -3,7 +3,6 @@ package documents
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/pkg/errors"
 )
 
 func TestPutDocumentOpts(t *testing.T) {
@@ -160,22 +158,20 @@ func TestPutDocument(t *testing.T) {
 			name:    "success",
 			content: ioutil.NopCloser(strings.NewReader(`{"_id":"oink"}`)),
 			opts:    &opts{Target: &kouch.Target{Database: "foo", Document: "123"}, Values: &url.Values{}},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.Method != "PUT" {
-					return errors.Errorf("Unexpected method: %s", r.Method)
+					t.Errorf("Unexpected method: %s", r.Method)
 				}
 				if r.URL.Path != "/foo/123" {
-					return errors.Errorf("Unexpected path: %s", r.URL.Path)
+					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
 				if ct := r.Header.Get("Content-Type"); ct != "application/json" {
-					return errors.Errorf("Unexpected Content-Type: %s", ct)
+					t.Errorf("Unexpected Content-Type: %s", ct)
 				}
 				var doc interface{}
 				if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
-					fmt.Printf("json err: %s\n", err)
-					return err
+					t.Errorf("json err: %s\n", err)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -190,7 +186,7 @@ func TestPutDocument(t *testing.T) {
 				t.Parallel()
 				if test.resp != nil {
 					if test.val != nil {
-						s := testy.ServeResponseValidator(test.resp, test.val)
+						s := testy.ServeResponseValidator(t, test.resp, test.val)
 						defer s.Close()
 						test.opts.Root = s.URL
 					} else {

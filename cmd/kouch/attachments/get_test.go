@@ -1,7 +1,6 @@
 package attachments
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -11,7 +10,6 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/pkg/errors"
 )
 
 func TestGetAttachmentOpts(t *testing.T) {
@@ -85,11 +83,10 @@ func TestGetAttachment(t *testing.T) {
 		{
 			name: "success",
 			opts: &opts{Target: &kouch.Target{Database: "foo", Document: "123", Filename: "foo.txt"}},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.Path != "/foo/123/foo.txt" {
-					return errors.Errorf("Unexpected path: %s", r.URL.Path)
+					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -100,11 +97,10 @@ func TestGetAttachment(t *testing.T) {
 		{
 			name: "slashes",
 			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
-					return errors.Errorf("Unexpected path: %s", r.URL.RawPath)
+					t.Errorf("Unexpected path: %s", r.URL.RawPath)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -115,18 +111,13 @@ func TestGetAttachment(t *testing.T) {
 		{
 			name: "if-none-match",
 			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, ifNoneMatch: "xyz"},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
-					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
 				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
-					err := errors.Errorf("Unexpected If-None-Match header: %s", inm)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected If-None-Match header: %s", inm)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -137,18 +128,13 @@ func TestGetAttachment(t *testing.T) {
 		{
 			name: "rev",
 			opts: &opts{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"}, rev: "xyz"},
-			val: func(r *http.Request) error {
+			val: func(t *testing.T, r *http.Request) {
 				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
-					err := errors.Errorf("Unexpected path: %s", r.URL.Path)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
 				if rev := r.URL.Query().Get("rev"); rev != "xyz" {
-					err := errors.Errorf("Unexpected revision: %s", rev)
-					fmt.Println(err)
-					return err
+					t.Errorf("Unexpected revision: %s", rev)
 				}
-				return nil
 			},
 			resp: &http.Response{
 				StatusCode: 200,
@@ -163,7 +149,7 @@ func TestGetAttachment(t *testing.T) {
 				t.Parallel()
 				if test.resp != nil {
 					if test.val != nil {
-						s := testy.ServeResponseValidator(test.resp, test.val)
+						s := testy.ServeResponseValidator(t, test.resp, test.val)
 						defer s.Close()
 						test.opts.Root = s.URL
 					} else {
