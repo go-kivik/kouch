@@ -44,6 +44,22 @@ func TestPutAttachmentOpts(t *testing.T) {
 				Options: &chttp.Options{ContentType: "image/oink", Body: input},
 			},
 		},
+		{
+			name: "guess content type",
+			args: []string{"--" + flagGuessContentType, "foo.txt"},
+			expected: &kouch.Options{
+				Target:  &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{ContentType: "text/plain; charset=utf-8", Body: input},
+			},
+		},
+		{
+			name: "guess content type failure",
+			args: []string{"--" + flagGuessContentType, "foo.xxxxxxx"},
+			expected: &kouch.Options{
+				Target:  &kouch.Target{Filename: "foo.xxxxxxx"},
+				Options: &chttp.Options{ContentType: "application/octet-stream", Body: input},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -88,14 +104,20 @@ func TestPutAttachment(t *testing.T) {
 		{
 			name: "success",
 			opts: &kouch.Options{
-				Target:  &kouch.Target{Database: "foo", Document: "oink", Filename: "foo.txt"},
-				Options: &chttp.Options{Body: ioutil.NopCloser(strings.NewReader("test data"))},
+				Target: &kouch.Target{Database: "foo", Document: "oink", Filename: "foo.txt"},
+				Options: &chttp.Options{
+					ContentType: "text/plain",
+					Body:        ioutil.NopCloser(strings.NewReader("test data")),
+				},
 			},
 			val: func(t *testing.T, r *http.Request) {
+				defer r.Body.Close()
 				if r.URL.Path != "/foo/oink/foo.txt" {
 					t.Errorf("Unexpected path: %s", r.URL.Path)
 				}
-				defer r.Body.Close()
+				if ct := r.Header.Get("Content-Type"); ct != "text/plain" {
+					t.Errorf("Unexpected Content-Type: %s", ct)
+				}
 				body, err := ioutil.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)

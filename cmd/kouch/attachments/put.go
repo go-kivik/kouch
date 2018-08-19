@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
+	"path/filepath"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
@@ -15,8 +17,11 @@ import (
 )
 
 const (
-	flagContentType = "content-type"
+	flagContentType      = "content-type"
+	flagGuessContentType = "guess-content-type"
 )
+
+const defaultContentType = "application/octet-stream"
 
 func init() {
 	registry.Register([]string{"put"}, putAttCmd())
@@ -34,6 +39,7 @@ func putAttCmd() *cobra.Command {
 	addCommonFlags(cmd.Flags())
 
 	cmd.Flags().String(flagContentType, "", "Attachment MIME type.")
+	cmd.Flags().Bool(flagGuessContentType, false, "Attempt to guess the content type from the file. Falls back to 'application/octet-stream'.")
 
 	return cmd
 }
@@ -59,10 +65,24 @@ func putAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Options, error
 		return nil, err
 	}
 	o.Options.Body = kouch.Input(kouch.GetContext(cmd))
-	o.Options.ContentType, err = cmd.Flags().GetString(flagContentType)
+	var ct string
+	ct, err = cmd.Flags().GetString(flagContentType)
 	if err != nil {
 		return nil, err
 	}
+	if ct == "" {
+		guess, err := cmd.Flags().GetBool(flagGuessContentType)
+		if err != nil {
+			return nil, err
+		}
+		if guess {
+			ct = mime.TypeByExtension(filepath.Ext(o.Target.Filename))
+			if ct == "" {
+				ct = defaultContentType
+			}
+		}
+	}
+	o.Options.ContentType = ct
 	return o, nil
 }
 
