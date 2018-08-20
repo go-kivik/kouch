@@ -15,6 +15,8 @@ import (
 type Options struct {
 	*Target
 	*chttp.Options
+	// Head turns a GET reuqest into a HEAD request, when true
+	Head bool
 }
 
 // NewOptions returns a new, empty Options struct.
@@ -71,5 +73,12 @@ func (o *Options) SetParamString(f *pflag.FlagSet, flagName string) error {
 	if err == nil && v != f.Lookup(flagName).DefValue {
 		o.Query().Add(param(flagName), v)
 	}
+	return err
+}
+
+// SetHead turns on the Head flag if the --head/-I flag is set.
+func (o *Options) SetHead(f *pflag.FlagSet) error {
+	var err error
+	o.Head, err = f.GetBool(FlagHead)
 	return err
 }

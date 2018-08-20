@@ -125,6 +125,15 @@ func TestGetDocumentOpts(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "head",
+			args: []string{"--" + kouch.FlagHead, "docid"},
+			expected: &kouch.Options{
+				Target:  &kouch.Target{Document: "docid"},
+				Options: &chttp.Options{},
+				Head:    true,
+			},
+		},
 	}
 	for _, flag := range []string{
 		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
@@ -290,6 +299,34 @@ func TestGetDocument(t *testing.T) {
 				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
 			},
 			expected: "Test\ncontent\n",
+		},
+		{
+			name: "head",
+			opts: &kouch.Options{
+				Target:  &kouch.Target{Database: "foo", Document: "123"},
+				Options: &chttp.Options{},
+				Head:    true,
+			},
+			val: func(t *testing.T, r *http.Request) {
+				if r.Method != "HEAD" {
+					t.Errorf("Unexpected method: %s", r.Method)
+				}
+				if r.URL.Path != "/foo/123" {
+					t.Errorf("Unexpected path: %s", r.URL.Path)
+				}
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Header: http.Header{
+					"Date": []string{"Mon, 20 Aug 2018 08:28:57 GMT"},
+					"ETag": []string{`"2-dcae93de55ac4c27b071654853bca12f"`},
+				},
+				Body: ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Content-Length: 13\r\n" +
+				"Content-Type: text/plain; charset=utf-8\r\n" +
+				"Date: Mon, 20 Aug 2018 08:28:57 GMT\r\n" +
+				"Etag: \"2-dcae93de55ac4c27b071654853bca12f\"\r\n",
 		},
 	}
 	for _, test := range tests {
