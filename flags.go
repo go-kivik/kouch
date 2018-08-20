@@ -2,12 +2,17 @@ package kouch
 
 // Common command line flags
 const (
+	// Curl-equivalent flags
+	FlagVerbose    = "verbose"
+	FlagOutputFile = "output"
+	FlagData       = "data"
+	FlagHead       = "head"
+
+	// Custom flags
 	FlagConfigFile   = "kouchconfig"
 	FlagServerRoot   = "root"
-	FlagData         = "data"
 	FlagDataJSON     = "data-json"
 	FlagDataYAML     = "data-yaml"
-	FlagOutputFile   = "output"
 	FlagOutputFormat = "output-format"
 	FlagFilename     = "filename"
 	FlagDocument     = "id"
@@ -16,10 +21,14 @@ const (
 	FlagIfNoneMatch  = "if-none-match"
 	FlagRev          = "rev"
 
-	// Short versions
+	// Curl-equivalent short flags
+	FlagShortVerbose    = "v"
+	FlagShortOutputFile = "o"
+	FlagShortData       = "d"
+	FlagShortHead       = "I"
+
+	// Short versions, custom
 	FlagShortServerRoot   = "R"
-	FlagShortOutputFile   = "o"
 	FlagShortOutputFormat = "F"
-	FlagShortData         = "d"
 	FlagShortRev          = "r"
 )

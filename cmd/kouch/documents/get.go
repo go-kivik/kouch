@@ -34,6 +34,7 @@ func getDocCmd() *cobra.Command {
 	f.StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
 	f.String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
 
+	cmd.PersistentFlags().BoolP(kouch.FlagHead, kouch.FlagShortHead, false, "Fetch the headers only.")
 	f.Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
 	f.Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
 	f.StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
@@ -50,12 +51,17 @@ func getDocCmd() *cobra.Command {
 
 func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := getDocumentOpts(cmd, args)
+	o, err := getDocumentOpts(cmd, args)
 	if err != nil {
 		return err
 	}
-	result, err := getDocument(opts)
+	result, err := getDocument(o)
 	if err != nil {
+		return err
+	}
+	if o.Head {
+		defer result.Close()
+		_, err = io.Copy(kouch.Output(ctx), result)
 		return err
 	}
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
@@ -76,6 +82,9 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 		return nil, err
 	}
 	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
+		return nil, err
+	}
+	if err := o.SetHead(cmd.Flags()); err != nil {
 		return nil, err
 	}
 
@@ -120,12 +129,25 @@ func getDocument(o *kouch.Options) (io.ReadCloser, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	res, err := c.DoReq(context.TODO(), http.MethodGet, path, o.Options)
+	method := http.MethodGet
+	if o.Head {
+		method = http.MethodHead
+	}
+	res, err := c.DoReq(context.TODO(), method, path, o.Options)
 	if err != nil {
 		return nil, err
 	}
 	if err = chttp.ResponseError(res); err != nil {
 		return nil, err
+	}
+	if o.Head {
+		_ = res.Body.Close()
+		r, w := io.Pipe()
+		go func() {
+			err := res.Header.Write(w)
+			w.CloseWithError(err)
+		}()
+		return r, nil
 	}
 	return res.Body, nil
 }

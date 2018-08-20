@@ -40,6 +40,15 @@ func TestGetAttachmentOpts(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "head",
+			args: []string{"--" + kouch.FlagHead, "foo.txt"},
+			expected: &kouch.Options{
+				Target:  &kouch.Target{Filename: "foo.txt"},
+				Options: &chttp.Options{},
+				Head:    true,
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -148,6 +157,32 @@ func TestGetAttachment(t *testing.T) {
 				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
 			},
 			expected: "Test\ncontent\n",
+		},
+		{
+			name: "head",
+			opts: &kouch.Options{
+				Target:  &kouch.Target{Database: "foo/ba r", Document: "123/b", Filename: "foo/bar.txt"},
+				Options: &chttp.Options{},
+				Head:    true,
+			},
+			val: func(t *testing.T, r *http.Request) {
+				if r.Method != http.MethodHead {
+					t.Errorf("Unepxected method: %s", r.Method)
+				}
+				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
+					t.Errorf("Unexpected path: %s", r.URL.Path)
+				}
+			},
+			resp: &http.Response{
+				StatusCode: 200,
+				Header: http.Header{
+					"Date": []string{"Mon, 20 Aug 2018 08:55:52 GMT"},
+				},
+				Body: ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			},
+			expected: "Content-Length: 13\r\n" +
+				"Content-Type: text/plain; charset=utf-8\r\n" +
+				"Date: Mon, 20 Aug 2018 08:55:52 GMT\r\n",
 		},
 	}
 	for _, test := range tests {
