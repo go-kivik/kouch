@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -305,7 +306,7 @@ func TestGetDocument(t *testing.T) {
 						test.opts.Root = s.URL
 					}
 				}
-				result, err := getDocument(test.opts)
+				result, err := getDocument(context.Background(), test.opts)
 				testy.ExitStatusError(t, test.err, test.status, err)
 				defer result.Close()
 				content, err := ioutil.ReadAll(result)

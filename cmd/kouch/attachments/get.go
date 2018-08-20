@@ -1,15 +1,17 @@
 package attachments
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"net/http"
+	"io/ioutil"
 	"net/url"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -67,30 +69,18 @@ func getAttachment(ctx context.Context, o *kouch.Options) (io.ReadCloser, error)
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
-	c, err := chttp.New(ctx, o.Root)
-	if err != nil {
-		return nil, err
-	}
 	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	method := http.MethodGet
+	var head, body *bytes.Buffer
 	if o.Head {
-		method = http.MethodHead
+		head = &bytes.Buffer{}
+	} else {
+		body = &bytes.Buffer{}
 	}
-	res, err := c.DoReq(ctx, method, path, o.Options)
-	if err != nil {
-		return nil, err
-	}
-	if err = chttp.ResponseError(res); err != nil {
+	if err := util.ChttpGet(ctx, path, o, head, body); err != nil {
 		return nil, err
 	}
 	if o.Head {
-		_ = res.Body.Close()
-		r, w := io.Pipe()
-		go func() {
-			err := res.Header.Write(w)
-			w.CloseWithError(err)
-		}()
-		return r, nil
+		return ioutil.NopCloser(head), nil
 	}
-	return res.Body, nil
+	return ioutil.NopCloser(body), nil
 }
