@@ -39,7 +39,7 @@ func getAttachmentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := getAttachment(opts)
+	resp, err := getAttachment(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -63,11 +63,11 @@ func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Options, error
 	return o, nil
 }
 
-func getAttachment(o *kouch.Options) (io.ReadCloser, error) {
+func getAttachment(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
-	c, err := chttp.New(context.TODO(), o.Root)
+	c, err := chttp.New(ctx, o.Root)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func getAttachment(o *kouch.Options) (io.ReadCloser, error) {
 	if o.Head {
 		method = http.MethodHead
 	}
-	res, err := c.DoReq(context.TODO(), method, path, o.Options)
+	res, err := c.DoReq(ctx, method, path, o.Options)
 	if err != nil {
 		return nil, err
 	}
