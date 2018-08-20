@@ -20,7 +20,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"data", "data-json", "data-yaml", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
+	testOptions(t, []string{"data", "data-json", "data-yaml", "dump-header", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {

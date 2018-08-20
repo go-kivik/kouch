@@ -8,10 +8,10 @@ import (
 type delayedOpenWriter struct {
 	filename string
 	clobber  bool
-	w        io.Writer
+	w        io.WriteCloser
 }
 
-var _ io.Writer = &delayedOpenWriter{}
+var _ io.WriteCloser = &delayedOpenWriter{}
 
 func (w *delayedOpenWriter) Write(p []byte) (int, error) {
 	if w.w == nil {
@@ -24,7 +24,11 @@ func (w *delayedOpenWriter) Write(p []byte) (int, error) {
 	return w.w.Write(p)
 }
 
-func (w *delayedOpenWriter) open() (io.Writer, error) {
+func (w *delayedOpenWriter) Close() error {
+	return w.w.Close()
+}
+
+func (w *delayedOpenWriter) open() (io.WriteCloser, error) {
 	return openOutputFile(w.filename, w.clobber)
 }
 

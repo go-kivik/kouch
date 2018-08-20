@@ -64,6 +64,7 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP request body data. Prefix with '@' to specify a filename.")
 	flags.String(kouch.FlagDataJSON, "", "HTTP request body data, in JSON format.")
 	flags.String(kouch.FlagDataYAML, "", "HTTP request body data, in YAML format.")
+	flags.StringP(kouch.FlagDumpHeader, kouch.FlagShortDumpHeader, "", "Write the received HTTP headers to the specified file. (- = stdout, % = stderr)")
 }
 
 // SetOutput returns a new context with the output parameters configured.
@@ -85,17 +86,24 @@ func SetOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, erro
 func setOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, error) {
 	output, err := open(flags, kouch.FlagOutputFile)
 	if err != nil {
-		return ctx, nil
+		return nil, err
 	}
-	if output == os.Stdout {
-		return ctx, nil
+	if output != nil && output != os.Stdout {
+		ctx = kouch.SetOutput(ctx, output)
 	}
-	ctx = kouch.SetOutput(ctx, &nopCloser{output})
+	headDump, err := open(flags, kouch.FlagDumpHeader)
+	if err != nil {
+		return nil, err
+	}
+	if headDump != nil {
+		ctx = kouch.SetHeadDumper(ctx, headDump)
+	}
+	ctx = kouch.SetOutput(ctx, output)
 
 	return ctx, nil
 }
 
-func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
+func open(flags *pflag.FlagSet, flagName string) (io.WriteCloser, error) {
 	output, err := flags.GetString(flagName)
 	if err != nil {
 		return nil, err

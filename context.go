@@ -15,11 +15,12 @@ type contextKey struct {
 
 // Context Keys
 var (
-	verboseContextKey = &contextKey{"verbose"}
-	outputContextKey  = &contextKey{"output"}
-	configContextKey  = &contextKey{"config"}
-	targetContextKey  = &contextKey{"target"}
-	inputContextKey   = &contextKey{"input"}
+	verboseContextKey     = &contextKey{"verbose"}
+	outputContextKey      = &contextKey{"output"}
+	configContextKey      = &contextKey{"config"}
+	targetContextKey      = &contextKey{"target"}
+	inputContextKey       = &contextKey{"input"}
+	headDumpberContextKey = &contextKey{"headDumper"}
 )
 
 // Conf returns the context's current configuration struct, or panics if none is
@@ -31,6 +32,18 @@ func Conf(ctx context.Context) *Config {
 // SetConf returns a new context with the current config set to conf.
 func SetConf(ctx context.Context, conf *Config) context.Context {
 	return context.WithValue(ctx, configContextKey, conf)
+}
+
+// HeadDumper returns an io.Writer to which headers should be written, or nil
+// if none.
+func HeadDumper(ctx context.Context) io.Writer {
+	d, _ := ctx.Value(headDumpberContextKey).(io.Writer)
+	return d
+}
+
+// SetHeadDumper returns a new context with the head-dumper set to d.
+func SetHeadDumper(ctx context.Context, d io.Writer) context.Context {
+	return context.WithValue(ctx, headDumpberContextKey, d)
 }
 
 // Output returns the context's current output, or panics if none is set.
