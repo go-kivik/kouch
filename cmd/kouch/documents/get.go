@@ -33,8 +33,8 @@ func getDocCmd() *cobra.Command {
 	f.String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
 	f.StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
 	f.String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
-	cmd.PersistentFlags().BoolP(kouch.FlagHead, kouch.FlagShortHead, false, "Fetch the headers only.")
 
+	cmd.PersistentFlags().BoolP(kouch.FlagHead, kouch.FlagShortHead, false, "Fetch the headers only.")
 	f.Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
 	f.Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
 	f.StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
