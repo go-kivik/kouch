@@ -70,25 +70,34 @@ func AddFlags(flags *pflag.FlagSet) {
 
 // SetOutput returns a new context with the output parameters configured.
 func SetOutput(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
-	output, err := cmd.Flags().GetString(kouch.FlagOutputFile)
+	output, err := open(cmd.Flags(), kouch.FlagOutputFile)
+	if err != nil {
+		return ctx, nil
+	}
+	if output == os.Stdout {
+		return ctx, nil
+	}
+	ctx = kouch.SetOutput(ctx, output)
+
+	return ctx, nil
+}
+
+func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
+	output, err := flags.GetString(flagName)
 	if err != nil {
 		return nil, err
 	}
 	if output == "" || output == "-" {
-		// Default to stdout
-		return ctx, nil
+		return os.Stdout, nil
 	}
-	clobber, err := cmd.Flags().GetBool(flagClobber)
+	clobber, err := flags.GetBool(flagClobber)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx = kouch.SetOutput(ctx, &delayedOpenWriter{
+	return &delayedOpenWriter{
 		filename: output,
 		clobber:  clobber,
-	})
-
-	return ctx, nil
+	}, nil
 }
 
 // SelectOutputProcessor selects and configures the desired output processor
