@@ -1,16 +1,17 @@
 package documents
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"net/http"
+	"io/ioutil"
 	"net/url"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
-	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -55,7 +56,7 @@ func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	result, err := getDocument(o)
+	result, err := getDocument(ctx, o)
 	if err != nil {
 		return err
 	}
@@ -120,50 +121,22 @@ func getDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 	return o, nil
 }
 
-func getDocument(o *kouch.Options) (io.ReadCloser, error) {
+func getDocument(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
 	if err := validateTarget(o.Target); err != nil {
 		return nil, err
 	}
-	c, err := chttp.New(context.TODO(), o.Root)
-	if err != nil {
-		return nil, err
-	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	method := http.MethodGet
+	var head, body *bytes.Buffer
 	if o.Head {
-		method = http.MethodHead
+		head = &bytes.Buffer{}
+	} else {
+		body = &bytes.Buffer{}
 	}
-	res, err := c.DoReq(context.TODO(), method, path, o.Options)
-	if err != nil {
-		return nil, err
-	}
-	if err = chttp.ResponseError(res); err != nil {
+	if err := util.ChttpGet(ctx, path, o, head, body); err != nil {
 		return nil, err
 	}
 	if o.Head {
-		_ = res.Body.Close()
-		r, w := io.Pipe()
-		go func() {
-			err := res.Header.Write(w)
-			w.CloseWithError(err)
-		}()
-		return r, nil
+		return ioutil.NopCloser(head), nil
 	}
-	return res.Body, nil
-}
-
-func validateTarget(t *kouch.Target) error {
-	if t.Filename != "" {
-		panic("non-nil filename")
-	}
-	if t.Document == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No document ID provided")
-	}
-	if t.Database == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No database name provided")
-	}
-	if t.Root == "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize, "No root URL provided")
-	}
-	return nil
+	return ioutil.NopCloser(body), nil
 }

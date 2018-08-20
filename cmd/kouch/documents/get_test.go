@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -174,45 +175,6 @@ func TestGetDocumentOpts(t *testing.T) {
 		})
 	}
 }
-
-func TestValidateTarget(t *testing.T) {
-	tests := []struct {
-		name   string
-		target *kouch.Target
-		err    string
-		status int
-	}{
-		{
-			name:   "no doc id",
-			target: &kouch.Target{},
-			err:    "No document ID provided",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name:   "no database provided",
-			target: &kouch.Target{Document: "123"},
-			err:    "No database name provided",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name:   "no root url",
-			target: &kouch.Target{Database: "foo", Document: "123"},
-			err:    "No root URL provided",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name:   "valid",
-			target: &kouch.Target{Root: "xxx", Database: "foo", Document: "123"},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := validateTarget(test.target)
-			testy.ExitStatusError(t, test.err, test.status, err)
-		})
-	}
-}
-
 func TestGetDocument(t *testing.T) {
 	type gdTest struct {
 		name     string
@@ -344,7 +306,7 @@ func TestGetDocument(t *testing.T) {
 						test.opts.Root = s.URL
 					}
 				}
-				result, err := getDocument(test.opts)
+				result, err := getDocument(context.Background(), test.opts)
 				testy.ExitStatusError(t, test.err, test.status, err)
 				defer result.Close()
 				content, err := ioutil.ReadAll(result)

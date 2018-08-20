@@ -1,6 +1,7 @@
 package attachments
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -200,7 +201,7 @@ func TestGetAttachment(t *testing.T) {
 						test.opts.Root = s.URL
 					}
 				}
-				result, err := getAttachment(test.opts)
+				result, err := getAttachment(context.Background(), test.opts)
 				testy.ExitStatusError(t, test.err, test.status, err)
 				defer result.Close()
 				content, err := ioutil.ReadAll(result)
