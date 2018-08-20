@@ -1,6 +1,7 @@
 package io
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -67,25 +68,27 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.String(kouch.FlagDataYAML, "", "HTTP request body data, in YAML format.")
 }
 
-// SelectOutput returns an io.Writer for the output.
-func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
+// SetOutput returns a new context with the output parameters configured.
+func SetOutput(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
 	output, err := cmd.Flags().GetString(kouch.FlagOutputFile)
 	if err != nil {
 		return nil, err
 	}
 	if output == "" || output == "-" {
 		// Default to stdout
-		return os.Stdout, nil
+		return ctx, nil
 	}
 	clobber, err := cmd.Flags().GetBool(flagClobber)
 	if err != nil {
 		return nil, err
 	}
 
-	return &delayedOpenWriter{
+	ctx = kouch.SetOutput(ctx, &delayedOpenWriter{
 		filename: output,
 		clobber:  clobber,
-	}, nil
+	})
+
+	return ctx, nil
 }
 
 // SelectOutputProcessor selects and configures the desired output processor

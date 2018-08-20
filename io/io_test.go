@@ -1,6 +1,7 @@
 package io
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -79,7 +80,7 @@ func TestSelectOutputProcessor(t *testing.T) {
 	}
 }
 
-func TestSelectOutput(t *testing.T) {
+func TestSetOutput(t *testing.T) {
 	type soTest struct {
 		name         string
 		args         []string
@@ -133,10 +134,13 @@ func TestSelectOutput(t *testing.T) {
 			cmd := &cobra.Command{}
 			AddFlags(cmd.PersistentFlags())
 			cmd.ParseFlags(test.args)
-			f, err := SelectOutput(cmd)
+			ctx := context.Background()
+			var err error
+			ctx, err = SetOutput(ctx, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
+			f := kouch.Output(ctx)
 			switch file := f.(type) {
 			case *os.File:
 				if test.expectedFd != 0 {
