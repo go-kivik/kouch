@@ -22,6 +22,7 @@ const (
 	FlagFullCommit   = "full-commit"
 	FlagIfNoneMatch  = "if-none-match"
 	FlagRev          = "rev"
+	FlagAutoRev      = "auto-rev"
 
 	// Curl-equivalent short flags
 	FlagShortVerbose    = "v"
@@ -31,7 +32,8 @@ const (
 	FlagShortDumpHeader = "D"
 
 	// Short versions, custom
-	FlagShortServerRoot   = "R"
+	FlagShortServerRoot   = "S"
 	FlagShortOutputFormat = "F"
 	FlagShortRev          = "r"
+	FlagShortAutoRev      = "R"
 )
