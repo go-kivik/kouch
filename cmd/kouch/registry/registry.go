@@ -23,6 +23,28 @@ func newSubCommand() *subCommand {
 	}
 }
 
+var root *cobra.Command
+
+// RegisterRoot registers the root command.
+func RegisterRoot(cmd *cobra.Command) {
+	if root != nil {
+		panic("Root command already registered")
+	}
+	root = cmd
+}
+
+var configured bool
+
+// Root initializes and returns the root command.
+func Root() *cobra.Command {
+	if !configured {
+		AddSubcommands(root)
+		configured = true
+	}
+
+	return root
+}
+
 // Register registers a sub-command.
 func Register(parent []string, cmd *cobra.Command) {
 	initMU.Lock()
