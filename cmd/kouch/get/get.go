@@ -7,8 +7,12 @@ import (
 )
 
 func init() {
-	registry.Register(nil, &cobra.Command{
+	registry.Register(nil, getCmd)
+}
+
+func getCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "get",
 		Short: "Display one or more resources.",
-	})
+	}
 }
