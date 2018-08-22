@@ -1,10 +1,10 @@
 package main
 
 import (
-
-	// The root command
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+
+	// The root command
 	_ "github.com/go-kivik/kouch/cmd/kouch/root"
 
 	// Top-level sub-commands
