@@ -12,16 +12,6 @@ import (
 	"github.com/go-kivik/kouch/config"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/io"
-
-	// Top-level sub-commands
-	_ "github.com/go-kivik/kouch/cmd/kouch/get"
-	_ "github.com/go-kivik/kouch/cmd/kouch/put"
-
-	// The individual sub-commands
-	_ "github.com/go-kivik/kouch/cmd/kouch/attachments"
-	_ "github.com/go-kivik/kouch/cmd/kouch/config"
-	_ "github.com/go-kivik/kouch/cmd/kouch/documents"
-	_ "github.com/go-kivik/kouch/cmd/kouch/uuids"
 )
 
 const version = "0.0.1"
@@ -31,12 +21,8 @@ const (
 	flagVerbose = "verbose"
 )
 
-// Run is the entry point, which executes the root command.
-func Run() {
-	cmd := rootCmd(version)
-	if err := cmd.Execute(); err != nil {
-		kouch.Exit(err)
-	}
+func init() {
+	registry.RegisterRoot(rootCmd(version))
 }
 
 // Run initializes the root command, adds subordinate commands, then executes.
@@ -54,8 +40,6 @@ func rootCmd(version string) *cobra.Command {
 
 	io.AddFlags(cmd.PersistentFlags())
 	config.AddFlags(cmd.PersistentFlags())
-
-	registry.AddSubcommands(cmd)
 	return cmd
 }
 
