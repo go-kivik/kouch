@@ -13,11 +13,15 @@ const (
 )
 
 func init() {
-	registry.Register([]string{"config"}, &cobra.Command{
+	registry.Register([]string{"config"}, configCmd)
+}
+
+func configCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "view",
 		Short: "Display merged kouchconfig settings or a specified kouchconfig file",
 		RunE:  viewConfig(),
-	})
+	}
 }
 
 func viewConfig() func(*cobra.Command, []string) error {

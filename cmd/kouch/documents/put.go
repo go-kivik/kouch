@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"put"}, putDocCmd())
+	registry.Register([]string{"put"}, putDocCmd)
 }
 
 func putDocCmd() *cobra.Command {

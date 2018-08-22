@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"get"}, getAttCmd())
+	registry.Register([]string{"get"}, getAttCmd)
 }
 
 func getAttCmd() *cobra.Command {

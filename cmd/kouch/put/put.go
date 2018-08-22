@@ -7,8 +7,12 @@ import (
 )
 
 func init() {
-	registry.Register(nil, &cobra.Command{
+	registry.Register(nil, putCmd)
+}
+
+func putCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "put",
 		Short: "Create or update an existing resource.",
-	})
+	}
 }

@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"get"}, getDocCmd())
+	registry.Register([]string{"get"}, getDocCmd)
 }
 
 func getDocCmd() *cobra.Command {

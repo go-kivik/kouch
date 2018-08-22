@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"get"}, uuidsCmd())
+	registry.Register([]string{"get"}, uuidsCmd)
 }
 
 func uuidsCmd() *cobra.Command {
