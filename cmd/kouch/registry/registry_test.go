@@ -20,8 +20,8 @@ func lockRegistry() func() {
 
 func TestAddSubcommandsPanic(t *testing.T) {
 	defer lockRegistry()()
-	Register(nil, &cobra.Command{Use: "foo"})
-	Register([]string{"foo", "bar", "baz"}, &cobra.Command{Use: "bar"})
+	Register(nil, func() *cobra.Command { return &cobra.Command{Use: "foo"} })
+	Register([]string{"foo", "bar", "baz"}, func() *cobra.Command { return &cobra.Command{Use: "bar"} })
 	recovered := func() (r interface{}) {
 		defer func() { r = recover() }()
 		AddSubcommands(&cobra.Command{})
@@ -34,39 +34,40 @@ func TestAddSubcommandsPanic(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
+	nilFn := func() *cobra.Command { return nil }
 	type regTest struct {
 		name     string
 		init     func()
 		parent   []string
-		cmd      *cobra.Command
+		fn       InitFunc
 		expected interface{}
 	}
 	tests := []regTest{
 		{
 			name: "simple",
-			cmd:  nil,
+			fn:   nilFn,
 			expected: &subCommand{
 				children: map[string]*subCommand{},
-				cmds:     []*cobra.Command{nil},
+				inits:    []InitFunc{nilFn},
 			},
 		},
 		{
 			name:   "subcommand with no parent",
 			parent: []string{"foo", "bar"},
-			cmd:    nil,
+			fn:     nilFn,
 			expected: &subCommand{
 				children: map[string]*subCommand{
 					"foo": &subCommand{
 						children: map[string]*subCommand{
 							"bar": &subCommand{
 								children: map[string]*subCommand{},
-								cmds:     []*cobra.Command{nil},
+								inits:    []InitFunc{nilFn},
 							},
 						},
-						cmds: []*cobra.Command{},
+						inits: []InitFunc{},
 					},
 				},
-				cmds: []*cobra.Command{},
+				inits: []InitFunc{},
 			},
 		},
 	}
@@ -76,7 +77,7 @@ func TestRegister(t *testing.T) {
 			if test.init != nil {
 				test.init()
 			}
-			Register(test.parent, test.cmd)
+			Register(test.parent, test.fn)
 			if d := diff.Interface(test.expected, rootCommand); d != nil {
 				t.Error(d)
 			}
