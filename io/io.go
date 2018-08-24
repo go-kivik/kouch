@@ -61,7 +61,7 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
 	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
 	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
-	flags.String(flagStderr, "", `Where to redirect stderr (use "-" for stdout)`)
+	flags.String(flagStderr, "", `Where to redirect stderr (- = stdout, % = stderr)`)
 
 	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP request body data. Prefix with '@' to specify a filename.")
 	flags.String(kouch.FlagDataJSON, "", "HTTP request body data, in JSON format.")
@@ -89,6 +89,9 @@ func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
 	}
 	if output == "" || output == "-" {
 		return os.Stdout, nil
+	}
+	if output == "%" {
+		return os.Stderr, nil
 	}
 	clobber, err := flags.GetBool(flagClobber)
 	if err != nil {
