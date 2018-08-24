@@ -22,7 +22,9 @@ const (
 )
 
 func init() {
-	registry.RegisterRoot(rootCmd(version))
+	registry.RegisterRoot(func() *cobra.Command {
+		return rootCmd(version)
+	})
 }
 
 // Run initializes the root command, adds subordinate commands, then executes.

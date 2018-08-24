@@ -26,26 +26,21 @@ func newSubCommand() *subCommand {
 	}
 }
 
-var root *cobra.Command
+var root InitFunc
 
 // RegisterRoot registers the root command.
-func RegisterRoot(cmd *cobra.Command) {
+func RegisterRoot(fn InitFunc) {
 	if root != nil {
 		panic("Root command already registered")
 	}
-	root = cmd
+	root = fn
 }
-
-var configured bool
 
 // Root initializes and returns the root command.
 func Root() *cobra.Command {
-	if !configured {
-		AddSubcommands(root)
-		configured = true
-	}
-
-	return root
+	cmd := root()
+	AddSubcommands(cmd)
+	return cmd
 }
 
 // Register registers a sub-command.
