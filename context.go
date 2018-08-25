@@ -3,7 +3,6 @@ package kouch
 import (
 	"context"
 	"io"
-	"os"
 	"sync"
 
 	"github.com/spf13/cobra"
@@ -47,11 +46,9 @@ func SetHeadDumper(ctx context.Context, d io.Writer) context.Context {
 }
 
 // Output returns the context's current output, or panics if none is set.
-func Output(ctx context.Context) io.WriteCloser {
-	if output, ok := ctx.Value(outputContextKey).(io.WriteCloser); ok {
-		return output
-	}
-	return os.Stdout
+func Output(ctx context.Context) io.Writer {
+	output, _ := ctx.Value(outputContextKey).(io.Writer)
+	return output
 }
 
 // SetOutput returns a new context with the output set to w.

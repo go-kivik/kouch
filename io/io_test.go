@@ -201,7 +201,9 @@ func TestOpen(t *testing.T) {
 func TestSetOutput(t *testing.T) {
 	type soTest struct {
 		name       string
+		addFlags   func(*pflag.FlagSet)
 		args       []string
+		outputNil  bool
 		outputFd   uintptr
 		outputName string
 		headNil    bool
@@ -228,9 +230,29 @@ func TestSetOutput(t *testing.T) {
 		headFd:     1,
 		headName:   "/dev/stdout",
 	})
+	tests.Add("--head", soTest{
+		args: []string{"--" + kouch.FlagHead},
+		addFlags: func(f *pflag.FlagSet) {
+			f.Bool(kouch.FlagHead, false, "x")
+		},
+		outputNil: true,
+		headFd:    1,
+	})
+	tests.Add("--head and --dump-header", soTest{
+		args: []string{"--" + kouch.FlagHead, "--" + kouch.FlagDumpHeader, "%"},
+		addFlags: func(f *pflag.FlagSet) {
+			f.Bool(kouch.FlagHead, false, "x")
+		},
+		outputNil: true,
+		headFd:    2,
+	})
+
 	tests.Run(t, func(t *testing.T, test soTest) {
 		cmd := &cobra.Command{}
 		AddFlags(cmd.PersistentFlags())
+		if fn := test.addFlags; fn != nil {
+			fn(cmd.PersistentFlags())
+		}
 		cmd.ParseFlags(test.args)
 		ctx := context.Background()
 		var err error
@@ -238,25 +260,22 @@ func TestSetOutput(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		f := kouch.Output(ctx)
-		testFile(t, f, test.outputFd, test.outputName)
-
-		_, err = f.Write([]byte("foo"))
-		testy.ErrorRE(t, test.err, err)
-
-		head := kouch.HeadDumper(ctx)
-
-		if test.headNil {
-			if head != nil {
-				t.Error("Expected nil header output, but got non-nil")
-			}
-			return
-		}
-		testFile(t, head, test.headFd, test.headName)
+		t.Run("output", func(t *testing.T) {
+			testFd(t, kouch.Output(ctx), test.outputNil, test.outputFd)
+		})
+		t.Run("header", func(t *testing.T) {
+			testFd(t, kouch.HeadDumper(ctx), test.headNil, test.headFd)
+		})
 	})
 }
 
-func testFd(t *testing.T, f io.Writer, expectedFd uintptr) {
+func testFd(t *testing.T, f io.Writer, expectedNil bool, expectedFd uintptr) {
+	if expectedNil {
+		if f != nil {
+			t.Error("Expected nil, got non-nil")
+		}
+		return
+	}
 	switch file := f.(type) {
 	case *os.File:
 		if expectedFd != 0 {

@@ -69,6 +69,7 @@ func AddFlags(flags *pflag.FlagSet) {
 
 // SetOutput returns a new context with the output parameters configured.
 func SetOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, error) {
+	ctx = kouch.SetOutput(ctx, os.Stdout)
 	ctx, err := setOutput(ctx, flags)
 	if err != nil {
 		return nil, err
@@ -88,9 +89,21 @@ func setOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, erro
 	if err != nil {
 		return nil, err
 	}
-	if output != nil && output != os.Stdout {
+	if output != nil {
 		ctx = kouch.SetOutput(ctx, output)
 	}
+
+	if f := flags.Lookup(kouch.FlagHead); f != nil {
+		head, e := flags.GetBool(kouch.FlagHead)
+		if e != nil {
+			return nil, e
+		}
+		if head {
+			ctx = kouch.SetOutput(ctx, nil)
+			ctx = kouch.SetHeadDumper(ctx, os.Stdout)
+		}
+	}
+
 	headDump, err := open(flags, kouch.FlagDumpHeader)
 	if err != nil {
 		return nil, err
@@ -98,7 +111,6 @@ func setOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, erro
 	if headDump != nil {
 		ctx = kouch.SetHeadDumper(ctx, headDump)
 	}
-	ctx = kouch.SetOutput(ctx, output)
 
 	return ctx, nil
 }
