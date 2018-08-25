@@ -1,7 +1,6 @@
 package documents
 
 import (
-	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -12,6 +11,11 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/go-kivik/kouch/cmd/kouch/registry"
+
+	_ "github.com/go-kivik/kouch/cmd/kouch/get"
+	_ "github.com/go-kivik/kouch/cmd/kouch/put"
+	_ "github.com/go-kivik/kouch/cmd/kouch/root"
 )
 
 func TestGetDocumentOpts(t *testing.T) {
@@ -175,148 +179,130 @@ func TestGetDocumentOpts(t *testing.T) {
 		})
 	}
 }
-func TestGetDocument(t *testing.T) {
-	type gdTest struct {
-		name     string
-		opts     *kouch.Options
-		resp     *http.Response
-		val      testy.RequestValidator
-		expected string
-		err      string
-		status   int
+
+func TestGetDocumentCmd(t *testing.T) {
+	type gdcTest struct {
+		conf   *kouch.Config
+		args   []string
+		stdout string
+		stderr string
+		err    string
+		status int
 	}
-	tests := []gdTest{
-		{
-			name:   "validation fails",
-			opts:   &kouch.Options{Target: &kouch.Target{}},
-			err:    "No document ID provided",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name: "success",
-			opts: &kouch.Options{Target: &kouch.Target{Database: "foo", Document: "123"}},
-			val: func(t *testing.T, r *http.Request) {
-				if r.URL.Path != "/foo/123" {
-					t.Errorf("Unexpected path: %s", r.URL.Path)
-				}
+	tests := testy.NewTable()
+	tests.Add("validation fails", gdcTest{
+		args:   []string{},
+		err:    "No document ID provided",
+		status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("success", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
+		}, func(t *testing.T, req *http.Request) {
+			if req.URL.Path != "/foo/bar" {
+				t.Errorf("Unexpected req path: %s", req.URL.Path)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return gdcTest{
+			args:   []string{s.URL + "/foo/bar"},
+			stdout: `{"foo":123}`,
+		}
+	})
+	tests.Add("slashes", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
+		}, func(t *testing.T, r *http.Request) {
+			if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
+				t.Errorf("Unexpected req path: %s", r.URL.Path)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return gdcTest{
+			args: []string{
+				"--" + kouch.FlagServerRoot, s.URL,
+				"--" + kouch.FlagDatabase, "foo/ba r",
+				"--" + kouch.FlagDocument, "123/b",
 			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
+			stdout: `{"foo":123}`,
+		}
+	})
+	tests.Add("if-none-match", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
+		}, func(t *testing.T, req *http.Request) {
+			if req.URL.Path != "/foo/bar" {
+				t.Errorf("Unexpected req path: %s", req.URL.Path)
+			}
+			if inm := req.Header.Get("If-None-Match"); inm != "\"oink\"" {
+				t.Errorf("Unexpected If-None-Match header: %s", inm)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return gdcTest{
+			args:   []string{"--" + kouch.FlagIfNoneMatch, "oink", s.URL + "/foo/bar"},
+			stdout: `{"foo":123}`,
+		}
+	})
+	tests.Add("rev", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
+		}, func(t *testing.T, req *http.Request) {
+			if req.URL.Path != "/foo/bar" {
+				t.Errorf("Unexpected req path: %s", req.URL.Path)
+			}
+			if rev := req.URL.Query().Get("rev"); rev != "oink" {
+				t.Errorf("Unexpected rev: %s", rev)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return gdcTest{
+			args:   []string{"--" + kouch.FlagRev, "oink", s.URL + "/foo/bar"},
+			stdout: `{"foo":123}`,
+		}
+	})
+	tests.Add("head", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Header: http.Header{
+				"Content-Type": []string{"application/json"},
+				"Date":         []string{"Mon, 20 Aug 2018 08:55:52 GMT"},
 			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "slashes",
-			opts: &kouch.Options{Target: &kouch.Target{Database: "foo/ba r", Document: "123/b"}},
-			val: func(t *testing.T, r *http.Request) {
-				if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
-					t.Errorf("Unexpected path: %s", r.URL.RawPath)
-				}
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "if-none-match",
-			opts: &kouch.Options{
-				Target:  &kouch.Target{Database: "foo", Document: "123"},
-				Options: &chttp.Options{IfNoneMatch: "xyz"},
-			},
-			val: func(t *testing.T, r *http.Request) {
-				if r.URL.Path != "/foo/123" {
-					t.Errorf("Unexpected path: %s", r.URL.Path)
-				}
-				if inm := r.Header.Get("If-None-Match"); inm != "\"xyz\"" {
-					t.Errorf("Unexpected If-None-Match header: %s", inm)
-				}
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "include query params",
-			opts: &kouch.Options{
-				Target: &kouch.Target{Database: "foo", Document: "123"},
-				Options: &chttp.Options{
-					Query: url.Values{"foobar": []string{"baz"}},
-				},
-			},
-			val: func(t *testing.T, r *http.Request) {
-				if r.URL.Path != "/foo/123" {
-					t.Errorf("Unexpected path: %s", r.URL.Path)
-				}
-				if val := r.URL.Query().Get("foobar"); val != "baz" {
-					t.Errorf("Unexpected query value: %s", val)
-				}
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Test\ncontent\n",
-		},
-		{
-			name: "head",
-			opts: &kouch.Options{
-				Target:  &kouch.Target{Database: "foo", Document: "123"},
-				Options: &chttp.Options{},
-				Head:    true,
-			},
-			val: func(t *testing.T, r *http.Request) {
-				if r.Method != "HEAD" {
-					t.Errorf("Unexpected method: %s", r.Method)
-				}
-				if r.URL.Path != "/foo/123" {
-					t.Errorf("Unexpected path: %s", r.URL.Path)
-				}
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Header: http.Header{
-					"Date": []string{"Mon, 20 Aug 2018 08:28:57 GMT"},
-					"ETag": []string{`"2-dcae93de55ac4c27b071654853bca12f"`},
-				},
-				Body: ioutil.NopCloser(strings.NewReader("Test\ncontent\n")),
-			},
-			expected: "Content-Length: 13\r\n" +
-				"Content-Type: text/plain; charset=utf-8\r\n" +
-				"Date: Mon, 20 Aug 2018 08:28:57 GMT\r\n" +
-				"Etag: \"2-dcae93de55ac4c27b071654853bca12f\"\r\n",
-		},
-	}
-	for _, test := range tests {
-		func(test gdTest) {
-			t.Run(test.name, func(t *testing.T) {
-				t.Parallel()
-				if test.resp != nil {
-					if test.val != nil {
-						s := testy.ServeResponseValidator(t, test.resp, test.val)
-						defer s.Close()
-						test.opts.Root = s.URL
-					} else {
-						s := testy.ServeResponse(test.resp)
-						defer s.Close()
-						test.opts.Root = s.URL
-					}
-				}
-				result, err := getDocument(context.Background(), test.opts)
-				testy.ExitStatusError(t, test.err, test.status, err)
-				defer result.Close()
-				content, err := ioutil.ReadAll(result)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if d := diff.Text(test.expected, string(content)); d != nil {
-					t.Error(d)
-				}
-			})
-		}(test)
-	}
+			Body: ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
+		}, func(t *testing.T, req *http.Request) {
+			if req.Method != http.MethodHead {
+				t.Errorf("Unexpected method: %s", req.Method)
+			}
+			if req.URL.Path != "/foo/bar/baz.txt" {
+				t.Errorf("Unexpected req path: %s", req.URL.Path)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return gdcTest{
+			args: []string{"--" + kouch.FlagHead, s.URL + "/foo/bar/baz.txt"},
+			stdout: "Content-Length: 11\r\n" +
+				"Content-Type: application/json\r\n" +
+				"Date: Mon, 20 Aug 2018 08:55:52 GMT\r\n",
+		}
+	})
+
+	tests.Run(t, func(t *testing.T, test gdcTest) {
+		var err error
+		stdout, stderr := testy.RedirIO(nil, func() {
+			root := registry.Root()
+			root.SetArgs(append([]string{"get", "doc"}, test.args...))
+			err = root.Execute()
+		})
+		if d := diff.Text(test.stdout, stdout); d != nil {
+			t.Errorf("STDOUT:\n%s", d)
+		}
+		if d := diff.Text(test.stderr, stderr); d != nil {
+			t.Errorf("STDERR:\n%s", d)
+		}
+		testy.ExitStatusError(t, test.err, test.status, err)
+	})
 }
