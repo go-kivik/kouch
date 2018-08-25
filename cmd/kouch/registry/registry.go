@@ -8,9 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// InitFunc returns a new command.
+type InitFunc func() *cobra.Command
+
 type subCommand struct {
 	children map[string]*subCommand
-	cmds     []*cobra.Command
+	inits    []InitFunc
 }
 
 var initMU sync.Mutex
@@ -19,34 +22,29 @@ var rootCommand = newSubCommand()
 func newSubCommand() *subCommand {
 	return &subCommand{
 		children: make(map[string]*subCommand),
-		cmds:     []*cobra.Command{},
+		inits:    []InitFunc{},
 	}
 }
 
-var root *cobra.Command
+var root InitFunc
 
 // RegisterRoot registers the root command.
-func RegisterRoot(cmd *cobra.Command) {
+func RegisterRoot(fn InitFunc) {
 	if root != nil {
 		panic("Root command already registered")
 	}
-	root = cmd
+	root = fn
 }
-
-var configured bool
 
 // Root initializes and returns the root command.
 func Root() *cobra.Command {
-	if !configured {
-		AddSubcommands(root)
-		configured = true
-	}
-
-	return root
+	cmd := root()
+	AddSubcommands(cmd)
+	return cmd
 }
 
 // Register registers a sub-command.
-func Register(parent []string, cmd *cobra.Command) {
+func Register(parent []string, fn InitFunc) {
 	initMU.Lock()
 	defer initMU.Unlock()
 	rootCmd := rootCommand
@@ -56,7 +54,7 @@ func Register(parent []string, cmd *cobra.Command) {
 		}
 		rootCmd = rootCmd.children[p]
 	}
-	rootCmd.cmds = append(rootCmd.cmds, cmd)
+	rootCmd.inits = append(rootCmd.inits, fn)
 }
 
 // AddSubcommands initializes and adds all registered subcommands to cmd.
@@ -70,7 +68,8 @@ func AddSubcommands(cmd *cobra.Command) {
 
 func addSubcommands(cmd *cobra.Command, path []string, cmdMap *subCommand) error {
 	children := make(map[string]*cobra.Command)
-	for _, subCmd := range cmdMap.cmds {
+	for _, fn := range cmdMap.inits {
+		subCmd := fn()
 		var cmdName string
 		if u := subCmd.Use; u != "" {
 			cmdName = strings.Fields(subCmd.Use)[0]

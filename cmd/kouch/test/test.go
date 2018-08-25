@@ -1,9 +1,6 @@
-package main
+package test
 
 import (
-	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/registry"
-
 	// The root command
 	_ "github.com/go-kivik/kouch/cmd/kouch/root"
 
@@ -17,15 +14,3 @@ import (
 	_ "github.com/go-kivik/kouch/cmd/kouch/documents"
 	_ "github.com/go-kivik/kouch/cmd/kouch/uuids"
 )
-
-func main() {
-	Run()
-}
-
-// Run executes the root command.
-func Run() {
-	cmd := registry.Root()
-	if err := cmd.Execute(); err != nil {
-		kouch.Exit(err)
-	}
-}

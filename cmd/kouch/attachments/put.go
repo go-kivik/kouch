@@ -24,7 +24,7 @@ const (
 const defaultContentType = "application/octet-stream"
 
 func init() {
-	registry.Register([]string{"put"}, putAttCmd())
+	registry.Register([]string{"put"}, putAttCmd)
 }
 
 func putAttCmd() *cobra.Command {
