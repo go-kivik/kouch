@@ -167,7 +167,7 @@ func TestGetDocumentOpts(t *testing.T) {
 				ctx = kouch.SetTarget(ctx, flags[0])
 			}
 			kouch.SetContext(ctx, cmd)
-			opts, err := getDocumentOpts(cmd, cmd.Flags().Args())
+			opts, err := getDocumentOpts(cmd)
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)

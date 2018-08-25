@@ -52,7 +52,7 @@ func getDocCmd() *cobra.Command {
 
 func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	o, err := getDocumentOpts(cmd, args)
+	o, err := getDocumentOpts(cmd)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
 }
 
-func getDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
+func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
 	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
