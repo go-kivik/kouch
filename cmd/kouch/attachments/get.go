@@ -35,9 +35,9 @@ func getAttCmd() *cobra.Command {
 	return cmd
 }
 
-func getAttachmentCmd(cmd *cobra.Command, args []string) error {
+func getAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := getAttachmentOpts(cmd, args)
+	opts, err := getAttachmentOpts(cmd)
 	if err != nil {
 		return err
 	}
@@ -50,8 +50,8 @@ func getAttachmentCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func getAttachmentOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
-	o, err := commonOpts(cmd, args)
+func getAttachmentOpts(cmd *cobra.Command) (*kouch.Options, error) {
+	o, err := commonOpts(cmd)
 	if err != nil {
 		return nil, err
 	}

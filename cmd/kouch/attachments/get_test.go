@@ -63,7 +63,7 @@ func TestGetAttachmentOpts(t *testing.T) {
 				ctx = kouch.SetTarget(ctx, flags[0])
 			}
 			kouch.SetContext(kouch.SetConf(ctx, test.conf), cmd)
-			opts, err := getAttachmentOpts(cmd, cmd.Flags().Args())
+			opts, err := getAttachmentOpts(cmd)
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)

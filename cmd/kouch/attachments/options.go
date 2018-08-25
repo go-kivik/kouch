@@ -34,7 +34,7 @@ func validateTarget(t *kouch.Target) error {
 	return nil
 }
 
-func commonOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
+func commonOpts(cmd *cobra.Command) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
 	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
