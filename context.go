@@ -3,6 +3,7 @@ package kouch
 import (
 	"context"
 	"io"
+	"os"
 	"sync"
 
 	"github.com/spf13/cobra"
@@ -33,8 +34,8 @@ func SetConf(ctx context.Context, conf *Config) context.Context {
 	return context.WithValue(ctx, configContextKey, conf)
 }
 
-// Outputer returns the context's current output processor, or panics if none
-// is set.
+// Outputer returns the context's current output processor, or os.Stdout if
+// none.
 func Outputer(ctx context.Context) OutputProcessor {
 	return ctx.Value(outputProcessorContextKey).(OutputProcessor)
 }
@@ -46,7 +47,10 @@ func SetOutputer(ctx context.Context, op OutputProcessor) context.Context {
 
 // Output returns the context's current output, or panics if none is set.
 func Output(ctx context.Context) io.Writer {
-	return ctx.Value(outputContextKey).(io.Writer)
+	if output, ok := ctx.Value(outputContextKey).(io.Writer); ok {
+		return output
+	}
+	return os.Stdout
 }
 
 // SetOutput returns a new context with the output set to w.

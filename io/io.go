@@ -1,6 +1,7 @@
 package io
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,9 +20,7 @@ import (
 )
 
 const (
-	// flagClobber indicates whether output files should be overwritten
-	flagClobber = "force"
-	flagStderr  = "stderr"
+	flagStderr = "stderr"
 )
 
 type defaultMode bool
@@ -59,29 +58,45 @@ func AddFlags(flags *pflag.FlagSet) {
 	sort.Strings(formats)
 	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
 	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
-	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
-	flags.String(flagStderr, "", `Where to redirect stderr (use "-" for stdout)`)
+	flags.BoolP(kouch.FlagClobber, "", false, "Overwrite destination files")
+	flags.String(flagStderr, "", `Where to redirect stderr (- = stdout, % = stderr)`)
 
 	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP request body data. Prefix with '@' to specify a filename.")
 	flags.String(kouch.FlagDataJSON, "", "HTTP request body data, in JSON format.")
 	flags.String(kouch.FlagDataYAML, "", "HTTP request body data, in YAML format.")
 }
 
-// SelectOutput returns an io.Writer for the output.
-func SelectOutput(cmd *cobra.Command) (io.Writer, error) {
-	output, err := cmd.Flags().GetString(kouch.FlagOutputFile)
+// SetOutput returns a new context with the output parameters configured.
+func SetOutput(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
+	output, err := open(cmd.Flags(), kouch.FlagOutputFile)
 	if err != nil {
-		return nil, err
+		return ctx, nil
 	}
-	if output == "" || output == "-" {
-		// Default to stdout
-		return os.Stdout, nil
+	if output == os.Stdout {
+		return ctx, nil
 	}
-	clobber, err := cmd.Flags().GetBool(flagClobber)
-	if err != nil {
-		return nil, err
-	}
+	ctx = kouch.SetOutput(ctx, output)
 
+	return ctx, nil
+}
+
+func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
+	output, err := flags.GetString(flagName)
+	if err != nil {
+		return nil, err
+	}
+	switch output {
+	case "":
+		return nil, nil
+	case "-":
+		return os.Stdout, nil
+	case "%":
+		return os.Stderr, nil
+	}
+	clobber, err := flags.GetBool(kouch.FlagClobber)
+	if err != nil {
+		return nil, err
+	}
 	return &delayedOpenWriter{
 		filename: output,
 		clobber:  clobber,
@@ -127,7 +142,7 @@ func RedirStderr(flags *pflag.FlagSet) error {
 		os.Stderr = os.Stdout
 		return nil
 	}
-	clobber, err := flags.GetBool(flagClobber)
+	clobber, err := flags.GetBool(kouch.FlagClobber)
 	if err != nil {
 		return err
 	}

@@ -58,11 +58,10 @@ func prerun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	output, err := io.SelectOutput(cmd)
+	ctx, err = io.SetOutput(ctx, cmd)
 	if err != nil {
 		return err
 	}
-	ctx = kouch.SetOutput(ctx, output)
 	outputer, err := io.SelectOutputProcessor(cmd)
 	if err != nil {
 		return err

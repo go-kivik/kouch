@@ -9,6 +9,7 @@ const (
 	FlagHead       = "head"
 
 	// Custom flags
+	FlagClobber      = "force"
 	FlagConfigFile   = "kouchconfig"
 	FlagServerRoot   = "root"
 	FlagDataJSON     = "data-json"

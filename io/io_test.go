@@ -1,6 +1,8 @@
 package io
 
 import (
+	"context"
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func TestAddFlags(t *testing.T) {
@@ -79,51 +82,140 @@ func TestSelectOutputProcessor(t *testing.T) {
 	}
 }
 
-func TestSelectOutput(t *testing.T) {
-	type soTest struct {
-		name         string
-		args         []string
+func TestOpen(t *testing.T) {
+	newFlags := func() *pflag.FlagSet {
+		f := pflag.NewFlagSet("foo", 1)
+		f.String(kouch.FlagOutputFile, "", "x")
+		f.Bool(kouch.FlagClobber, false, "x")
+		return f
+	}
+	type oTest struct {
+		flags        *pflag.FlagSet
+		flagName     string
+		expectedNil  bool
 		expectedFd   uintptr
 		expectedName string
 		err          string
-		cleanup      func()
+		writeErr     string
+	}
+	tests := testy.NewTable()
+	tests.Add("no flag defined", oTest{
+		flags:    newFlags(),
+		flagName: "foo",
+		err:      "flag accessed but not defined: foo",
+	})
+	tests.Add("default", oTest{
+		flags:       newFlags(),
+		flagName:    kouch.FlagOutputFile,
+		expectedNil: true,
+	})
+	tests.Add("stdout", oTest{
+		flags: func() *pflag.FlagSet {
+			f := newFlags()
+			f.Set(kouch.FlagOutputFile, "-")
+			return f
+		}(),
+		flagName:     kouch.FlagOutputFile,
+		expectedFd:   1,
+		expectedName: "/dev/stdout",
+	})
+	tests.Add("stderr", oTest{
+		flags: func() *pflag.FlagSet {
+			f := newFlags()
+			f.Set(kouch.FlagOutputFile, "%")
+			return f
+		}(),
+		flagName:     kouch.FlagOutputFile,
+		expectedFd:   2,
+		expectedName: "/dev/stderr",
+	})
+	tests.Add("overwrite error", func(t *testing.T) interface{} {
+		file, err := ioutil.TempFile("", "overwrite")
+		if err != nil {
+			t.Fatal(err)
+		}
+		tests.Cleanup(func() error {
+			return os.Remove(file.Name())
+		})
+		file.Close()
+
+		flags := newFlags()
+		flags.Set(kouch.FlagOutputFile, file.Name())
+		return oTest{
+			flags:        flags,
+			flagName:     kouch.FlagOutputFile,
+			expectedName: file.Name(),
+			writeErr:     "^open /tmp/overwrite\\d+: file exists$",
+		}
+	})
+	tests.Add("missing parent dir", oTest{
+		flags: func() *pflag.FlagSet {
+			f := newFlags()
+			f.Set(kouch.FlagOutputFile, "./foo/bar/baz")
+			return f
+		}(),
+		flagName:     kouch.FlagOutputFile,
+		expectedName: "./foo/bar/baz",
+		writeErr:     "open ./foo/bar/baz: no such file or directory",
+	})
+	tests.Add("clobber", func(t *testing.T) interface{} {
+		file, err := ioutil.TempFile("", "overwrite")
+		if err != nil {
+			t.Fatal(err)
+		}
+		file.Close()
+
+		flags := newFlags()
+		flags.Set(kouch.FlagOutputFile, file.Name())
+		flags.Set(kouch.FlagClobber, "true")
+
+		tests.Cleanup(func() error {
+			return os.Remove(file.Name())
+		})
+
+		return oTest{
+			flags:        flags,
+			flagName:     kouch.FlagOutputFile,
+			expectedName: file.Name(),
+		}
+	})
+
+	tests.Run(t, func(t *testing.T, test oTest) {
+		f, err := open(test.flags, test.flagName)
+		testy.Error(t, test.err, err)
+		if test.expectedNil {
+			if f != nil {
+				t.Errorf("Expected nil, got %T", f)
+			}
+			return
+		}
+
+		testFile(t, f, test.expectedFd, test.expectedName)
+
+		_, err = f.Write([]byte("foo"))
+		testy.ErrorRE(t, test.writeErr, err)
+	})
+}
+
+func TestSetOutput(t *testing.T) {
+	type soTest struct {
+		name       string
+		args       []string
+		outputFd   uintptr
+		outputName string
+		stderrFd   uintptr
+		stderrName string
+		headFd     uintptr
+		headName   string
+		err        string
+		cleanup    func()
 	}
 	tests := []soTest{
 		{
 			name:       "default, stdout",
-			expectedFd: 1,
+			outputFd:   1,
+			outputName: "/dev/stdout",
 		},
-		func() soTest {
-			f, err := ioutil.TempFile("", "overwrite")
-			if err != nil {
-				t.Fatal(err)
-			}
-			f.Close()
-			return soTest{
-				name:    "overwrite error",
-				args:    []string{"--" + kouch.FlagOutputFile, f.Name()},
-				err:     "^open /tmp/overwrite\\d+: file exists$",
-				cleanup: func() { _ = os.Remove(f.Name()) },
-			}
-		}(),
-		{
-			name: "Missing parent dir",
-			args: []string{"--" + kouch.FlagOutputFile, "./foo/bar/baz"},
-			err:  "open ./foo/bar/baz: no such file or directory",
-		},
-		func() soTest {
-			f, err := ioutil.TempFile("", "overwrite")
-			if err != nil {
-				t.Fatal(err)
-			}
-			f.Close()
-			return soTest{
-				name:         "clobber",
-				args:         []string{"--" + kouch.FlagOutputFile, f.Name(), "--force"},
-				expectedName: f.Name(),
-				cleanup:      func() { _ = os.Remove(f.Name()) },
-			}
-		}(),
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -133,31 +225,38 @@ func TestSelectOutput(t *testing.T) {
 			cmd := &cobra.Command{}
 			AddFlags(cmd.PersistentFlags())
 			cmd.ParseFlags(test.args)
-			f, err := SelectOutput(cmd)
+			ctx := context.Background()
+			var err error
+			ctx, err = SetOutput(ctx, cmd)
 			if err != nil {
 				t.Fatal(err)
 			}
-			switch file := f.(type) {
-			case *os.File:
-				if test.expectedFd != 0 {
-					if test.expectedFd != file.Fd() {
-						t.Errorf("Unexpected FD: Got %d, expected %d", file.Fd(), test.expectedFd)
-					}
-				}
-				if test.expectedName != "" && test.expectedName != file.Name() {
-					t.Errorf("Unexpected name: Got %q, expected %q", file.Name(), test.expectedName)
-				}
-			case *delayedOpenWriter:
-				if test.expectedName != "" && test.expectedName != file.filename {
-					t.Errorf("Unexpected name: Got %q, expected %q", file.filename, test.expectedName)
-				}
-			default:
-				t.Errorf("Unexpected return type: %T", f)
-			}
+			f := kouch.Output(ctx)
+			testFile(t, f, test.outputFd, test.outputName)
 
 			_, err = f.Write([]byte("foo"))
 			testy.ErrorRE(t, test.err, err)
 		})
+	}
+}
+
+func testFile(t *testing.T, f io.Writer, expectedFd uintptr, expectedName string) {
+	switch file := f.(type) {
+	case *os.File:
+		if expectedFd != 0 {
+			if expectedFd != file.Fd() {
+				t.Errorf("Unexpected FD: Got %d, expected %d", file.Fd(), expectedFd)
+			}
+		}
+		if expectedName != file.Name() {
+			t.Errorf("Unexpected name: Got %q, expected %q", file.Name(), expectedName)
+		}
+	case *delayedOpenWriter:
+		if expectedName != file.filename {
+			t.Errorf("Unexpected name: Got %q, expected %q", file.filename, expectedName)
+		}
+	default:
+		t.Errorf("Unexpected return type: %T", f)
 	}
 }
 
