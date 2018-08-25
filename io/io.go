@@ -85,10 +85,12 @@ func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	if output == "" || output == "-" {
+	switch output {
+	case "":
+		return nil, nil
+	case "-":
 		return os.Stdout, nil
-	}
-	if output == "%" {
+	case "%":
 		return os.Stderr, nil
 	}
 	clobber, err := flags.GetBool(kouch.FlagClobber)
