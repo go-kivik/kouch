@@ -20,9 +20,7 @@ import (
 )
 
 const (
-	// flagClobber indicates whether output files should be overwritten
-	flagClobber = "force"
-	flagStderr  = "stderr"
+	flagStderr = "stderr"
 )
 
 type defaultMode bool
@@ -60,7 +58,7 @@ func AddFlags(flags *pflag.FlagSet) {
 	sort.Strings(formats)
 	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
 	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
-	flags.BoolP(flagClobber, "", false, "Overwrite destination files")
+	flags.BoolP(kouch.FlagClobber, "", false, "Overwrite destination files")
 	flags.String(flagStderr, "", `Where to redirect stderr (- = stdout, % = stderr)`)
 
 	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP request body data. Prefix with '@' to specify a filename.")
@@ -93,7 +91,7 @@ func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
 	if output == "%" {
 		return os.Stderr, nil
 	}
-	clobber, err := flags.GetBool(flagClobber)
+	clobber, err := flags.GetBool(kouch.FlagClobber)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +140,7 @@ func RedirStderr(flags *pflag.FlagSet) error {
 		os.Stderr = os.Stdout
 		return nil
 	}
-	clobber, err := flags.GetBool(flagClobber)
+	clobber, err := flags.GetBool(kouch.FlagClobber)
 	if err != nil {
 		return err
 	}
