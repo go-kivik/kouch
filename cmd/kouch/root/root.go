@@ -58,7 +58,7 @@ func prerun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, err = io.SetOutput(ctx, cmd)
+	ctx, err = io.SetOutput(ctx, cmd.Flags())
 	if err != nil {
 		return err
 	}
