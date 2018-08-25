@@ -204,40 +204,68 @@ func TestSetOutput(t *testing.T) {
 		args       []string
 		outputFd   uintptr
 		outputName string
-		stderrFd   uintptr
-		stderrName string
+		headNil    bool
 		headFd     uintptr
 		headName   string
 		err        string
-		cleanup    func()
 	}
-	tests := []soTest{
-		{
-			name:       "default, stdout",
-			outputFd:   1,
-			outputName: "/dev/stdout",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if test.cleanup != nil {
-				defer test.cleanup()
-			}
-			cmd := &cobra.Command{}
-			AddFlags(cmd.PersistentFlags())
-			cmd.ParseFlags(test.args)
-			ctx := context.Background()
-			var err error
-			ctx, err = setOutput(ctx, cmd.Flags())
-			if err != nil {
-				t.Fatal(err)
-			}
-			f := kouch.Output(ctx)
-			testFile(t, f, test.outputFd, test.outputName)
+	tests := testy.NewTable()
+	tests.Add("defaults", soTest{
+		outputFd:   1,
+		outputName: "/dev/stdout",
+		headNil:    true,
+	})
+	tests.Add("stdout to stderr", soTest{
+		args:       []string{"--" + kouch.FlagOutputFile, "%"},
+		outputFd:   2,
+		outputName: "/dev/stderr",
+		headNil:    true,
+	})
+	tests.Add("head to stdout", soTest{
+		args:       []string{"--" + kouch.FlagDumpHeader, "-"},
+		outputFd:   1,
+		outputName: "/dev/stdout",
+		headFd:     1,
+		headName:   "/dev/stdout",
+	})
+	tests.Run(t, func(t *testing.T, test soTest) {
+		cmd := &cobra.Command{}
+		AddFlags(cmd.PersistentFlags())
+		cmd.ParseFlags(test.args)
+		ctx := context.Background()
+		var err error
+		ctx, err = setOutput(ctx, cmd.Flags())
+		if err != nil {
+			t.Fatal(err)
+		}
+		f := kouch.Output(ctx)
+		testFile(t, f, test.outputFd, test.outputName)
 
-			_, err = f.Write([]byte("foo"))
-			testy.ErrorRE(t, test.err, err)
-		})
+		_, err = f.Write([]byte("foo"))
+		testy.ErrorRE(t, test.err, err)
+
+		head := kouch.HeadDumper(ctx)
+
+		if test.headNil {
+			if head != nil {
+				t.Error("Expected nil header output, but got non-nil")
+			}
+			return
+		}
+		testFile(t, head, test.headFd, test.headName)
+	})
+}
+
+func testFd(t *testing.T, f io.Writer, expectedFd uintptr) {
+	switch file := f.(type) {
+	case *os.File:
+		if expectedFd != 0 {
+			if expectedFd != file.Fd() {
+				t.Errorf("Unexpected FD: Got %d, expected %d", file.Fd(), expectedFd)
+			}
+		}
+	default:
+		t.Errorf("Unexpected return type: %T", f)
 	}
 }
 
