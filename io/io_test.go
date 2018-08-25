@@ -227,7 +227,7 @@ func TestSetOutput(t *testing.T) {
 			cmd.ParseFlags(test.args)
 			ctx := context.Background()
 			var err error
-			ctx, err = SetOutput(ctx, cmd)
+			ctx, err = SetOutput(ctx, cmd.Flags())
 			if err != nil {
 				t.Fatal(err)
 			}
