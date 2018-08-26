@@ -130,15 +130,6 @@ func TestGetDocumentOpts(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "head",
-			args: []string{"--" + kouch.FlagHead, "docid"},
-			expected: &kouch.Options{
-				Target:  &kouch.Target{Document: "docid"},
-				Options: &chttp.Options{},
-				Head:    true,
-			},
-		},
 	}
 	for _, flag := range []string{
 		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
@@ -279,6 +270,21 @@ func TestGetDocumentCmd(t *testing.T) {
 			Stdout: "Content-Length: 11\r\n" +
 				"Content-Type: application/json\r\n" +
 				"Date: Mon, 20 Aug 2018 08:55:52 GMT\r\n",
+		}
+	})
+	tests.Add("yaml", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
+		}, func(t *testing.T, req *http.Request) {
+			if req.URL.Path != "/foo/bar" {
+				t.Errorf("Unexpected req path: %s", req.URL.Path)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return test.CmdTest{
+			Args:   []string{s.URL + "/foo/bar", "--" + kouch.FlagOutputFormat, "yaml"},
+			Stdout: `foo: 123`,
 		}
 	})
 

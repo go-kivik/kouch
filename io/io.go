@@ -149,8 +149,8 @@ func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, e
 	if !ok {
 		return nil, errors.Errorf("Unrecognized output format '%s'", name)
 	}
-	p, err := processor.new(flags, w)
-	return &exitStatusWriter{p}, err
+	return processor.new(flags, w)
+	// return &exitStatusWriter{p}, err
 }
 
 type outputMode interface {

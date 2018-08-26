@@ -35,19 +35,19 @@ func SetConf(ctx context.Context, conf *Config) context.Context {
 
 // HeadDumper returns an io.Writer to which headers should be written, or nil
 // if none.
-func HeadDumper(ctx context.Context) io.Writer {
-	d, _ := ctx.Value(headDumpberContextKey).(io.Writer)
+func HeadDumper(ctx context.Context) io.WriteCloser {
+	d, _ := ctx.Value(headDumpberContextKey).(io.WriteCloser)
 	return d
 }
 
 // SetHeadDumper returns a new context with the head-dumper set to d.
-func SetHeadDumper(ctx context.Context, d io.Writer) context.Context {
+func SetHeadDumper(ctx context.Context, d io.WriteCloser) context.Context {
 	return context.WithValue(ctx, headDumpberContextKey, d)
 }
 
 // Output returns the context's current output, or panics if none is set.
-func Output(ctx context.Context) io.Writer {
-	output, _ := ctx.Value(outputContextKey).(io.Writer)
+func Output(ctx context.Context) io.WriteCloser {
+	output, _ := ctx.Value(outputContextKey).(io.WriteCloser)
 	return output
 }
 

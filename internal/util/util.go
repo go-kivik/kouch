@@ -12,17 +12,16 @@ import (
 	"github.com/go-kivik/kouch"
 )
 
-// ChttpGet performs an HTTP GET (or HEAD if body is nil), writing the header to
-// head, and body to body. If either head or body is nil, that write is skipped.
-func ChttpGet(ctx context.Context, path string, o *kouch.Options, head, body io.Writer) error {
-	nilBody := reflect.ValueOf(body).IsNil()
+// ChttpDo performs an HTTP request (GET is downgraded to HEAD if
+// body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
+func ChttpDo(ctx context.Context, method, path string, o *kouch.Options, head, body io.Writer) error {
+	nilBody := body == nil || reflect.ValueOf(body).IsNil()
 	c, err := chttp.New(ctx, o.Root)
 	if err != nil {
 		return err
 	}
 
-	method := http.MethodGet
-	if nilBody {
+	if method == http.MethodGet && nilBody {
 		method = http.MethodHead
 	}
 
@@ -34,15 +33,18 @@ func ChttpGet(ctx context.Context, path string, o *kouch.Options, head, body io.
 		return err
 	}
 	defer res.Body.Close()
-	if !reflect.ValueOf(head).IsNil() {
+	if head != nil && !reflect.ValueOf(head).IsNil() {
 		if e := res.Header.Write(head); e != nil {
 			return e
 		}
+		if c, ok := head.(io.WriteCloser); ok {
+			if e := c.Close(); e != nil {
+				return e
+			}
+		}
 	}
 	if !nilBody {
-		if _, e := io.Copy(body, res.Body); e != nil {
-			return e
-		}
+		return CopyAll(body, res.Body)
 	}
 	return nil
 }

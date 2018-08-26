@@ -1,18 +1,16 @@
 package attachments
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
+	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
+	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -42,20 +40,13 @@ func getAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := getAttachment(ctx, opts)
-	if err != nil {
-		return err
-	}
-	return util.CopyAll(os.Stdout, resp)
+	return getAttachment(ctx, opts)
 }
 
 func getAttachmentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 	o, err := commonOpts(cmd)
 	if err != nil {
 		return nil, err
-	}
-	if e := o.SetHead(cmd.Flags()); e != nil {
-		return nil, e
 	}
 	o.Options.IfNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
 	if err != nil {
@@ -64,22 +55,11 @@ func getAttachmentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 	return o, nil
 }
 
-func getAttachment(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
+func getAttachment(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
-		return nil, err
+		return err
 	}
 	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	var head, body *bytes.Buffer
-	if o.Head {
-		head = &bytes.Buffer{}
-	} else {
-		body = &bytes.Buffer{}
-	}
-	if err := util.ChttpGet(ctx, path, o, head, body); err != nil {
-		return nil, err
-	}
-	if o.Head {
-		return ioutil.NopCloser(head), nil
-	}
-	return ioutil.NopCloser(body), nil
+	body := io.Underlying(kouch.Output(ctx))
+	return util.ChttpDo(ctx, http.MethodGet, path, o, kouch.HeadDumper(ctx), body)
 }
