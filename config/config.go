@@ -1,6 +1,7 @@
 package config
 
 import (
+	"io"
 	"os"
 	"path"
 	"syscall"
@@ -17,8 +18,11 @@ func readConfigFile(file string) (*kouch.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	var conf *kouch.Config
+	conf := new(kouch.Config)
 	if e := yaml.NewDecoder(r).Decode(&conf); e != nil {
+		if e == io.EOF {
+			return conf, nil
+		}
 		return nil, e
 	}
 	conf.File = file
