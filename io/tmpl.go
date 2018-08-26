@@ -3,6 +3,7 @@ package io
 import (
 	"html/template"
 	"io"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -30,6 +31,16 @@ func (m *tmplMode) config(flags *pflag.FlagSet) {
 }
 
 func (m *tmplMode) new(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
+	tmpl, err := newTmpl(cmd)
+	if err != nil {
+		return nil, err
+	}
+	return newProcessor(w, func(o io.Writer, i interface{}) error {
+		return tmpl.Execute(o, i)
+	}), nil
+}
+
+func newTmpl(cmd *cobra.Command) (*template.Template, error) {
 	templateString, err := cmd.Flags().GetString(optTemplate)
 	if err != nil {
 		return nil, err
@@ -45,54 +56,7 @@ func (m *tmplMode) new(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) 
 		return nil, errors.Errorf("Both --%s and --%s specified; must provide only one.", optTemplate, optTemplateFile)
 	}
 	if templateString != "" {
-		tmpl, e := template.New("").Parse(templateString)
-		return &tmplProcessor{template: tmpl, underlying: w}, e
+		return template.New("").Parse(templateString)
 	}
-	tmpl, err := template.New("").ParseFiles(templateFile)
-	return &tmplProcessor{template: tmpl, underlying: w}, err
-}
-
-type tmplProcessor struct {
-	template   *template.Template
-	underlying io.Writer
-	r          *io.PipeReader
-	w          *io.PipeWriter
-	done       <-chan struct{}
-	err        error
-}
-
-var _ io.WriteCloser = &tmplProcessor{}
-
-func (p *tmplProcessor) Write(in []byte) (int, error) {
-	if p.w == nil {
-		p.init()
-	}
-	n, e := p.w.Write(in)
-	return n, e
-}
-
-func (p *tmplProcessor) init() {
-	p.r, p.w = io.Pipe()
-	done := make(chan struct{})
-	p.done = done
-	go func() {
-		defer func() { close(done) }()
-		defer p.r.Close()
-		unmarshaled, err := unmarshal(p.r)
-		if err != nil {
-			p.err = err
-			return
-		}
-		p.err = p.template.Execute(p.underlying, unmarshaled)
-	}()
-}
-
-func (p *tmplProcessor) Close() error {
-	if p.w == nil {
-		return nil
-	}
-
-	<-p.done
-	_ = p.w.Close() // always returns nil for PipeWriter
-	return p.err
+	return template.New(filepath.Base(templateFile)).ParseFiles(templateFile)
 }
