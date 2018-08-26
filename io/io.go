@@ -113,8 +113,8 @@ func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
 
 // selectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
-func selectOutputProcessor(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
-	name, err := cmd.Flags().GetString(kouch.FlagOutputFormat)
+func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
+	name, err := flags.GetString(kouch.FlagOutputFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func selectOutputProcessor(cmd *cobra.Command, w io.Writer) (io.WriteCloser, err
 	if !ok {
 		return nil, errors.Errorf("Unrecognized output format '%s'", name)
 	}
-	p, err := processor.new(cmd, w)
+	p, err := processor.new(flags, w)
 	return &exitStatusWriter{p}, err
 }
 
@@ -132,9 +132,9 @@ type outputMode interface {
 	// isDefault returns true if this should be the default format. Exactly one
 	// output mode must return true.
 	isDefault() bool
-	// new takes cmd, after command line options have been parsed, and returns
+	// new takes flags, after command line options have been parsed, and returns
 	// a new output processor.
-	new(*cobra.Command, io.Writer) (io.WriteCloser, error)
+	new(*pflag.FlagSet, io.Writer) (io.WriteCloser, error)
 }
 
 // RedirStderr redirects stderr based on configuration.

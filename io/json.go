@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -30,16 +29,16 @@ func (m *jsonMode) config(flags *pflag.FlagSet) {
 	flags.Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
-func (m *jsonMode) new(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
-	prefix, err := cmd.Flags().GetString(optJSONPrefix)
+func (m *jsonMode) new(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
+	prefix, err := flags.GetString(optJSONPrefix)
 	if err != nil {
 		return nil, err
 	}
-	indent, err := cmd.Flags().GetString(optJSONIndent)
+	indent, err := flags.GetString(optJSONIndent)
 	if err != nil {
 		return nil, err
 	}
-	escapeHTML, err := cmd.Flags().GetBool(optJSONEscapeHTML)
+	escapeHTML, err := flags.GetBool(optJSONEscapeHTML)
 	if err != nil {
 		return nil, err
 	}

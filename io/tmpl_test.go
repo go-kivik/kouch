@@ -141,7 +141,7 @@ func TestTmplOutput(t *testing.T) {
 			testy.Error(t, test.flagsErr, err)
 
 			buf := &bytes.Buffer{}
-			p, err := mode.new(cmd, buf)
+			p, err := mode.new(cmd.Flags(), buf)
 			testy.Error(t, test.newErr, err)
 
 			defer p.Close()

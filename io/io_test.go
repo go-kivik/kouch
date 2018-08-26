@@ -74,7 +74,7 @@ func TestSelectOutputProcessor(t *testing.T) {
 			if err := cmd.ParseFlags(test.args); err != nil {
 				t.Fatal(err)
 			}
-			result, err := selectOutputProcessor(cmd, &bytes.Buffer{})
+			result, err := selectOutputProcessor(cmd.Flags(), &bytes.Buffer{})
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)

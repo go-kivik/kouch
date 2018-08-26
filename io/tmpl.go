@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -30,8 +29,8 @@ func (m *tmplMode) config(flags *pflag.FlagSet) {
 	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
-func (m *tmplMode) new(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
-	tmpl, err := newTmpl(cmd)
+func (m *tmplMode) new(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
+	tmpl, err := newTmpl(flags)
 	if err != nil {
 		return nil, err
 	}
@@ -40,12 +39,12 @@ func (m *tmplMode) new(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) 
 	}), nil
 }
 
-func newTmpl(cmd *cobra.Command) (*template.Template, error) {
-	templateString, err := cmd.Flags().GetString(optTemplate)
+func newTmpl(flags *pflag.FlagSet) (*template.Template, error) {
+	templateString, err := flags.GetString(optTemplate)
 	if err != nil {
 		return nil, err
 	}
-	templateFile, err := cmd.Flags().GetString(optTemplateFile)
+	templateFile, err := flags.GetString(optTemplateFile)
 	if err != nil {
 		return nil, err
 	}

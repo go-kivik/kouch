@@ -3,7 +3,6 @@ package io
 import (
 	"io"
 
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -19,7 +18,7 @@ var _ outputMode = &rawMode{}
 
 func (m *rawMode) config(_ *pflag.FlagSet) {}
 
-func (m *rawMode) new(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
+func (m *rawMode) new(_ *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
 	if t, ok := w.(io.WriteCloser); ok {
 		return t, nil
 	}
