@@ -111,9 +111,9 @@ func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
 	}, nil
 }
 
-// SelectOutputProcessor selects and configures the desired output processor
+// selectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
-func SelectOutputProcessor(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
+func selectOutputProcessor(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
 	name, err := cmd.Flags().GetString(kouch.FlagOutputFormat)
 	if err != nil {
 		return nil, err
