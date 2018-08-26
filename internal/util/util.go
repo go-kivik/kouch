@@ -16,7 +16,8 @@ import (
 
 // ChttpDo performs an HTTP request (GET is downgraded to HEAD if
 // body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
-func ChttpDo(ctx context.Context, method, path string, o *kouch.Options, head, body io.Writer) error {
+func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
+	head, body := kouch.HeadDumper(ctx), kouch.Output(ctx)
 	defer close(head)
 	defer close(body)
 	nilBody := body == nil || reflect.ValueOf(body).IsNil()

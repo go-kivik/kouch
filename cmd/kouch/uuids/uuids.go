@@ -1,7 +1,6 @@
 package uuids
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -59,13 +58,9 @@ func getUUIDsOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
 
 func getUUIDsCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := getUUIDsOpts(cmd, args)
+	o, err := getUUIDsOpts(cmd, args)
 	if err != nil {
 		return err
 	}
-	return getUUIDs(ctx, opts)
-}
-
-func getUUIDs(ctx context.Context, o *kouch.Options) error {
-	return util.ChttpDo(ctx, http.MethodGet, "/_uuids", o, kouch.HeadDumper(ctx), kouch.Output(ctx))
+	return util.ChttpDo(ctx, http.MethodGet, "/_uuids", o)
 }

@@ -2,16 +2,14 @@ package documents
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"net/url"
 
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func init() {
@@ -50,15 +48,14 @@ func getDocCmd() *cobra.Command {
 
 func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	o, err := getDocumentOpts(cmd)
+	o, err := getDocumentOpts(ctx, cmd.Flags())
 	if err != nil {
 		return err
 	}
 	return getDocument(ctx, o)
 }
 
-func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
-	ctx := kouch.GetContext(cmd)
+func getDocumentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
 	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
@@ -68,10 +65,10 @@ func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 		}
 	}
 
-	if err := o.Target.DocumentFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DocumentFromFlags(flags); err != nil {
 		return nil, err
 	}
-	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DatabaseFromFlags(flags); err != nil {
 		return nil, err
 	}
 
@@ -81,15 +78,15 @@ func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 		}
 	}
 	var err error
-	o.Options.IfNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
+	o.Options.IfNoneMatch, err = flags.GetString(kouch.FlagIfNoneMatch)
 	if err != nil {
 		return nil, err
 	}
-	if e := o.SetParamString(cmd.Flags(), kouch.FlagRev); e != nil {
+	if e := o.SetParamString(flags, kouch.FlagRev); e != nil {
 		return nil, e
 	}
 	for _, flag := range []string{flagAttsSince, flagOpenRevs} {
-		if e := o.SetParamStringSlice(cmd.Flags(), flag); e != nil {
+		if e := o.SetParamStringSlice(flags, flag); e != nil {
 			return nil, e
 		}
 	}
@@ -99,7 +96,7 @@ func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
 		flagMeta, flagRevs, flagRevsInfo,
 	} {
-		if e := o.SetParamBool(cmd.Flags(), flag); e != nil {
+		if e := o.SetParamBool(flags, flag); e != nil {
 			return nil, e
 		}
 	}
@@ -111,6 +108,5 @@ func getDocument(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
 		return err
 	}
-	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	return util.ChttpDo(ctx, http.MethodGet, path, o, kouch.HeadDumper(ctx), kouch.Output(ctx))
+	return util.ChttpDo(ctx, http.MethodGet, util.DocPath(o), o)
 }

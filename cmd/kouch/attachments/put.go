@@ -45,11 +45,14 @@ func putAttCmd() *cobra.Command {
 
 func putAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := putAttachmentOpts(ctx, cmd.Flags())
+	o, err := putAttachmentOpts(ctx, cmd.Flags())
 	if err != nil {
 		return err
 	}
-	return putAttachment(ctx, opts)
+	if err := validateTarget(o.Target); err != nil {
+		return err
+	}
+	return util.ChttpDo(ctx, http.MethodPut, util.AttPath(o), o)
 }
 
 func putAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
@@ -90,11 +93,4 @@ func putAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Option
 	}
 	o.Options.ContentType = ct
 	return o, nil
-}
-
-func putAttachment(ctx context.Context, o *kouch.Options) error {
-	if err := validateTarget(o.Target); err != nil {
-		return err
-	}
-	return util.ChttpDo(ctx, http.MethodPut, util.AttPath(o), o, kouch.HeadDumper(ctx), kouch.Output(ctx))
 }

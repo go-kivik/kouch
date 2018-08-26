@@ -61,6 +61,6 @@ func getAttachment(ctx context.Context, o *kouch.Options) error {
 		return err
 	}
 	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	body := io.Underlying(kouch.Output(ctx))
-	return util.ChttpDo(ctx, http.MethodGet, path, o, kouch.HeadDumper(ctx), body)
+	ctx = kouch.SetOutput(ctx, io.Underlying(kouch.Output(ctx)))
+	return util.ChttpDo(ctx, http.MethodGet, path, o)
 }

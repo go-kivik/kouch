@@ -46,13 +46,13 @@ func SetHeadDumper(ctx context.Context, d io.WriteCloser) context.Context {
 }
 
 // Output returns the context's current output, or panics if none is set.
-func Output(ctx context.Context) io.WriteCloser {
-	output, _ := ctx.Value(outputContextKey).(io.WriteCloser)
+func Output(ctx context.Context) io.Writer {
+	output, _ := ctx.Value(outputContextKey).(io.Writer)
 	return output
 }
 
 // SetOutput returns a new context with the output set to w.
-func SetOutput(ctx context.Context, w io.WriteCloser) context.Context {
+func SetOutput(ctx context.Context, w io.Writer) context.Context {
 	return context.WithValue(ctx, outputContextKey, w)
 }
 
