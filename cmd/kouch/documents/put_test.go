@@ -3,6 +3,7 @@ package documents
 import (
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -200,6 +201,26 @@ func TestPutDocCmd(t *testing.T) {
 				"Date: Sun, 26 Aug 2018 17:30:01 GMT\r\n" +
 				"\r\n" +
 				"id: bar\nok: true\nrev: 2-967a00dff5e02add41819138abb3284d",
+		}
+	})
+	tests.Add("auto rev", func(t *testing.T) interface{} {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			if r.Method == http.MethodHead {
+				w.Header().Add("ETag", `"1-xyz"`)
+				w.WriteHeader(200)
+				return
+			}
+			if rev := r.URL.Query().Get("rev"); rev != "1-xyz" {
+				t.Errorf("Unexpected rev: %s", rev)
+			}
+			w.WriteHeader(200)
+			w.Write([]byte(`{"ok":true,"id":"bar","rev":"2-967a00dff5e02add41819138abb3284d"}`))
+		}))
+		tests.Cleanup(s.Close)
+		return test.CmdTest{
+			Args:   []string{s.URL + "/foo/bar", "-d", `{"oink":foo}`, "-F", "yaml", "--auto-rev"},
+			Stdout: "id: bar\nok: true\nrev: 2-967a00dff5e02add41819138abb3284d",
 		}
 	})
 
