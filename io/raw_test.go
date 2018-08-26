@@ -23,13 +23,13 @@ func TestRawNew(t *testing.T) {
 		name     string
 		args     []string
 		parseErr string
-		expected io.Writer
+		expected io.WriteCloser
 		err      string
 	}{
 		{
 			name:     "happy path",
 			args:     nil,
-			expected: &bytes.Buffer{},
+			expected: &nopCloser{&bytes.Buffer{}},
 		},
 		{
 			name:     "invalid args",

@@ -2,7 +2,7 @@ package io
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 
@@ -30,7 +30,7 @@ func TestJsonNew(t *testing.T) {
 		{
 			name:     "happy path, no options",
 			args:     nil,
-			expected: &jsonProcessor{},
+			expected: &jsonProcessor{underlying: &bytes.Buffer{}},
 		},
 		{
 			name:     "invalid args",
@@ -41,20 +41,23 @@ func TestJsonNew(t *testing.T) {
 			name: "happy path, prefix",
 			args: []string{"--json-prefix", "xx"},
 			expected: &jsonProcessor{
-				prefix: "xx",
+				underlying: &bytes.Buffer{},
+				prefix:     "xx",
 			},
 		},
 		{
 			name: "happy path, indent",
 			args: []string{"--json-indent", "--"},
 			expected: &jsonProcessor{
-				indent: "--",
+				underlying: &bytes.Buffer{},
+				indent:     "--",
 			},
 		},
 		{
 			name: "happy path, escape html",
 			args: []string{"--json-escape-html"},
 			expected: &jsonProcessor{
+				underlying: &bytes.Buffer{},
 				escapeHTML: true,
 			},
 		},
@@ -68,7 +71,7 @@ func TestJsonNew(t *testing.T) {
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.parseErr, err)
 
-			result, err := mode.new(cmd)
+			result, err := mode.new(cmd, &bytes.Buffer{})
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
@@ -120,13 +123,13 @@ func TestJSONOutput(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			p := &jsonProcessor{
-				prefix:     test.prefix,
-				indent:     test.indent,
-				escapeHTML: test.escapeHTML,
-			}
 			buf := &bytes.Buffer{}
-			err := p.Output(buf, ioutil.NopCloser(strings.NewReader(test.input)))
+			p := newJSONProcessor(test.prefix, test.indent, test.escapeHTML, buf)
+			defer p.Close()
+			_, err := io.Copy(p, strings.NewReader(test.input))
+			if err == nil {
+				err = p.Close()
+			}
 			testy.Error(t, test.err, err)
 			if d := diff.Text(test.expected, buf.String()); d != nil {
 				t.Error(d)

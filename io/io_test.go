@@ -49,7 +49,7 @@ func TestSelectOutputProcessor(t *testing.T) {
 		{
 			name:     "raw output",
 			args:     []string{"-F", "raw"},
-			expected: &exitStatusWriter{&bytes.Buffer{}},
+			expected: &exitStatusWriter{&nopCloser{&bytes.Buffer{}}},
 		},
 		// {
 		// 	name:     "YAML output",
