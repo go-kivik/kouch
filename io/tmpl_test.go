@@ -3,7 +3,7 @@ package io
 import (
 	"bytes"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 
@@ -69,7 +69,7 @@ func TestTmplNew(t *testing.T) {
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.flagsErr, err)
 
-			result, err := mode.new(cmd)
+			result, err := mode.new(cmd, &bytes.Buffer{})
 			testy.Error(t, test.err, err)
 			if result.(*tmplProcessor).template == nil {
 				t.Errorf("Nil template found after instantiation")
@@ -104,9 +104,13 @@ func TestTmplOutput(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			p := &tmplProcessor{template: tmpl}
 			buf := &bytes.Buffer{}
-			err = p.Output(buf, ioutil.NopCloser(strings.NewReader(test.input)))
+			p := &tmplProcessor{template: tmpl, underlying: buf}
+			defer p.Close()
+			_, err = io.Copy(p, strings.NewReader(test.input))
+			if err == nil {
+				err = p.Close()
+			}
 			testy.Error(t, test.err, err)
 			if d := diff.Text(test.expected, buf.String()); d != nil {
 				t.Error(d)

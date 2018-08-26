@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"io"
 
-	"github.com/go-kivik/kouch"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -30,7 +29,7 @@ func (m *tmplMode) config(flags *pflag.FlagSet) {
 	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
-func (m *tmplMode) new(cmd *cobra.Command) (kouch.OutputProcessor, error) {
+func (m *tmplMode) new(cmd *cobra.Command, w io.Writer) (io.WriteCloser, error) {
 	templateString, err := cmd.Flags().GetString(optTemplate)
 	if err != nil {
 		return nil, err
@@ -47,23 +46,53 @@ func (m *tmplMode) new(cmd *cobra.Command) (kouch.OutputProcessor, error) {
 	}
 	if templateString != "" {
 		tmpl, e := template.New("").Parse(templateString)
-		return &tmplProcessor{template: tmpl}, e
+		return &tmplProcessor{template: tmpl, underlying: w}, e
 	}
 	tmpl, err := template.New("").ParseFiles(templateFile)
-	return &tmplProcessor{template: tmpl}, err
+	return &tmplProcessor{template: tmpl, underlying: w}, err
 }
 
 type tmplProcessor struct {
-	template *template.Template
+	template   *template.Template
+	underlying io.Writer
+	r          *io.PipeReader
+	w          *io.PipeWriter
+	done       <-chan struct{}
+	err        error
 }
 
-var _ kouch.OutputProcessor = &tmplProcessor{}
+var _ io.WriteCloser = &tmplProcessor{}
 
-func (p *tmplProcessor) Output(o io.Writer, input io.ReadCloser) error {
-	defer input.Close()
-	unmarshaled, err := unmarshal(input)
-	if err != nil {
-		return err
+func (p *tmplProcessor) Write(in []byte) (int, error) {
+	if p.w == nil {
+		p.init()
 	}
-	return p.template.Execute(o, unmarshaled)
+	n, e := p.w.Write(in)
+	return n, e
+}
+
+func (p *tmplProcessor) init() {
+	p.r, p.w = io.Pipe()
+	done := make(chan struct{})
+	p.done = done
+	go func() {
+		defer func() { close(done) }()
+		defer p.r.Close()
+		unmarshaled, err := unmarshal(p.r)
+		if err != nil {
+			p.err = err
+			return
+		}
+		p.err = p.template.Execute(p.underlying, unmarshaled)
+	}()
+}
+
+func (p *tmplProcessor) Close() error {
+	if p.w == nil {
+		return nil
+	}
+
+	<-p.done
+	_ = p.w.Close() // always returns nil for PipeWriter
+	return p.err
 }
