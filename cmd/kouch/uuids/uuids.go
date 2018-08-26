@@ -70,6 +70,7 @@ func getUUIDsCmd(cmd *cobra.Command, args []string) error {
 	}
 	defer result.Close()
 	_, err = io.Copy(kouch.Output(ctx), result)
+	kouch.Output(ctx).Close()
 	return err
 }
 
