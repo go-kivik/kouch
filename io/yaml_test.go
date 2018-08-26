@@ -2,7 +2,7 @@ package io
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 
@@ -30,7 +30,7 @@ func TestYamlNew(t *testing.T) {
 		{
 			name:     "happy path",
 			args:     nil,
-			expected: &yamlProcessor{},
+			expected: &yamlProcessor{underlying: &bytes.Buffer{}},
 		},
 		{
 			name:     "invalid args",
@@ -47,7 +47,8 @@ func TestYamlNew(t *testing.T) {
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.parseErr, err)
 
-			result, err := mode.new(cmd)
+			buf := &bytes.Buffer{}
+			result, err := mode.new(cmd, buf)
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
@@ -81,9 +82,13 @@ qux:
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			p := &yamlProcessor{}
 			buf := &bytes.Buffer{}
-			err := p.Output(buf, ioutil.NopCloser(strings.NewReader(test.input)))
+			p := newYAMLProcessor(buf)
+			defer p.Close()
+			_, err := io.Copy(p, strings.NewReader(test.input))
+			if err == nil {
+				err = p.Close()
+			}
 			testy.Error(t, test.err, err)
 			if d := diff.Text(test.expected, buf.String()); d != nil {
 				t.Error(d)
