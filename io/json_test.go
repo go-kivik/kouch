@@ -19,47 +19,58 @@ func TestJsonModeConfig(t *testing.T) {
 	testOptions(t, []string{"json-escape-html", "json-indent", "json-prefix"}, cmd)
 }
 
-func TestJsonNew(t *testing.T) {
+func TestJSONOutput(t *testing.T) {
 	tests := []struct {
-		name     string
-		args     []string
-		parseErr string
-		expected *jsonProcessor
-		err      string
+		name             string
+		args             []string
+		flagsErr, newErr string
+		input            string
+		expected         string
+		err              string
 	}{
 		{
-			name:     "happy path, no options",
-			args:     nil,
-			expected: &jsonProcessor{underlying: &bytes.Buffer{}},
+			name:     "happy path",
+			input:    `{"foo":"bar", "baz":123}`,
+			expected: `{"baz":123,"foo":"bar"}`,
+		},
+		{
+			name:  "indented",
+			args:  []string{"--json-indent", "\t"},
+			input: `{"foo":"bar", "baz":123}`,
+			expected: `{
+	"baz": 123,
+	"foo": "bar"
+}`,
+		},
+		{
+			name:  "prefix",
+			args:  []string{"--json-prefix", "xx"},
+			input: `{"foo":"bar", "baz":123}`,
+			expected: `{
+xx"baz": 123,
+xx"foo": "bar"
+xx}`,
+		},
+		{
+			name:     "no escape HTML",
+			input:    `{"foo": "<>"}`,
+			expected: `{"foo":"<>"}`,
+		},
+		{
+			name:     "escape HTML",
+			args:     []string{"--json-escape-html"},
+			input:    `{"foo": "<>"}`,
+			expected: `{"foo":"\u003c\u003e"}`,
+		},
+		{
+			name:  "invalid JSON input",
+			input: "oink",
+			err:   `invalid character 'o' looking for beginning of value`,
 		},
 		{
 			name:     "invalid args",
 			args:     []string{"--foo"},
-			parseErr: "unknown flag: --foo",
-		},
-		{
-			name: "happy path, prefix",
-			args: []string{"--json-prefix", "xx"},
-			expected: &jsonProcessor{
-				underlying: &bytes.Buffer{},
-				prefix:     "xx",
-			},
-		},
-		{
-			name: "happy path, indent",
-			args: []string{"--json-indent", "--"},
-			expected: &jsonProcessor{
-				underlying: &bytes.Buffer{},
-				indent:     "--",
-			},
-		},
-		{
-			name: "happy path, escape html",
-			args: []string{"--json-escape-html"},
-			expected: &jsonProcessor{
-				underlying: &bytes.Buffer{},
-				escapeHTML: true,
-			},
+			flagsErr: "unknown flag: --foo",
 		},
 	}
 	for _, test := range tests {
@@ -69,64 +80,14 @@ func TestJsonNew(t *testing.T) {
 			mode.config(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
-			testy.Error(t, test.parseErr, err)
+			testy.Error(t, test.flagsErr, err)
 
-			result, err := mode.new(cmd, &bytes.Buffer{})
-			testy.Error(t, test.err, err)
-			if d := diff.Interface(test.expected, result); d != nil {
-				t.Error(d)
-			}
-		})
-	}
-}
-
-func TestJSONOutput(t *testing.T) {
-	tests := []struct {
-		name           string
-		prefix, indent string
-		escapeHTML     bool
-		input          string
-		expected       string
-		err            string
-	}{
-		{
-			name:     "happy path",
-			input:    `{"foo":"bar", "baz":123}`,
-			expected: `{"baz":123,"foo":"bar"}`,
-		},
-		{
-			name:   "indented",
-			indent: "\t",
-			input:  `{"foo":"bar", "baz":123}`,
-			expected: `{
-	"baz": 123,
-	"foo": "bar"
-}`,
-		},
-		{
-			name:       "no escape HTML",
-			escapeHTML: false,
-			input:      `{"foo": "<>"}`,
-			expected:   `{"foo":"<>"}`,
-		},
-		{
-			name:       "escape HTML",
-			escapeHTML: true,
-			input:      `{"foo": "<>"}`,
-			expected:   `{"foo":"\u003c\u003e"}`,
-		},
-		{
-			name:  "invalid JSON input",
-			input: "oink",
-			err:   `invalid character 'o' looking for beginning of value`,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			p := newJSONProcessor(test.prefix, test.indent, test.escapeHTML, buf)
+			p, err := mode.new(cmd, buf)
+			testy.Error(t, test.newErr, err)
+
 			defer p.Close()
-			_, err := io.Copy(p, strings.NewReader(test.input))
+			_, err = io.Copy(p, strings.NewReader(test.input))
 			if err == nil {
 				err = p.Close()
 			}
