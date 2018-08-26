@@ -2,14 +2,11 @@ package documents
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -32,6 +29,7 @@ func putDocCmd() *cobra.Command {
 	f.String(kouch.FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}.")
 	f.StringP(kouch.FlagRev, kouch.FlagShortRev, "", "Retrieves document of specified revision.")
 	f.Bool(kouch.FlagFullCommit, false, "Overrides server’s commit policy.")
+	f.BoolP(kouch.FlagAutoRev, kouch.FlagShortAutoRev, false, "Fetch the current rev before update. Use with caution!")
 
 	f.Bool(flagBatch, false, "Store document in batch mode.")
 	f.Bool(flagNewEdits, true, "When disabled, prevents insertion of conflicting documents.")
@@ -61,13 +59,25 @@ func putDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 		return nil, err
 	}
 
-	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
+	if defCtx, e := kouch.Conf(ctx).DefaultCtx(); e == nil {
 		if o.Root == "" {
 			o.Root = defCtx.Root
 		}
 	}
-	if e := o.SetParamString(cmd.Flags(), kouch.FlagRev); e != nil {
-		return nil, e
+	autoRev, err := cmd.Flags().GetBool(kouch.FlagAutoRev)
+	if err != nil {
+		return nil, err
+	}
+	if autoRev {
+		rev, err := util.FetchRev(ctx, o)
+		if err != nil {
+			return nil, err
+		}
+		o.Query().Set("rev", rev)
+	} else {
+		if e := o.SetParamString(cmd.Flags(), kouch.FlagRev); e != nil {
+			return nil, e
+		}
 	}
 	if e := setBatch(o, cmd.Flags()); e != nil {
 		return nil, e
@@ -85,30 +95,12 @@ func putDocumentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	result, err := putDocument(ctx, opts)
-	if err != nil {
-		return err
-	}
-	defer result.Close()
-	_, err = io.Copy(kouch.Output(ctx), result)
-	return err
+	return putDocument(ctx, opts)
 }
 
-func putDocument(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
+func putDocument(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
-		return nil, err
+		return err
 	}
-	c, err := chttp.New(context.TODO(), o.Root)
-	if err != nil {
-		return nil, err
-	}
-	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	res, err := c.DoReq(ctx, http.MethodPut, path, o.Options)
-	if err != nil {
-		return nil, err
-	}
-	if err = chttp.ResponseError(res); err != nil {
-		return nil, err
-	}
-	return res.Body, nil
+	return util.ChttpDo(ctx, http.MethodPut, util.DocPath(o), o, kouch.HeadDumper(ctx), kouch.Output(ctx))
 }

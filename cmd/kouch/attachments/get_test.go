@@ -14,7 +14,6 @@ import (
 	"github.com/go-kivik/kouch/internal/test"
 
 	_ "github.com/go-kivik/kouch/cmd/kouch/get"
-	_ "github.com/go-kivik/kouch/cmd/kouch/put"
 	_ "github.com/go-kivik/kouch/cmd/kouch/root"
 )
 
@@ -54,11 +53,12 @@ func TestGetAttachmentOpts(t *testing.T) {
 			cmd := getAttCmd()
 			cmd.ParseFlags(test.args)
 			ctx := kouch.GetContext(cmd)
+			ctx = kouch.SetConf(ctx, test.conf)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {
 				ctx = kouch.SetTarget(ctx, flags[0])
 			}
 			kouch.SetContext(kouch.SetConf(ctx, test.conf), cmd)
-			opts, err := getAttachmentOpts(cmd)
+			opts, err := getAttachmentOpts(ctx, cmd.Flags())
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)

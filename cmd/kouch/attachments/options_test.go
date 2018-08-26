@@ -149,11 +149,12 @@ func TestCommonOpts(t *testing.T) {
 			addCommonFlags(cmd.Flags())
 			cmd.ParseFlags(test.args)
 			ctx := kouch.GetContext(cmd)
+			ctx = kouch.SetConf(ctx, test.conf)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {
 				ctx = kouch.SetTarget(ctx, flags[0])
 			}
 			kouch.SetContext(kouch.SetConf(ctx, test.conf), cmd)
-			opts, err := commonOpts(cmd)
+			opts, err := commonOpts(ctx, cmd.Flags())
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, opts); d != nil {
 				t.Error(d)

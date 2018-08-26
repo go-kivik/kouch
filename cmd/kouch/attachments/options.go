@@ -1,13 +1,12 @@
 package attachments
 
 import (
-	"net/url"
+	"context"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/go-kivik/kouch/target"
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -34,8 +33,7 @@ func validateTarget(t *kouch.Target) error {
 	return nil
 }
 
-func commonOpts(cmd *cobra.Command) (*kouch.Options, error) {
-	ctx := kouch.GetContext(cmd)
+func commonOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
 	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
@@ -45,13 +43,13 @@ func commonOpts(cmd *cobra.Command) (*kouch.Options, error) {
 		}
 	}
 
-	if err := o.Target.FilenameFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.FilenameFromFlags(flags); err != nil {
 		return nil, err
 	}
-	if err := o.Target.DocumentFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DocumentFromFlags(flags); err != nil {
 		return nil, err
 	}
-	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
+	if err := o.Target.DatabaseFromFlags(flags); err != nil {
 		return nil, err
 	}
 
@@ -61,12 +59,8 @@ func commonOpts(cmd *cobra.Command) (*kouch.Options, error) {
 		}
 	}
 
-	rev, err := cmd.Flags().GetString(kouch.FlagRev)
-	if err != nil {
-		return nil, err
-	}
-	if rev != "" {
-		o.Options.Query = url.Values{"rev": []string{rev}}
+	if e := o.SetParamString(flags, kouch.FlagRev); e != nil {
+		return nil, e
 	}
 
 	return o, nil
