@@ -3,13 +3,13 @@ package documents
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -85,30 +85,13 @@ func putDocumentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	result, err := putDocument(ctx, opts)
-	if err != nil {
-		return err
-	}
-	defer result.Close()
-	_, err = io.Copy(kouch.Output(ctx), result)
-	return err
+	return putDocument(ctx, opts)
 }
 
-func putDocument(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
+func putDocument(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
-		return nil, err
-	}
-	c, err := chttp.New(context.TODO(), o.Root)
-	if err != nil {
-		return nil, err
+		return err
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	res, err := c.DoReq(ctx, http.MethodPut, path, o.Options)
-	if err != nil {
-		return nil, err
-	}
-	if err = chttp.ResponseError(res); err != nil {
-		return nil, err
-	}
-	return res.Body, nil
+	return util.ChttpDo(ctx, http.MethodPut, path, o, kouch.HeadDumper(ctx), kouch.Output(ctx))
 }

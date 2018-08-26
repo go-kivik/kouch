@@ -1,8 +1,6 @@
 package documents
 
 import (
-	"context"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,6 +11,10 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/go-kivik/kouch/internal/test"
+
+	_ "github.com/go-kivik/kouch/cmd/kouch/put"
+	_ "github.com/go-kivik/kouch/cmd/kouch/root"
 )
 
 func TestPutDocumentOpts(t *testing.T) {
@@ -140,78 +142,66 @@ func TestPutDocumentOpts(t *testing.T) {
 	}
 }
 
-func TestPutDocument(t *testing.T) {
-	type pdTest struct {
-		name     string
-		opts     *kouch.Options
-		resp     *http.Response
-		val      testy.RequestValidator
-		expected string
-		err      string
-		status   int
-	}
-	tests := []pdTest{
-		{
-			name:   "validation fails",
-			opts:   &kouch.Options{Target: &kouch.Target{}},
-			err:    "No document ID provided",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name: "success",
-			opts: &kouch.Options{
-				Target:  &kouch.Target{Database: "foo", Document: "123"},
-				Options: &chttp.Options{Body: ioutil.NopCloser(strings.NewReader(`{"_id":"oink"}`))},
+func TestPutDocCmd(t *testing.T) {
+	tests := testy.NewTable()
+	tests.Add("validation fails", test.CmdTest{
+		Args:   []string{},
+		Err:    "No document ID provided",
+		Status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("create success", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(strings.NewReader(`{"ok":true,"id":"bar","rev":"1-967a00dff5e02add41819138abb3284d"}`)),
+		}, func(t *testing.T, r *http.Request) {
+			if r.Method != http.MethodPut {
+				t.Errorf("Unexpected method: %s", r.Method)
+			}
+			if r.URL.Path != "/foo/bar" {
+				t.Errorf("Unexpected req path: %s", r.URL.Path)
+			}
+			if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+				t.Errorf("Unexpected Content-Type: %s", ct)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return test.CmdTest{
+			Args:   []string{s.URL + "/foo/bar", "-d", `{"oink":foo}`, "-F", "yaml"},
+			Stdout: "id: bar\nok: true\nrev: 1-967a00dff5e02add41819138abb3284d",
+		}
+	})
+	tests.Add("manual rev, dump header", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Header: http.Header{
+				"Date":         []string{"Sun, 26 Aug 2018 17:30:01 GMT"},
+				"Content-Type": []string{"application/json"},
 			},
-			val: func(t *testing.T, r *http.Request) {
-				if r.Method != "PUT" {
-					t.Errorf("Unexpected method: %s", r.Method)
-				}
-				if r.URL.Path != "/foo/123" {
-					t.Errorf("Unexpected path: %s", r.URL.Path)
-				}
-				if ct := r.Header.Get("Content-Type"); ct != "application/json" {
-					t.Errorf("Unexpected Content-Type: %s", ct)
-				}
-				var doc interface{}
-				if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
-					t.Errorf("json err: %s\n", err)
-				}
-			},
-			resp: &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader(`{"ok":true,"id":"bar","rev":"1-967a00dff5e02add41819138abb3284d"}`)),
-			},
-			expected: `{"ok":true,"id":"bar","rev":"1-967a00dff5e02add41819138abb3284d"}`,
-		},
-	}
-	for _, test := range tests {
-		func(test pdTest) {
-			t.Run(test.name, func(t *testing.T) {
-				t.Parallel()
-				if test.resp != nil {
-					if test.val != nil {
-						s := testy.ServeResponseValidator(t, test.resp, test.val)
-						defer s.Close()
-						test.opts.Root = s.URL
-					} else {
-						s := testy.ServeResponse(test.resp)
-						defer s.Close()
-						test.opts.Root = s.URL
-					}
-				}
-				ctx := context.Background()
-				result, err := putDocument(ctx, test.opts)
-				testy.ExitStatusError(t, test.err, test.status, err)
-				defer result.Close()
-				content, err := ioutil.ReadAll(result)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if d := diff.Text(test.expected, string(content)); d != nil {
-					t.Error(d)
-				}
-			})
-		}(test)
-	}
+			Body: ioutil.NopCloser(strings.NewReader(`{"ok":true,"id":"bar","rev":"2-967a00dff5e02add41819138abb3284d"}`)),
+		}, func(t *testing.T, r *http.Request) {
+			if r.Method != http.MethodPut {
+				t.Errorf("Unexpected method: %s", r.Method)
+			}
+			if r.URL.Path != "/foo/bar" {
+				t.Errorf("Unexpected req path: %s", r.URL.Path)
+			}
+			if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+				t.Errorf("Unexpected Content-Type: %s", ct)
+			}
+			if rev := r.URL.Query().Get("rev"); rev != "1-967a00dff5e02add41819138abb3284d" {
+				t.Errorf("Unexpected rev: %s", rev)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return test.CmdTest{
+			Args: []string{s.URL + "/foo/bar", "-d", `{"oink":foo}`, "-F", "yaml", "--rev", "1-967a00dff5e02add41819138abb3284d", "--dump-header", "-"},
+			Stdout: "Content-Length: 65\r\n" +
+				"Content-Type: application/json\r\n" +
+				"Date: Sun, 26 Aug 2018 17:30:01 GMT\r\n" +
+				"\r\n" +
+				"id: bar\nok: true\nrev: 2-967a00dff5e02add41819138abb3284d",
+		}
+	})
+
+	tests.Run(t, test.ValidateCmdTest([]string{"put", "doc"}))
 }

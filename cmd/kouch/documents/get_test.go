@@ -14,7 +14,6 @@ import (
 	"github.com/go-kivik/kouch/internal/test"
 
 	_ "github.com/go-kivik/kouch/cmd/kouch/get"
-	_ "github.com/go-kivik/kouch/cmd/kouch/put"
 	_ "github.com/go-kivik/kouch/cmd/kouch/root"
 )
 
