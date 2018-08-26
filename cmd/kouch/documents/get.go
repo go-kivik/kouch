@@ -2,11 +2,8 @@ package documents
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"net/url"
 
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
@@ -111,6 +108,5 @@ func getDocument(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
 		return err
 	}
-	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	return util.ChttpDo(ctx, http.MethodGet, path, o, kouch.HeadDumper(ctx), kouch.Output(ctx))
+	return util.ChttpDo(ctx, http.MethodGet, util.DocPath(o), o)
 }

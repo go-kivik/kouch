@@ -1,7 +1,6 @@
 package documents
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/go-kivik/kouch"
@@ -91,16 +90,12 @@ func putDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 
 func putDocumentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := putDocumentOpts(cmd, args)
+	o, err := putDocumentOpts(cmd, args)
 	if err != nil {
 		return err
 	}
-	return putDocument(ctx, opts)
-}
-
-func putDocument(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
 		return err
 	}
-	return util.ChttpDo(ctx, http.MethodPut, util.DocPath(o), o, kouch.HeadDumper(ctx), kouch.Output(ctx))
+	return util.ChttpDo(ctx, http.MethodPut, util.DocPath(o), o)
 }

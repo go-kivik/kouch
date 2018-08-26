@@ -121,7 +121,10 @@ func TestChttpDo(t *testing.T) {
 			if test.body {
 				body = &bytes.Buffer{}
 			}
-			err := ChttpDo(context.Background(), test.method, test.path, test.options, NopWriteCloser(head), NopWriteCloser(body))
+			ctx := context.Background()
+			ctx = kouch.SetHeadDumper(ctx, NopWriteCloser(head))
+			ctx = kouch.SetOutput(ctx, NopWriteCloser(body))
+			err := ChttpDo(ctx, test.method, test.path, test.options)
 			testy.ExitStatusError(t, test.err, test.status, err)
 			var resultHead, resultBody string
 			if head != nil {
