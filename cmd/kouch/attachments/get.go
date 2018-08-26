@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
+	"os"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
@@ -45,9 +46,7 @@ func getAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Close()
-	_, err = io.Copy(kouch.Output(ctx), resp)
-	return err
+	return util.CopyAll(os.Stdout, resp)
 }
 
 func getAttachmentOpts(cmd *cobra.Command) (*kouch.Options, error) {

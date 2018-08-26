@@ -4,10 +4,6 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/go-kivik/couchdb/chttp"
-	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/internal/errors"
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -33,50 +29,23 @@ func (m *jsonMode) config(flags *pflag.FlagSet) {
 	flags.Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
-func (m *jsonMode) new(cmd *cobra.Command) (kouch.OutputProcessor, error) {
-	prefix, err := cmd.Flags().GetString(optJSONPrefix)
+func (m *jsonMode) new(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
+	prefix, err := flags.GetString(optJSONPrefix)
 	if err != nil {
 		return nil, err
 	}
-	indent, err := cmd.Flags().GetString(optJSONIndent)
+	indent, err := flags.GetString(optJSONIndent)
 	if err != nil {
 		return nil, err
 	}
-	escapeHTML, err := cmd.Flags().GetBool(optJSONEscapeHTML)
+	escapeHTML, err := flags.GetBool(optJSONEscapeHTML)
 	if err != nil {
 		return nil, err
 	}
-	return &jsonProcessor{
-		prefix:     prefix,
-		indent:     indent,
-		escapeHTML: escapeHTML,
-	}, nil
-}
-
-type jsonProcessor struct {
-	prefix     string
-	indent     string
-	escapeHTML bool
-}
-
-var _ kouch.OutputProcessor = &jsonProcessor{}
-
-func (p *jsonProcessor) Output(o io.Writer, input io.ReadCloser) error {
-	defer input.Close()
-	unmarshaled, err := unmarshal(input)
-	if err != nil {
-		return err
-	}
-	enc := json.NewEncoder(o)
-	enc.SetIndent(p.prefix, p.indent)
-	enc.SetEscapeHTML(p.escapeHTML)
-	return enc.Encode(unmarshaled)
-}
-
-func unmarshal(r io.Reader) (interface{}, error) {
-	var unmarshaled interface{}
-	if err := json.NewDecoder(r).Decode(&unmarshaled); err != nil {
-		return nil, &errors.ExitError{Err: err, ExitCode: chttp.ExitWeirdReply}
-	}
-	return unmarshaled, nil
+	return newProcessor(w, func(o io.Writer, i interface{}) error {
+		enc := json.NewEncoder(o)
+		enc.SetIndent(prefix, indent)
+		enc.SetEscapeHTML(escapeHTML)
+		return enc.Encode(i)
+	}), nil
 }

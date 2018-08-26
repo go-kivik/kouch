@@ -62,11 +62,6 @@ func prerun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	outputer, err := io.SelectOutputProcessor(cmd)
-	if err != nil {
-		return err
-	}
-	ctx = kouch.SetOutputer(ctx, outputer)
 	conf, err := config.ReadConfig(cmd)
 	if err != nil {
 		return err

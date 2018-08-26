@@ -2,8 +2,7 @@ package io
 
 import (
 	"bytes"
-	"io/ioutil"
-	"strings"
+	"io"
 	"testing"
 
 	"github.com/flimzy/diff"
@@ -24,13 +23,13 @@ func TestRawNew(t *testing.T) {
 		name     string
 		args     []string
 		parseErr string
-		expected *rawProcessor
+		expected io.WriteCloser
 		err      string
 	}{
 		{
 			name:     "happy path",
 			args:     nil,
-			expected: &rawProcessor{},
+			expected: &nopCloser{&bytes.Buffer{}},
 		},
 		{
 			name:     "invalid args",
@@ -47,28 +46,11 @@ func TestRawNew(t *testing.T) {
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.parseErr, err)
 
-			result, err := mode.new(cmd)
+			result, err := mode.new(cmd.Flags(), &bytes.Buffer{})
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
 			}
 		})
 	}
-}
-
-func TestRawOutput(t *testing.T) {
-	input := `{foo bar baz}`
-	p := &rawProcessor{}
-	t.Run("happy path", func(t *testing.T) {
-		buf := &bytes.Buffer{}
-		err := p.Output(buf, ioutil.NopCloser(strings.NewReader(input)))
-		testy.Error(t, "", err)
-		if d := diff.Text(input, buf.String()); d != nil {
-			t.Error(d)
-		}
-	})
-	t.Run("write error", func(t *testing.T) {
-		err := p.Output(&errWriter{}, ioutil.NopCloser(strings.NewReader(input)))
-		testy.Error(t, "errWriter: write error", err)
-	})
 }

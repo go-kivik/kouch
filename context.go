@@ -15,12 +15,11 @@ type contextKey struct {
 
 // Context Keys
 var (
-	verboseContextKey         = &contextKey{"verbose"}
-	outputContextKey          = &contextKey{"output"}
-	outputProcessorContextKey = &contextKey{"outputer"}
-	configContextKey          = &contextKey{"config"}
-	targetContextKey          = &contextKey{"target"}
-	inputContextKey           = &contextKey{"input"}
+	verboseContextKey = &contextKey{"verbose"}
+	outputContextKey  = &contextKey{"output"}
+	configContextKey  = &contextKey{"config"}
+	targetContextKey  = &contextKey{"target"}
+	inputContextKey   = &contextKey{"input"}
 )
 
 // Conf returns the context's current configuration struct, or panics if none is
@@ -34,27 +33,16 @@ func SetConf(ctx context.Context, conf *Config) context.Context {
 	return context.WithValue(ctx, configContextKey, conf)
 }
 
-// Outputer returns the context's current output processor, or os.Stdout if
-// none.
-func Outputer(ctx context.Context) OutputProcessor {
-	return ctx.Value(outputProcessorContextKey).(OutputProcessor)
-}
-
-// SetOutputer returns a new context with the output processor set to op.
-func SetOutputer(ctx context.Context, op OutputProcessor) context.Context {
-	return context.WithValue(ctx, outputProcessorContextKey, op)
-}
-
 // Output returns the context's current output, or panics if none is set.
-func Output(ctx context.Context) io.Writer {
-	if output, ok := ctx.Value(outputContextKey).(io.Writer); ok {
+func Output(ctx context.Context) io.WriteCloser {
+	if output, ok := ctx.Value(outputContextKey).(io.WriteCloser); ok {
 		return output
 	}
 	return os.Stdout
 }
 
 // SetOutput returns a new context with the output set to w.
-func SetOutput(ctx context.Context, w io.Writer) context.Context {
+func SetOutput(ctx context.Context, w io.WriteCloser) context.Context {
 	return context.WithValue(ctx, outputContextKey, w)
 }
 

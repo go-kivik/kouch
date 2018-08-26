@@ -1,10 +1,9 @@
 package config
 
 import (
-	"os"
-
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +26,6 @@ func configCmd() *cobra.Command {
 func viewConfig() func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		ctx := kouch.GetContext(cmd)
-		return kouch.Outputer(ctx).Output(os.Stdout, kouch.Conf(ctx).Dump())
+		return util.CopyAll(kouch.Output(ctx), kouch.Conf(ctx).Dump())
 	}
 }
