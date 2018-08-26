@@ -68,6 +68,14 @@ func AddFlags(flags *pflag.FlagSet) {
 
 // SetOutput returns a new context with the output parameters configured.
 func SetOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, error) {
+	ctx, err := setOutput(ctx, flags)
+	if err != nil {
+		return nil, err
+	}
+	return ctx, nil
+}
+
+func setOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, error) {
 	output, err := open(flags, kouch.FlagOutputFile)
 	if err != nil {
 		return ctx, nil
