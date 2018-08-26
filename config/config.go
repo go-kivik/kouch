@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path"
+	"syscall"
 
 	"github.com/go-kivik/kouch"
 	"github.com/spf13/cobra"
@@ -64,11 +65,25 @@ func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
 	home := Home()
 	if home != "" {
 		conf, err := readConfigFile(path.Join(home, "config"))
-		if err == nil || !os.IsNotExist(err) {
+		if err == nil || !isNotExist(err) {
 			return conf, err
 		}
 	}
 	return &kouch.Config{}, nil
+}
+
+func isNotExist(err error) bool {
+	if os.IsNotExist(err) {
+		return true
+	}
+	if pe, ok := err.(*os.PathError); ok {
+		if errno, ok := pe.Err.(syscall.Errno); ok {
+			if errno == syscall.ENOTDIR {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // AddFlags adds command line flags for global config options.
