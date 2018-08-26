@@ -17,6 +17,8 @@ import (
 // ChttpDo performs an HTTP request (GET is downgraded to HEAD if
 // body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
 func ChttpDo(ctx context.Context, method, path string, o *kouch.Options, head, body io.Writer) error {
+	defer close(head)
+	defer close(body)
 	nilBody := body == nil || reflect.ValueOf(body).IsNil()
 	nilHead := head == nil || reflect.ValueOf(head).IsNil()
 	c, err := chttp.New(ctx, o.Root)
@@ -36,32 +38,23 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options, head, b
 		return err
 	}
 	defer res.Body.Close()
+
 	if !nilHead {
 		if e := res.Header.Write(head); e != nil {
 			return e
 		}
+		// If head and body go to the same place, output a blank line between them
+		if sameFd(head, body) {
+			if _, e := head.Write([]byte("\r\n")); e != nil {
+				return e
+			}
+		} else {
+			close(head)
+		}
 	}
+
 	if !nilBody {
 		if e := CopyAll(body, res.Body); e != nil {
-			return e
-		}
-	}
-
-	// If head and body go to the same place, output a blank linke
-	// between them.
-	if sameFd(head, body) {
-		if _, e := body.Write([]byte("\r\n")); e != nil {
-			return e
-		}
-	}
-
-	if !nilHead {
-		if e := close(head); e != nil {
-			return e
-		}
-	}
-	if !nilBody {
-		if e := close(body); e != nil {
 			return e
 		}
 	}

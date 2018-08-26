@@ -133,7 +133,7 @@ func TestGetUUIDsCmd(t *testing.T) {
 				"- 3cd2f787fc320c6654befd3a4a00624e\n",
 		}
 	})
-	tests.Add("dump header", func(t *testing.T) interface{} {
+	tests.Add("dump header stdout", func(t *testing.T) interface{} {
 		s := testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 200,
 			Header: http.Header{
@@ -154,11 +154,13 @@ func TestGetUUIDsCmd(t *testing.T) {
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{
-			Args:   []string{"--root", s.URL, "--dump-header", "%"},
-			Stdout: `{"uuids":["3cd2f787fc320c6654befd3a4a004df6"]}`,
-			Stderr: "Content-Length: 46\r\n" +
+			Args: []string{"--root", s.URL, "--dump-header", "-", "-F", "yaml"},
+			Stdout: "Content-Length: 46\r\n" +
 				"Content-Type: application/json\r\n" +
-				"Date: Sun, 26 Aug 2018 15:44:26 GMT\r\n",
+				"Date: Sun, 26 Aug 2018 15:44:26 GMT\r\n" +
+				"\r\n" +
+				"uuids:\n" +
+				"- 3cd2f787fc320c6654befd3a4a004df6\n",
 		}
 	})
 
