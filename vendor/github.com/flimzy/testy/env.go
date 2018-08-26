@@ -3,7 +3,10 @@ package testy
 import (
 	"os"
 	"strings"
+	"sync"
 )
+
+var envLock = new(sync.Mutex)
 
 // RestoreEnv returns a function which restores the environment to the original
 // state. It is intended to be used in conjunction with defer, to temporarily
@@ -16,8 +19,10 @@ import (
 //      os.SetEnv( ... ) // Set temporary values
 //  }
 func RestoreEnv() func() {
+	envLock.Lock()
 	env := Environ()
 	return func() {
+		defer envLock.Unlock()
 		os.Clearenv()
 		if err := SetEnv(env); err != nil {
 			panic("Failed to restore environment: " + err.Error())
