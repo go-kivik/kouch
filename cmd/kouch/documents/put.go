@@ -89,7 +89,9 @@ func putDocumentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
+	defer result.Close()
+	_, err = io.Copy(kouch.Output(ctx), result)
+	return err
 }
 
 func putDocument(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {

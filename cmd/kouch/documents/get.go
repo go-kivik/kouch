@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
+	"os"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
@@ -61,11 +62,9 @@ func getDocumentCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if o.Head {
-		defer result.Close()
-		_, err = io.Copy(kouch.Output(ctx), result)
-		return err
+		return util.CopyAll(os.Stdout, result)
 	}
-	return kouch.Outputer(ctx).Output(kouch.Output(ctx), result)
+	return util.CopyAll(kouch.Output(ctx), result)
 }
 
 func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {

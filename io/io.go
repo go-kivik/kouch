@@ -72,6 +72,13 @@ func SetOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, erro
 	if err != nil {
 		return nil, err
 	}
+	if output := kouch.Output(ctx); output != nil {
+		newOutput, err := selectOutputProcessor(flags, output)
+		if err != nil {
+			return nil, err
+		}
+		ctx = kouch.SetOutput(ctx, newOutput)
+	}
 	return ctx, nil
 }
 
@@ -83,7 +90,7 @@ func setOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, erro
 	if output == os.Stdout {
 		return ctx, nil
 	}
-	ctx = kouch.SetOutput(ctx, output)
+	ctx = kouch.SetOutput(ctx, &nopCloser{output})
 
 	return ctx, nil
 }

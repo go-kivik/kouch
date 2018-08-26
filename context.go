@@ -34,15 +34,15 @@ func SetConf(ctx context.Context, conf *Config) context.Context {
 }
 
 // Output returns the context's current output, or panics if none is set.
-func Output(ctx context.Context) io.Writer {
-	if output, ok := ctx.Value(outputContextKey).(io.Writer); ok {
+func Output(ctx context.Context) io.WriteCloser {
+	if output, ok := ctx.Value(outputContextKey).(io.WriteCloser); ok {
 		return output
 	}
 	return os.Stdout
 }
 
 // SetOutput returns a new context with the output set to w.
-func SetOutput(ctx context.Context, w io.Writer) context.Context {
+func SetOutput(ctx context.Context, w io.WriteCloser) context.Context {
 	return context.WithValue(ctx, outputContextKey, w)
 }
 
