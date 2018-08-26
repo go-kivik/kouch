@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/go-kivik/couchdb/chttp"
@@ -33,7 +34,14 @@ func (o *Options) Query() *url.Values {
 	return &o.Options.Query
 }
 
+var flagExceptions = map[string]string{
+	"shards": "q",
+}
+
 func param(flagName string) string {
+	if exception, ok := flagExceptions[flagName]; ok {
+		return exception
+	}
 	return strings.Replace(flagName, "-", "_", -1)
 }
 
@@ -73,6 +81,19 @@ func (o *Options) SetParamString(f *pflag.FlagSet, flagName string) error {
 	v, err := f.GetString(flagName)
 	if err == nil && v != f.Lookup(flagName).DefValue {
 		o.Query().Add(param(flagName), v)
+	}
+	return err
+}
+
+// SetParamInt sets the query parameter string value specified by flagName,
+// if it differs from the default.
+func (o *Options) SetParamInt(f *pflag.FlagSet, flagName string) error {
+	if flag := f.Lookup(flagName); flag == nil {
+		return nil
+	}
+	v, err := f.GetInt(flagName)
+	if err == nil && strconv.Itoa(v) != f.Lookup(flagName).DefValue {
+		o.Query().Add(param(flagName), strconv.Itoa(v))
 	}
 	return err
 }

@@ -23,6 +23,7 @@ const (
 	FlagIfNoneMatch  = "if-none-match"
 	FlagRev          = "rev"
 	FlagAutoRev      = "auto-rev"
+	FlagShards       = "shards"
 
 	// Curl-equivalent short flags
 	FlagShortVerbose    = "v"
@@ -36,4 +37,5 @@ const (
 	FlagShortOutputFormat = "F"
 	FlagShortRev          = "r"
 	FlagShortAutoRev      = "R"
+	FlagShortShards       = "q"
 )

@@ -17,3 +17,8 @@ func DocPath(o *kouch.Options) string {
 func AttPath(o *kouch.Options) string {
 	return fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
 }
+
+// DatabasePath calculates the server path to a database.
+func DatabasePath(o *kouch.Options) string {
+	return fmt.Sprintf("/%s", url.QueryEscape(o.Database))
+}
