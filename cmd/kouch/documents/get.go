@@ -1,13 +1,10 @@
 package documents
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
+	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
@@ -57,14 +54,7 @@ func getDocumentCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	result, err := getDocument(ctx, o)
-	if err != nil {
-		return err
-	}
-	if o.Head {
-		return util.CopyAll(os.Stdout, result)
-	}
-	return util.CopyAll(kouch.Output(ctx), result)
+	return getDocument(ctx, o)
 }
 
 func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
@@ -82,9 +72,6 @@ func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 		return nil, err
 	}
 	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
-		return nil, err
-	}
-	if err := o.SetHead(cmd.Flags()); err != nil {
 		return nil, err
 	}
 
@@ -120,22 +107,10 @@ func getDocumentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 	return o, nil
 }
 
-func getDocument(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
+func getDocument(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
-		return nil, err
+		return err
 	}
 	path := fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
-	var head, body *bytes.Buffer
-	if o.Head {
-		head = &bytes.Buffer{}
-	} else {
-		body = &bytes.Buffer{}
-	}
-	if err := util.ChttpGet(ctx, path, o, head, body); err != nil {
-		return nil, err
-	}
-	if o.Head {
-		return ioutil.NopCloser(head), nil
-	}
-	return ioutil.NopCloser(body), nil
+	return util.ChttpDo(ctx, http.MethodGet, path, o, kouch.HeadDumper(ctx), kouch.Output(ctx))
 }

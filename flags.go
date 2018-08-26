@@ -7,6 +7,7 @@ const (
 	FlagOutputFile = "output"
 	FlagData       = "data"
 	FlagHead       = "head"
+	FlagDumpHeader = "dump-header"
 
 	// Custom flags
 	FlagClobber      = "force"
@@ -27,6 +28,7 @@ const (
 	FlagShortOutputFile = "o"
 	FlagShortData       = "d"
 	FlagShortHead       = "I"
+	FlagShortDumpHeader = "D"
 
 	// Short versions, custom
 	FlagShortServerRoot   = "R"

@@ -2,16 +2,15 @@ package uuids
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/spf13/cobra"
 
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 )
 
@@ -64,27 +63,9 @@ func getUUIDsCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	result, err := getUUIDs(ctx, opts)
-	if err != nil {
-		return err
-	}
-	defer result.Close()
-	_, err = io.Copy(kouch.Output(ctx), result)
-	kouch.Output(ctx).Close()
-	return err
+	return getUUIDs(ctx, opts)
 }
 
-func getUUIDs(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
-	c, err := chttp.New(ctx, o.Target.Root)
-	if err != nil {
-		return nil, err
-	}
-	res, err := c.DoReq(ctx, http.MethodGet, "/_uuids", o.Options)
-	if err != nil {
-		return nil, err
-	}
-	if err = chttp.ResponseError(res); err != nil {
-		return nil, err
-	}
-	return res.Body, nil
+func getUUIDs(ctx context.Context, o *kouch.Options) error {
+	return util.ChttpDo(ctx, http.MethodGet, "/_uuids", o, kouch.HeadDumper(ctx), kouch.Output(ctx))
 }

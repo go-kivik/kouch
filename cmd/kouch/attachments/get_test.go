@@ -45,15 +45,6 @@ func TestGetAttachmentOpts(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "head",
-			args: []string{"--" + kouch.FlagHead, "foo.txt"},
-			expected: &kouch.Options{
-				Target:  &kouch.Target{Filename: "foo.txt"},
-				Options: &chttp.Options{},
-				Head:    true,
-			},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -171,6 +162,28 @@ func TestGetAttachmentCmd(t *testing.T) {
 		return test.CmdTest{
 			Args: []string{"--" + kouch.FlagHead, s.URL + "/foo/bar/baz.txt"},
 			Stdout: "Content-Length: 18\r\n" +
+				"Content-Type: text/plain; charset=utf-8\r\n" +
+				"Date: Mon, 20 Aug 2018 08:55:52 GMT\r\n",
+		}
+	})
+	tests.Add("dump header", func(t *testing.T) interface{} {
+		s := testy.ServeResponseValidator(t, &http.Response{
+			StatusCode: 200,
+			Header:     http.Header{"Date": []string{"Mon, 20 Aug 2018 08:55:52 GMT"}},
+			Body:       ioutil.NopCloser(strings.NewReader("attachment content")),
+		}, func(t *testing.T, req *http.Request) {
+			if req.Method != http.MethodGet {
+				t.Errorf("Unexpected method: %s", req.Method)
+			}
+			if req.URL.Path != "/foo/bar/baz.txt" {
+				t.Errorf("Unexpected req path: %s", req.URL.Path)
+			}
+		})
+		tests.Cleanup(s.Close)
+		return test.CmdTest{
+			Args:   []string{"--" + kouch.FlagDumpHeader, "%", s.URL + "/foo/bar/baz.txt"},
+			Stdout: "attachment content",
+			Stderr: "Content-Length: 18\r\n" +
 				"Content-Type: text/plain; charset=utf-8\r\n" +
 				"Date: Mon, 20 Aug 2018 08:55:52 GMT\r\n",
 		}

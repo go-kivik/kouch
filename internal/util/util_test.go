@@ -3,7 +3,7 @@ package util
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -16,6 +16,7 @@ import (
 
 func TestChttpDo(t *testing.T) {
 	type cdTest struct {
+		method       string
 		path         string
 		options      *kouch.Options
 		head, body   bool // Indicate whether to pass an io.Writer for the respective part
@@ -41,6 +42,7 @@ func TestChttpDo(t *testing.T) {
 					}
 				})
 			return cdTest{
+				method:       "GET",
 				options:      &kouch.Options{Target: &kouch.Target{Root: s.URL + "/foo"}},
 				path:         "bar",
 				body:         true,
@@ -68,6 +70,7 @@ func TestChttpDo(t *testing.T) {
 					}
 				})
 			return cdTest{
+				method:  "GET",
 				options: &kouch.Options{Target: &kouch.Target{Root: s.URL + "/foo"}},
 				path:    "bar",
 				head:    true,
@@ -95,6 +98,7 @@ func TestChttpDo(t *testing.T) {
 					}
 				})
 			return cdTest{
+				method:  "GET",
 				options: &kouch.Options{Target: &kouch.Target{Root: s.URL + "/foo"}},
 				path:    "bar",
 				head:    true,
@@ -110,22 +114,21 @@ func TestChttpDo(t *testing.T) {
 	for name, fn := range tests {
 		t.Run(name, func(t *testing.T) {
 			test := fn(t)
-			var head, body *bytes.Buffer
+			var head, body io.Writer
 			if test.head {
 				head = &bytes.Buffer{}
 			}
 			if test.body {
-				fmt.Printf("body\n")
 				body = &bytes.Buffer{}
 			}
-			err := ChttpGet(context.Background(), test.path, test.options, head, body)
+			err := ChttpDo(context.Background(), test.method, test.path, test.options, NopWriteCloser(head), NopWriteCloser(body))
 			testy.ExitStatusError(t, test.err, test.status, err)
 			var resultHead, resultBody string
 			if head != nil {
-				resultHead = head.String()
+				resultHead = head.(*bytes.Buffer).String()
 			}
 			if body != nil {
-				resultBody = body.String()
+				resultBody = body.(*bytes.Buffer).String()
 			}
 			if d := diff.Text(test.expectedHead, resultHead); d != nil {
 				t.Errorf("Head differs:\n%s", d)

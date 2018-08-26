@@ -8,6 +8,21 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 )
 
+// Underlying returns the unwrapped io.Writer, or the original if it was not
+// wrapped.
+func Underlying(w io.Writer) io.Writer {
+	if u, ok := w.(WrappedWriter); ok {
+		return Underlying(u.Underlying())
+	}
+	return w
+}
+
+// WrappedWriter represents an io.Writerr wrapped by some logic.
+type WrappedWriter interface {
+	// Underlying returns the original, unwrapped, io.WriteCloser
+	Underlying() io.Writer
+}
+
 type processorFunc func(io.Writer, interface{}) error
 
 // processor implements a basic processor
@@ -21,12 +36,17 @@ type processor struct {
 }
 
 var _ io.WriteCloser = &processor{}
+var _ WrappedWriter = &processor{}
 
 func newProcessor(w io.Writer, fn processorFunc) io.WriteCloser {
 	return &processor{
 		underlying: w,
 		fn:         fn,
 	}
+}
+
+func (p *processor) Underlying() io.Writer {
+	return p.underlying
 }
 
 func (p *processor) Write(in []byte) (int, error) {

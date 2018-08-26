@@ -64,10 +64,12 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP request body data. Prefix with '@' to specify a filename.")
 	flags.String(kouch.FlagDataJSON, "", "HTTP request body data, in JSON format.")
 	flags.String(kouch.FlagDataYAML, "", "HTTP request body data, in YAML format.")
+	flags.StringP(kouch.FlagDumpHeader, kouch.FlagShortDumpHeader, "", "Write the received HTTP headers to the specified file. (- = stdout, % = stderr)")
 }
 
 // SetOutput returns a new context with the output parameters configured.
 func SetOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, error) {
+	ctx = kouch.SetOutput(ctx, os.Stdout)
 	ctx, err := setOutput(ctx, flags)
 	if err != nil {
 		return nil, err
@@ -85,17 +87,35 @@ func SetOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, erro
 func setOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, error) {
 	output, err := open(flags, kouch.FlagOutputFile)
 	if err != nil {
-		return ctx, nil
+		return nil, err
 	}
-	if output == os.Stdout {
-		return ctx, nil
+	if output != nil {
+		ctx = kouch.SetOutput(ctx, output)
 	}
-	ctx = kouch.SetOutput(ctx, &nopCloser{output})
+
+	if f := flags.Lookup(kouch.FlagHead); f != nil {
+		head, e := flags.GetBool(kouch.FlagHead)
+		if e != nil {
+			return nil, e
+		}
+		if head {
+			ctx = kouch.SetOutput(ctx, nil)
+			ctx = kouch.SetHeadDumper(ctx, os.Stdout)
+		}
+	}
+
+	headDump, err := open(flags, kouch.FlagDumpHeader)
+	if err != nil {
+		return nil, err
+	}
+	if headDump != nil {
+		ctx = kouch.SetHeadDumper(ctx, headDump)
+	}
 
 	return ctx, nil
 }
 
-func open(flags *pflag.FlagSet, flagName string) (io.Writer, error) {
+func open(flags *pflag.FlagSet, flagName string) (io.WriteCloser, error) {
 	output, err := flags.GetString(flagName)
 	if err != nil {
 		return nil, err
@@ -129,8 +149,8 @@ func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, e
 	if !ok {
 		return nil, errors.Errorf("Unrecognized output format '%s'", name)
 	}
-	p, err := processor.new(flags, w)
-	return &exitStatusWriter{p}, err
+	return processor.new(flags, w)
+	// return &exitStatusWriter{p}, err
 }
 
 type outputMode interface {

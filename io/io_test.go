@@ -20,7 +20,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"data", "data-json", "data-yaml", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
+	testOptions(t, []string{"data", "data-json", "data-yaml", "dump-header", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {
@@ -49,7 +49,7 @@ func TestSelectOutputProcessor(t *testing.T) {
 		{
 			name:     "raw output",
 			args:     []string{"-F", "raw"},
-			expected: &exitStatusWriter{&nopCloser{&bytes.Buffer{}}},
+			expected: &nopCloser{&bytes.Buffer{}},
 		},
 		// {
 		// 	name:     "YAML output",
@@ -201,43 +201,90 @@ func TestOpen(t *testing.T) {
 func TestSetOutput(t *testing.T) {
 	type soTest struct {
 		name       string
+		addFlags   func(*pflag.FlagSet)
 		args       []string
+		outputNil  bool
 		outputFd   uintptr
 		outputName string
-		stderrFd   uintptr
-		stderrName string
+		headNil    bool
 		headFd     uintptr
 		headName   string
 		err        string
-		cleanup    func()
 	}
-	tests := []soTest{
-		{
-			name:       "default, stdout",
-			outputFd:   1,
-			outputName: "/dev/stdout",
+	tests := testy.NewTable()
+	tests.Add("defaults", soTest{
+		outputFd:   1,
+		outputName: "/dev/stdout",
+		headNil:    true,
+	})
+	tests.Add("stdout to stderr", soTest{
+		args:       []string{"--" + kouch.FlagOutputFile, "%"},
+		outputFd:   2,
+		outputName: "/dev/stderr",
+		headNil:    true,
+	})
+	tests.Add("head to stdout", soTest{
+		args:       []string{"--" + kouch.FlagDumpHeader, "-"},
+		outputFd:   1,
+		outputName: "/dev/stdout",
+		headFd:     1,
+		headName:   "/dev/stdout",
+	})
+	tests.Add("--head", soTest{
+		args: []string{"--" + kouch.FlagHead},
+		addFlags: func(f *pflag.FlagSet) {
+			f.Bool(kouch.FlagHead, false, "x")
 		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if test.cleanup != nil {
-				defer test.cleanup()
-			}
-			cmd := &cobra.Command{}
-			AddFlags(cmd.PersistentFlags())
-			cmd.ParseFlags(test.args)
-			ctx := context.Background()
-			var err error
-			ctx, err = setOutput(ctx, cmd.Flags())
-			if err != nil {
-				t.Fatal(err)
-			}
-			f := kouch.Output(ctx)
-			testFile(t, f, test.outputFd, test.outputName)
+		outputNil: true,
+		headFd:    1,
+	})
+	tests.Add("--head and --dump-header", soTest{
+		args: []string{"--" + kouch.FlagHead, "--" + kouch.FlagDumpHeader, "%"},
+		addFlags: func(f *pflag.FlagSet) {
+			f.Bool(kouch.FlagHead, false, "x")
+		},
+		outputNil: true,
+		headFd:    2,
+	})
 
-			_, err = f.Write([]byte("foo"))
-			testy.ErrorRE(t, test.err, err)
+	tests.Run(t, func(t *testing.T, test soTest) {
+		cmd := &cobra.Command{}
+		AddFlags(cmd.PersistentFlags())
+		if fn := test.addFlags; fn != nil {
+			fn(cmd.PersistentFlags())
+		}
+		cmd.ParseFlags(test.args)
+		ctx := context.Background()
+		var err error
+		ctx, err = setOutput(ctx, cmd.Flags())
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Run("output", func(t *testing.T) {
+			testFd(t, kouch.Output(ctx), test.outputNil, test.outputFd)
 		})
+		t.Run("header", func(t *testing.T) {
+			testFd(t, kouch.HeadDumper(ctx), test.headNil, test.headFd)
+		})
+	})
+}
+
+func testFd(t *testing.T, f io.Writer, expectedNil bool, expectedFd uintptr) {
+	if expectedNil {
+		if f != nil {
+			t.Error("Expected nil, got non-nil")
+		}
+		return
+	}
+	switch file := f.(type) {
+	case *os.File:
+		if expectedFd != 0 {
+			if expectedFd != file.Fd() {
+				t.Errorf("Unexpected FD: Got %d, expected %d", file.Fd(), expectedFd)
+			}
+		}
+	default:
+		t.Errorf("Unexpected return type: %T", f)
 	}
 }
 
