@@ -2,6 +2,7 @@
 package test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/flimzy/diff"
@@ -23,6 +24,8 @@ type CmdTest struct {
 // ValidateCmdTest validates a test. It is meant to be passed to
 // testy's tests.Run() method.
 func ValidateCmdTest(t *testing.T, test CmdTest) {
+	defer testy.RestoreEnv()()
+	os.Setenv("HOME", "/dev/null")
 	var err error
 	stdout, stderr := testy.RedirIO(nil, func() {
 		root := registry.Root()
