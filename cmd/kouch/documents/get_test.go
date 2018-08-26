@@ -11,7 +11,7 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/test"
 
 	_ "github.com/go-kivik/kouch/cmd/kouch/get"
 	_ "github.com/go-kivik/kouch/cmd/kouch/put"
@@ -181,19 +181,11 @@ func TestGetDocumentOpts(t *testing.T) {
 }
 
 func TestGetDocumentCmd(t *testing.T) {
-	type gdcTest struct {
-		conf   *kouch.Config
-		args   []string
-		stdout string
-		stderr string
-		err    string
-		status int
-	}
 	tests := testy.NewTable()
-	tests.Add("validation fails", gdcTest{
-		args:   []string{},
-		err:    "No document ID provided",
-		status: chttp.ExitFailedToInitialize,
+	tests.Add("validation fails", test.CmdTest{
+		Args:   []string{},
+		Err:    "No document ID provided",
+		Status: chttp.ExitFailedToInitialize,
 	})
 	tests.Add("success", func(t *testing.T) interface{} {
 		s := testy.ServeResponseValidator(t, &http.Response{
@@ -205,9 +197,9 @@ func TestGetDocumentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gdcTest{
-			args:   []string{s.URL + "/foo/bar"},
-			stdout: `{"foo":123}`,
+		return test.CmdTest{
+			Args:   []string{s.URL + "/foo/bar"},
+			Stdout: `{"foo":123}`,
 		}
 	})
 	tests.Add("slashes", func(t *testing.T) interface{} {
@@ -220,13 +212,13 @@ func TestGetDocumentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gdcTest{
-			args: []string{
+		return test.CmdTest{
+			Args: []string{
 				"--" + kouch.FlagServerRoot, s.URL,
 				"--" + kouch.FlagDatabase, "foo/ba r",
 				"--" + kouch.FlagDocument, "123/b",
 			},
-			stdout: `{"foo":123}`,
+			Stdout: `{"foo":123}`,
 		}
 	})
 	tests.Add("if-none-match", func(t *testing.T) interface{} {
@@ -242,9 +234,9 @@ func TestGetDocumentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gdcTest{
-			args:   []string{"--" + kouch.FlagIfNoneMatch, "oink", s.URL + "/foo/bar"},
-			stdout: `{"foo":123}`,
+		return test.CmdTest{
+			Args:   []string{"--" + kouch.FlagIfNoneMatch, "oink", s.URL + "/foo/bar"},
+			Stdout: `{"foo":123}`,
 		}
 	})
 	tests.Add("rev", func(t *testing.T) interface{} {
@@ -260,9 +252,9 @@ func TestGetDocumentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gdcTest{
-			args:   []string{"--" + kouch.FlagRev, "oink", s.URL + "/foo/bar"},
-			stdout: `{"foo":123}`,
+		return test.CmdTest{
+			Args:   []string{"--" + kouch.FlagRev, "oink", s.URL + "/foo/bar"},
+			Stdout: `{"foo":123}`,
 		}
 	})
 	tests.Add("head", func(t *testing.T) interface{} {
@@ -282,27 +274,13 @@ func TestGetDocumentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gdcTest{
-			args: []string{"--" + kouch.FlagHead, s.URL + "/foo/bar/baz.txt"},
-			stdout: "Content-Length: 11\r\n" +
+		return test.CmdTest{
+			Args: []string{"--" + kouch.FlagHead, s.URL + "/foo/bar/baz.txt"},
+			Stdout: "Content-Length: 11\r\n" +
 				"Content-Type: application/json\r\n" +
 				"Date: Mon, 20 Aug 2018 08:55:52 GMT\r\n",
 		}
 	})
 
-	tests.Run(t, func(t *testing.T, test gdcTest) {
-		var err error
-		stdout, stderr := testy.RedirIO(nil, func() {
-			root := registry.Root()
-			root.SetArgs(append([]string{"get", "doc"}, test.args...))
-			err = root.Execute()
-		})
-		if d := diff.Text(test.stdout, stdout); d != nil {
-			t.Errorf("STDOUT:\n%s", d)
-		}
-		if d := diff.Text(test.stderr, stderr); d != nil {
-			t.Errorf("STDERR:\n%s", d)
-		}
-		testy.ExitStatusError(t, test.err, test.status, err)
-	})
+	tests.Run(t, test.ValidateCmdTest([]string{"get", "doc"}))
 }
