@@ -44,16 +44,15 @@ func putAttCmd() *cobra.Command {
 
 func putAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := putAttachmentOpts(cmd)
+	opts, err := putAttachmentOpts(ctx, cmd)
 	if err != nil {
 		return err
 	}
 	return putAttachment(ctx, opts)
 }
 
-func putAttachmentOpts(cmd *cobra.Command) (*kouch.Options, error) {
-	ctx := kouch.GetContext(cmd)
-	o, err := commonOpts(cmd)
+func putAttachmentOpts(ctx context.Context, cmd *cobra.Command) (*kouch.Options, error) {
+	o, err := commonOpts(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}

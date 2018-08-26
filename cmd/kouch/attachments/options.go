@@ -1,6 +1,8 @@
 package attachments
 
 import (
+	"context"
+
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
@@ -32,8 +34,7 @@ func validateTarget(t *kouch.Target) error {
 	return nil
 }
 
-func commonOpts(cmd *cobra.Command) (*kouch.Options, error) {
-	ctx := kouch.GetContext(cmd)
+func commonOpts(ctx context.Context, cmd *cobra.Command) (*kouch.Options, error) {
 	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
