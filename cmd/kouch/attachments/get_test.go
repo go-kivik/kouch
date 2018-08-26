@@ -11,7 +11,7 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/test"
 
 	_ "github.com/go-kivik/kouch/cmd/kouch/get"
 	_ "github.com/go-kivik/kouch/cmd/kouch/put"
@@ -77,19 +77,11 @@ func TestGetAttachmentOpts(t *testing.T) {
 }
 
 func TestGetAttachmentCmd(t *testing.T) {
-	type gacTest struct {
-		conf   *kouch.Config
-		args   []string
-		stdout string
-		stderr string
-		err    string
-		status int
-	}
 	tests := testy.NewTable()
-	tests.Add("validation fails", gacTest{
-		args:   []string{},
-		err:    "No filename provided",
-		status: chttp.ExitFailedToInitialize,
+	tests.Add("validation fails", test.CmdTest{
+		Args:   []string{},
+		Err:    "No filename provided",
+		Status: chttp.ExitFailedToInitialize,
 	})
 	tests.Add("slashes", func(t *testing.T) interface{} {
 		s := testy.ServeResponseValidator(t, &http.Response{
@@ -101,14 +93,14 @@ func TestGetAttachmentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gacTest{
-			args: []string{
+		return test.CmdTest{
+			Args: []string{
 				"--" + kouch.FlagServerRoot, s.URL,
 				"--" + kouch.FlagDatabase, "foo/ba r",
 				"--" + kouch.FlagDocument, "123/b",
 				"--" + kouch.FlagFilename, "foo/bar.txt",
 			},
-			stdout: "attachment content\n",
+			Stdout: "attachment content\n",
 		}
 	})
 	tests.Add("success", func(t *testing.T) interface{} {
@@ -121,9 +113,9 @@ func TestGetAttachmentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gacTest{
-			args:   []string{s.URL + "/foo/bar/foo.txt"},
-			stdout: "attachment content",
+		return test.CmdTest{
+			Args:   []string{s.URL + "/foo/bar/foo.txt"},
+			Stdout: "attachment content",
 		}
 	})
 	tests.Add("if-none-match", func(t *testing.T) interface{} {
@@ -139,9 +131,9 @@ func TestGetAttachmentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gacTest{
-			args:   []string{"--" + kouch.FlagIfNoneMatch, "oink", s.URL + "/foo/bar/baz.txt"},
-			stdout: "attachment content",
+		return test.CmdTest{
+			Args:   []string{"--" + kouch.FlagIfNoneMatch, "oink", s.URL + "/foo/bar/baz.txt"},
+			Stdout: "attachment content",
 		}
 	})
 	tests.Add("rev", func(t *testing.T) interface{} {
@@ -157,9 +149,9 @@ func TestGetAttachmentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gacTest{
-			args:   []string{"--" + kouch.FlagRev, "oink", s.URL + "/foo/bar/baz.txt"},
-			stdout: "attachment content",
+		return test.CmdTest{
+			Args:   []string{"--" + kouch.FlagRev, "oink", s.URL + "/foo/bar/baz.txt"},
+			Stdout: "attachment content",
 		}
 	})
 	tests.Add("head", func(t *testing.T) interface{} {
@@ -176,27 +168,13 @@ func TestGetAttachmentCmd(t *testing.T) {
 			}
 		})
 		tests.Cleanup(s.Close)
-		return gacTest{
-			args: []string{"--" + kouch.FlagHead, s.URL + "/foo/bar/baz.txt"},
-			stdout: "Content-Length: 18\r\n" +
+		return test.CmdTest{
+			Args: []string{"--" + kouch.FlagHead, s.URL + "/foo/bar/baz.txt"},
+			Stdout: "Content-Length: 18\r\n" +
 				"Content-Type: text/plain; charset=utf-8\r\n" +
 				"Date: Mon, 20 Aug 2018 08:55:52 GMT\r\n",
 		}
 	})
 
-	tests.Run(t, func(t *testing.T, test gacTest) {
-		var err error
-		stdout, stderr := testy.RedirIO(nil, func() {
-			root := registry.Root()
-			root.SetArgs(append([]string{"get", "att"}, test.args...))
-			err = root.Execute()
-		})
-		if d := diff.Text(test.stdout, stdout); d != nil {
-			t.Errorf("STDOUT:\n%s", d)
-		}
-		if d := diff.Text(test.stderr, stderr); d != nil {
-			t.Errorf("STDERR:\n%s", d)
-		}
-		testy.ExitStatusError(t, test.err, test.status, err)
-	})
+	tests.Run(t, test.ValidateCmdTest([]string{"get", "att"}))
 }
