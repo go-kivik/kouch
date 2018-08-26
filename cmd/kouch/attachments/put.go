@@ -11,6 +11,7 @@ import (
 	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -44,20 +45,20 @@ func putAttCmd() *cobra.Command {
 
 func putAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := putAttachmentOpts(ctx, cmd)
+	opts, err := putAttachmentOpts(ctx, cmd.Flags())
 	if err != nil {
 		return err
 	}
 	return putAttachment(ctx, opts)
 }
 
-func putAttachmentOpts(ctx context.Context, cmd *cobra.Command) (*kouch.Options, error) {
-	o, err := commonOpts(ctx, cmd)
+func putAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
+	o, err := commonOpts(ctx, flags)
 	if err != nil {
 		return nil, err
 	}
 
-	autoRev, err := cmd.Flags().GetBool(kouch.FlagAutoRev)
+	autoRev, err := flags.GetBool(kouch.FlagAutoRev)
 	if err != nil {
 		return nil, err
 	}
@@ -69,14 +70,14 @@ func putAttachmentOpts(ctx context.Context, cmd *cobra.Command) (*kouch.Options,
 		o.Query().Set("rev", rev)
 	}
 
-	o.Options.Body = kouch.Input(kouch.GetContext(cmd))
+	o.Options.Body = kouch.Input(ctx)
 	var ct string
-	ct, err = cmd.Flags().GetString(flagContentType)
+	ct, err = flags.GetString(flagContentType)
 	if err != nil {
 		return nil, err
 	}
 	if ct == "" {
-		guess, err := cmd.Flags().GetBool(flagGuessContentType)
+		guess, err := flags.GetBool(flagGuessContentType)
 		if err != nil {
 			return nil, err
 		}

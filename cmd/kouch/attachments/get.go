@@ -13,6 +13,7 @@ import (
 	"github.com/go-kivik/kouch/io"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func init() {
@@ -36,19 +37,19 @@ func getAttCmd() *cobra.Command {
 
 func getAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	ctx := kouch.GetContext(cmd)
-	opts, err := getAttachmentOpts(ctx, cmd)
+	opts, err := getAttachmentOpts(ctx, cmd.Flags())
 	if err != nil {
 		return err
 	}
 	return getAttachment(ctx, opts)
 }
 
-func getAttachmentOpts(ctx context.Context, cmd *cobra.Command) (*kouch.Options, error) {
-	o, err := commonOpts(ctx, cmd)
+func getAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
+	o, err := commonOpts(ctx, flags)
 	if err != nil {
 		return nil, err
 	}
-	o.Options.IfNoneMatch, err = cmd.Flags().GetString(kouch.FlagIfNoneMatch)
+	o.Options.IfNoneMatch, err = flags.GetString(kouch.FlagIfNoneMatch)
 	if err != nil {
 		return nil, err
 	}
