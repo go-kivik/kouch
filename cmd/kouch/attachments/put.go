@@ -2,16 +2,13 @@ package attachments
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"mime"
 	"net/http"
-	"net/url"
 	"path/filepath"
 
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 )
@@ -37,6 +34,7 @@ func putAttCmd() *cobra.Command {
 		RunE: putAttachmentCmd,
 	}
 	addCommonFlags(cmd.Flags())
+	cmd.Flags().BoolP(kouch.FlagAutoRev, kouch.FlagShortAutoRev, false, "Fetch the current rev before update. Use with caution!")
 
 	cmd.Flags().String(flagContentType, "", "Attachment MIME type.")
 	cmd.Flags().Bool(flagGuessContentType, false, "Attempt to guess the content type from the file. Falls back to 'application/octet-stream'.")
@@ -50,20 +48,28 @@ func putAttachmentCmd(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := putAttachment(ctx, opts)
-	if err != nil {
-		return err
-	}
-	defer resp.Close()
-	_, err = io.Copy(kouch.Output(ctx), resp)
-	return err
+	return putAttachment(ctx, opts)
 }
 
 func putAttachmentOpts(cmd *cobra.Command) (*kouch.Options, error) {
+	ctx := kouch.GetContext(cmd)
 	o, err := commonOpts(cmd)
 	if err != nil {
 		return nil, err
 	}
+
+	autoRev, err := cmd.Flags().GetBool(kouch.FlagAutoRev)
+	if err != nil {
+		return nil, err
+	}
+	if autoRev {
+		rev, e := util.FetchRev(ctx, o)
+		if e != nil {
+			return nil, e
+		}
+		o.Query().Set("rev", rev)
+	}
+
 	o.Options.Body = kouch.Input(kouch.GetContext(cmd))
 	var ct string
 	ct, err = cmd.Flags().GetString(flagContentType)
@@ -86,21 +92,9 @@ func putAttachmentOpts(cmd *cobra.Command) (*kouch.Options, error) {
 	return o, nil
 }
 
-func putAttachment(ctx context.Context, o *kouch.Options) (io.ReadCloser, error) {
+func putAttachment(ctx context.Context, o *kouch.Options) error {
 	if err := validateTarget(o.Target); err != nil {
-		return nil, err
+		return err
 	}
-	c, err := chttp.New(context.TODO(), o.Root)
-	if err != nil {
-		return nil, err
-	}
-	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	res, err := c.DoReq(context.TODO(), http.MethodPut, path, o.Options)
-	if err != nil {
-		return nil, err
-	}
-	if err = chttp.ResponseError(res); err != nil {
-		return nil, err
-	}
-	return res.Body, nil
+	return util.ChttpDo(ctx, http.MethodPut, util.AttPath(o), o, kouch.HeadDumper(ctx), kouch.Output(ctx))
 }

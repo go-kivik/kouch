@@ -12,3 +12,8 @@ import (
 func DocPath(o *kouch.Options) string {
 	return fmt.Sprintf("/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document))
 }
+
+// AttPath calculates the server path to an attachment.
+func AttPath(o *kouch.Options) string {
+	return fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
+}

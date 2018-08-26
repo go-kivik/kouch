@@ -1,8 +1,6 @@
 package attachments
 
 import (
-	"net/url"
-
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
@@ -61,12 +59,8 @@ func commonOpts(cmd *cobra.Command) (*kouch.Options, error) {
 		}
 	}
 
-	rev, err := cmd.Flags().GetString(kouch.FlagRev)
-	if err != nil {
-		return nil, err
-	}
-	if rev != "" {
-		o.Options.Query = url.Values{"rev": []string{rev}}
+	if e := o.SetParamString(cmd.Flags(), kouch.FlagRev); e != nil {
+		return nil, e
 	}
 
 	return o, nil
