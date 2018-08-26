@@ -6,16 +6,19 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	kio "github.com/go-kivik/kouch/io"
 )
 
 // ChttpDo performs an HTTP request (GET is downgraded to HEAD if
 // body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
 func ChttpDo(ctx context.Context, method, path string, o *kouch.Options, head, body io.Writer) error {
 	nilBody := body == nil || reflect.ValueOf(body).IsNil()
+	nilHead := head == nil || reflect.ValueOf(head).IsNil()
 	c, err := chttp.New(ctx, o.Root)
 	if err != nil {
 		return err
@@ -33,18 +36,58 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options, head, b
 		return err
 	}
 	defer res.Body.Close()
-	if head != nil && !reflect.ValueOf(head).IsNil() {
+	if !nilHead {
 		if e := res.Header.Write(head); e != nil {
 			return e
 		}
-		if c, ok := head.(io.WriteCloser); ok {
-			if e := c.Close(); e != nil {
-				return e
-			}
+	}
+	if !nilBody {
+		if e := CopyAll(body, res.Body); e != nil {
+			return e
+		}
+	}
+
+	// If head and body go to the same place, output a blank linke
+	// between them.
+	if sameFd(head, body) {
+		if _, e := body.Write([]byte("\r\n")); e != nil {
+			return e
+		}
+	}
+
+	if !nilHead {
+		if e := close(head); e != nil {
+			return e
 		}
 	}
 	if !nilBody {
-		return CopyAll(body, res.Body)
+		if e := close(body); e != nil {
+			return e
+		}
 	}
+
 	return nil
+}
+
+func sameFd(w1, w2 io.Writer) bool {
+	if w1 == nil || w2 == nil {
+		return false
+	}
+	if w1 == w2 {
+		return true
+	}
+	u1 := kio.Underlying(w1)
+	u2 := kio.Underlying(w2)
+	if u1 == u2 {
+		return true
+	}
+	f1, _ := u1.(*os.File)
+	if f1 == nil {
+		return false
+	}
+	f2, _ := u2.(*os.File)
+	if f2 == nil {
+		return false
+	}
+	return f1.Fd() == f2.Fd()
 }

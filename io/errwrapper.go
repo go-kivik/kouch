@@ -12,6 +12,11 @@ type exitStatusWriter struct {
 }
 
 var _ io.WriteCloser = &exitStatusWriter{}
+var _ WrappedWriter = &exitStatusWriter{}
+
+func (w *exitStatusWriter) Underlying() io.Writer {
+	return w.WriteCloser
+}
 
 func (w *exitStatusWriter) Write(p []byte) (int, error) {
 	c, err := w.WriteCloser.Write(p)

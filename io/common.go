@@ -12,7 +12,7 @@ import (
 // wrapped.
 func Underlying(w io.Writer) io.Writer {
 	if u, ok := w.(WrappedWriter); ok {
-		return u.Underlying()
+		return Underlying(u.Underlying())
 	}
 	return w
 }
