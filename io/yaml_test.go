@@ -19,51 +19,21 @@ func TestYamlModeConfig(t *testing.T) {
 	testOptions(t, []string{}, cmd)
 }
 
-func TestYamlNew(t *testing.T) {
+func TestYAMLOutput(t *testing.T) {
 	tests := []struct {
-		name     string
-		args     []string
-		parseErr string
-		expected *yamlProcessor
-		err      string
+		name             string
+		cmd              *cobra.Command
+		args             []string
+		flagsErr, newErr string
+		input            string
+		expected         string
+		err              string
 	}{
-		{
-			name:     "happy path",
-			args:     nil,
-			expected: &yamlProcessor{underlying: &bytes.Buffer{}},
-		},
 		{
 			name:     "invalid args",
 			args:     []string{"--foo"},
-			parseErr: "unknown flag: --foo",
+			flagsErr: "unknown flag: --foo",
 		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			cmd := &cobra.Command{}
-			mode := &yamlMode{}
-			mode.config(cmd.PersistentFlags())
-
-			err := cmd.ParseFlags(test.args)
-			testy.Error(t, test.parseErr, err)
-
-			buf := &bytes.Buffer{}
-			result, err := mode.new(cmd, buf)
-			testy.Error(t, test.err, err)
-			if d := diff.Interface(test.expected, result); d != nil {
-				t.Error(d)
-			}
-		})
-	}
-}
-
-func TestYAMLOutput(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-		err      string
-	}{
 		{
 			name:  "happy path",
 			input: `{"foo":"bar", "baz":123, "qux": [1,2,3]}`,
@@ -82,10 +52,19 @@ qux:
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			mode := &yamlMode{}
+			mode.config(cmd.PersistentFlags())
+
+			err := cmd.ParseFlags(test.args)
+			testy.Error(t, test.flagsErr, err)
+
 			buf := &bytes.Buffer{}
-			p := newYAMLProcessor(buf)
+			p, err := mode.new(cmd, buf)
+			testy.Error(t, test.newErr, err)
+
 			defer p.Close()
-			_, err := io.Copy(p, strings.NewReader(test.input))
+			_, err = io.Copy(p, strings.NewReader(test.input))
 			if err == nil {
 				err = p.Close()
 			}
