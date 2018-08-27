@@ -32,7 +32,11 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	defer close(body)
 	nilBody := body == nil || reflect.ValueOf(body).IsNil()
 	nilHead := head == nil || reflect.ValueOf(head).IsNil()
-	c, err := NewChttp(o.Root)
+	addr, err := o.ServerURL()
+	if err != nil {
+		return err
+	}
+	c, err := NewChttp(addr)
 	if err != nil {
 		return err
 	}
