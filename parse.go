@@ -22,53 +22,44 @@ type Target struct {
 	Password string
 }
 
-// DocumentFromFlags sets t.DocID from the passed flagset.
-func (t *Target) DocumentFromFlags(flags *pflag.FlagSet) error {
-	id, err := flags.GetString(FlagDocument)
+var duplicateConfigErrors = map[string]error{
+	FlagDatabase: errors.NewExitError(chttp.ExitFailedToInitialize,
+		"Must not use --%s and pass database as part of the target", FlagDatabase),
+	FlagDocument: errors.NewExitError(chttp.ExitFailedToInitialize,
+		"Must not use --%s and pass document ID as part of the target", FlagDocument),
+	FlagFilename: errors.NewExitError(chttp.ExitFailedToInitialize,
+		"Must not use --%s and pass separate filename", FlagFilename),
+}
+
+func setFromFlags(target *string, flags *pflag.FlagSet, flagName string) error {
+	if flag := flags.Lookup(flagName); flag == nil {
+		return nil
+	}
+	value, err := flags.GetString(flagName)
 	if err != nil {
 		return err
 	}
-	if id == "" {
+	if value == "" {
 		return nil
 	}
-	if t.Document != "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize,
-			"Must not use --%s and pass document ID as part of the target", FlagDocument)
+	if *target != "" {
+		return duplicateConfigErrors[flagName]
 	}
-	t.Document = id
+	*target = value
 	return nil
+}
+
+// DocumentFromFlags sets t.DocID from the passed flagset.
+func (t *Target) DocumentFromFlags(flags *pflag.FlagSet) error {
+	return setFromFlags(&t.Document, flags, FlagDocument)
 }
 
 // DatabaseFromFlags sets t.Database from the passed flagset.
 func (t *Target) DatabaseFromFlags(flags *pflag.FlagSet) error {
-	db, err := flags.GetString(FlagDatabase)
-	if err != nil {
-		return err
-	}
-	if db == "" {
-		return nil
-	}
-	if t.Database != "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize,
-			"Must not use --%s and pass database as part of the target", FlagDatabase)
-	}
-	t.Database = db
-	return nil
+	return setFromFlags(&t.Database, flags, FlagDatabase)
 }
 
 // FilenameFromFlags sets t.Filename from the passed flagset.
 func (t *Target) FilenameFromFlags(flags *pflag.FlagSet) error {
-	fn, err := flags.GetString(FlagFilename)
-	if err != nil {
-		return err
-	}
-	if fn == "" {
-		return nil
-	}
-	if t.Filename != "" {
-		return errors.NewExitError(chttp.ExitFailedToInitialize,
-			"Must not use --%s and pass separate filename", FlagFilename)
-	}
-	t.Filename = fn
-	return nil
+	return setFromFlags(&t.Filename, flags, FlagFilename)
 }

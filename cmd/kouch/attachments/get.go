@@ -45,7 +45,7 @@ func getAttachmentCmd(cmd *cobra.Command, _ []string) error {
 }
 
 func getAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
-	o, err := commonOpts(ctx, flags)
+	o, err := util.CommonOptions(ctx, target.Attachment, flags)
 	if err != nil {
 		return nil, err
 	}
