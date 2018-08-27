@@ -56,21 +56,9 @@ func putAttachmentCmd(cmd *cobra.Command, _ []string) error {
 }
 
 func putAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
-	o, err := commonOpts(ctx, flags)
+	o, err := util.CommonOptions(ctx, target.Attachment, flags)
 	if err != nil {
 		return nil, err
-	}
-
-	autoRev, err := flags.GetBool(kouch.FlagAutoRev)
-	if err != nil {
-		return nil, err
-	}
-	if autoRev {
-		rev, e := util.FetchRev(ctx, o)
-		if e != nil {
-			return nil, e
-		}
-		o.Query().Set("rev", rev)
 	}
 
 	o.Options.Body = kouch.Input(ctx)

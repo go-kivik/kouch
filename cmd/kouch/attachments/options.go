@@ -1,12 +1,9 @@
 package attachments
 
 import (
-	"context"
-
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/errors"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/pflag"
 )
 
@@ -31,37 +28,4 @@ func validateTarget(t *kouch.Target) error {
 		return errors.NewExitError(chttp.ExitFailedToInitialize, "No root URL provided")
 	}
 	return nil
-}
-
-func commonOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
-	o := kouch.NewOptions()
-	if tgt := kouch.GetTarget(ctx); tgt != "" {
-		var err error
-		o.Target, err = target.Parse(target.Attachment, tgt)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := o.Target.FilenameFromFlags(flags); err != nil {
-		return nil, err
-	}
-	if err := o.Target.DocumentFromFlags(flags); err != nil {
-		return nil, err
-	}
-	if err := o.Target.DatabaseFromFlags(flags); err != nil {
-		return nil, err
-	}
-
-	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if o.Root == "" {
-			o.Root = defCtx.Root
-		}
-	}
-
-	if e := o.SetParamString(flags, kouch.FlagRev); e != nil {
-		return nil, e
-	}
-
-	return o, nil
 }

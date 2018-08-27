@@ -67,6 +67,9 @@ func (o *Options) SetParamStringSlice(f *pflag.FlagSet, flagName string) error {
 // SetParamString sets the query parameter string value specified by flagName,
 // if it differs from the default.
 func (o *Options) SetParamString(f *pflag.FlagSet, flagName string) error {
+	if flag := f.Lookup(flagName); flag == nil {
+		return nil
+	}
 	v, err := f.GetString(flagName)
 	if err == nil && v != f.Lookup(flagName).DefValue {
 		o.Query().Add(param(flagName), v)

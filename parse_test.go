@@ -28,12 +28,6 @@ func TestFilenameFromFlags(t *testing.T) {
 			expected: &Target{},
 		},
 		{
-			name:   "no flag defined",
-			target: &Target{},
-			flags:  flagSet(),
-			err:    "flag accessed but not defined: filename",
-		},
-		{
 			name:   "filename already set",
 			target: &Target{Filename: "foo"},
 			flags: func() *pflag.FlagSet {
@@ -89,12 +83,6 @@ func TestDocumentFromFlags(t *testing.T) {
 			expected: &Target{},
 		},
 		{
-			name:   "no flag defined",
-			target: &Target{},
-			flags:  flagSet(),
-			err:    "flag accessed but not defined: id",
-		},
-		{
 			name:   "id already set",
 			target: &Target{Document: "321"},
 			flags: func() *pflag.FlagSet {
@@ -148,12 +136,6 @@ func TestDatabaseFromFlags(t *testing.T) {
 			target:   &Target{},
 			flags:    dbFlagSet(),
 			expected: &Target{},
-		},
-		{
-			name:   "no flag defined",
-			target: &Target{},
-			flags:  flagSet(),
-			err:    "flag accessed but not defined: database",
 		},
 		{
 			name:   "id already set",

@@ -24,6 +24,9 @@ type Target struct {
 
 // DocumentFromFlags sets t.DocID from the passed flagset.
 func (t *Target) DocumentFromFlags(flags *pflag.FlagSet) error {
+	if flag := flags.Lookup(FlagDocument); flag == nil {
+		return nil
+	}
 	id, err := flags.GetString(FlagDocument)
 	if err != nil {
 		return err
@@ -41,6 +44,9 @@ func (t *Target) DocumentFromFlags(flags *pflag.FlagSet) error {
 
 // DatabaseFromFlags sets t.Database from the passed flagset.
 func (t *Target) DatabaseFromFlags(flags *pflag.FlagSet) error {
+	if flag := flags.Lookup(FlagDatabase); flag == nil {
+		return nil
+	}
 	db, err := flags.GetString(FlagDatabase)
 	if err != nil {
 		return err
@@ -58,6 +64,9 @@ func (t *Target) DatabaseFromFlags(flags *pflag.FlagSet) error {
 
 // FilenameFromFlags sets t.Filename from the passed flagset.
 func (t *Target) FilenameFromFlags(flags *pflag.FlagSet) error {
+	if flag := flags.Lookup(FlagFilename); flag == nil {
+		return nil
+	}
 	fn, err := flags.GetString(FlagFilename)
 	if err != nil {
 		return err
