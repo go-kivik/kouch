@@ -198,3 +198,42 @@ var _ driver.AttachmentMetaGetter = &AttachmentMetaGetter{}
 func (db *AttachmentMetaGetter) GetAttachmentMeta(ctx context.Context, docID, rev, filename string, options map[string]interface{}) (*driver.Attachment, error) {
 	return db.GetAttachmentMetaFunc(ctx, docID, rev, filename, options)
 }
+
+// DesignDocer mocks a driver.DB and driver.DesignDocer
+type DesignDocer struct {
+	*DB
+	DesignDocsFunc func(context.Context, map[string]interface{}) (driver.Rows, error)
+}
+
+var _ driver.DesignDocer = &DesignDocer{}
+
+// DesignDocs calls db.DesignDocsFunc
+func (db *DesignDocer) DesignDocs(ctx context.Context, options map[string]interface{}) (driver.Rows, error) {
+	return db.DesignDocsFunc(ctx, options)
+}
+
+// LocalDocer mocks a driver.DB and driver.DesignDocer
+type LocalDocer struct {
+	*DB
+	LocalDocsFunc func(context.Context, map[string]interface{}) (driver.Rows, error)
+}
+
+var _ driver.LocalDocer = &LocalDocer{}
+
+// LocalDocs calls db.LocalDocsFunc
+func (db *LocalDocer) LocalDocs(ctx context.Context, options map[string]interface{}) (driver.Rows, error) {
+	return db.LocalDocsFunc(ctx, options)
+}
+
+// Purger mocks a driver.DB and driver.Purger
+type Purger struct {
+	*DB
+	PurgeFunc func(context.Context, map[string][]string) (*driver.PurgeResult, error)
+}
+
+var _ driver.Purger = &Purger{}
+
+// Purge calls db.PurgeFunc
+func (db *Purger) Purge(ctx context.Context, docMap map[string][]string) (*driver.PurgeResult, error) {
+	return db.PurgeFunc(ctx, docMap)
+}

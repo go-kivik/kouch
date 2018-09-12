@@ -32,14 +32,14 @@ func mergeOptions(otherOpts ...Options) (Options, error) {
 
 // New creates a new client object specified by its database driver name
 // and a driver-specific data source name.
-func New(ctx context.Context, driverName, dataSourceName string) (*Client, error) {
+func New(driverName, dataSourceName string) (*Client, error) {
 	driversMu.RLock()
 	driveri, ok := drivers[driverName]
 	driversMu.RUnlock()
 	if !ok {
 		return nil, errors.Statusf(StatusBadAPICall, "kivik: unknown driver %q (forgotten import?)", driverName)
 	}
-	client, err := driveri.NewClient(ctx, dataSourceName)
+	client, err := driveri.NewClient(dataSourceName)
 	if err != nil {
 		return nil, err
 	}
@@ -153,4 +153,46 @@ func (c *Client) Authenticate(ctx context.Context, a interface{}) error {
 
 func missingArg(arg string) error {
 	return errors.Statusf(StatusBadRequest, "kivik: %s required", arg)
+}
+
+// DBsStats returns database statistics about one or more databases.
+func (c *Client) DBsStats(ctx context.Context, dbnames []string) ([]*DBStats, error) {
+	dbstats, err := c.nativeDBsStats(ctx, dbnames)
+	switch StatusCode(err) {
+	case StatusNotFound, StatusNotImplemented:
+		return c.fallbackDBsStats(ctx, dbnames)
+	}
+	return dbstats, err
+}
+
+func (c *Client) fallbackDBsStats(ctx context.Context, dbnames []string) ([]*DBStats, error) {
+	dbstats := make([]*DBStats, len(dbnames))
+	for i, dbname := range dbnames {
+		db, err := c.DB(ctx, dbname)
+		if err != nil {
+			return nil, err
+		}
+		stat, err := db.Stats(ctx)
+		if err != nil {
+			return nil, err
+		}
+		dbstats[i] = stat
+	}
+	return dbstats, nil
+}
+
+func (c *Client) nativeDBsStats(ctx context.Context, dbnames []string) ([]*DBStats, error) {
+	statser, ok := c.driverClient.(driver.DBsStatser)
+	if !ok {
+		return nil, errors.Status(StatusNotImplemented, "kivik: not supported by driver")
+	}
+	stats, err := statser.DBsStats(ctx, dbnames)
+	if err != nil {
+		return nil, err
+	}
+	dbstats := make([]*DBStats, len(stats))
+	for i, stat := range stats {
+		dbstats[i] = driverStats2kivikStats(stat)
+	}
+	return dbstats, nil
 }

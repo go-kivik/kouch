@@ -11,7 +11,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -65,11 +64,20 @@ func optionsToParams(opts ...map[string]interface{}) (url.Values, error) {
 
 // rowsQuery performs a query that returns a rows iterator.
 func (d *db) rowsQuery(ctx context.Context, path string, opts map[string]interface{}) (driver.Rows, error) {
-	options, err := optionsToParams(opts)
+	query, err := optionsToParams(opts)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := d.Client.DoReq(ctx, kivik.MethodGet, d.path(path), &chttp.Options{Query: options})
+	options := &chttp.Options{Query: query}
+	method := kivik.MethodGet
+	if keys, ok := query["keys"]; ok {
+		method = kivik.MethodPost
+		options.Body = chttp.EncodeBody(map[string][]string{
+			"keys": keys,
+		})
+		delete(query, "keys")
+	}
+	resp, err := d.Client.DoReq(ctx, method, d.path(path), options)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +90,16 @@ func (d *db) rowsQuery(ctx context.Context, path string, opts map[string]interfa
 // AllDocs returns all of the documents in the database.
 func (d *db) AllDocs(ctx context.Context, opts map[string]interface{}) (driver.Rows, error) {
 	return d.rowsQuery(ctx, "_all_docs", opts)
+}
+
+// DesignDocs returns all of the documents in the database.
+func (d *db) DesignDocs(ctx context.Context, opts map[string]interface{}) (driver.Rows, error) {
+	return d.rowsQuery(ctx, "_design_docs", opts)
+}
+
+// LocalDocs returns all of the documents in the database.
+func (d *db) LocalDocs(ctx context.Context, opts map[string]interface{}) (driver.Rows, error) {
+	return d.rowsQuery(ctx, "_local_docs", opts)
 }
 
 // Query queries a view.
@@ -262,7 +280,7 @@ func (d *db) CreateDoc(ctx context.Context, doc interface{}, options map[string]
 		Rev string `json:"rev"`
 	}{}
 
-	fullCommit, err := fullCommit(false, options)
+	fullCommit, err := fullCommit(options)
 	if err != nil {
 		return "", "", err
 	}
@@ -288,7 +306,7 @@ func (d *db) Put(ctx context.Context, docID string, doc interface{}, options map
 	if docID == "" {
 		return "", missingArg("docID")
 	}
-	fullCommit, err := fullCommit(false, options)
+	fullCommit, err := fullCommit(options)
 	if err != nil {
 		return "", err
 	}
@@ -319,7 +337,7 @@ func (d *db) Delete(ctx context.Context, docID, rev string, options map[string]i
 		return "", missingArg("rev")
 	}
 
-	fullCommit, err := fullCommit(false, options)
+	fullCommit, err := fullCommit(options)
 	if err != nil {
 		return "", err
 	}
@@ -344,51 +362,6 @@ func (d *db) Delete(ctx context.Context, docID, rev string, options map[string]i
 func (d *db) Flush(ctx context.Context) error {
 	_, err := d.Client.DoError(ctx, kivik.MethodPost, d.path("/_ensure_full_commit"), nil)
 	return err
-}
-
-func (d *db) Stats(ctx context.Context) (*driver.DBStats, error) {
-	res, err := d.Client.DoReq(ctx, kivik.MethodGet, d.dbName, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close() // nolint: errcheck
-	if err = chttp.ResponseError(res); err != nil {
-		return nil, err
-	}
-	resBody, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, errors.WrapStatus(kivik.StatusNetworkError, err)
-	}
-	result := struct {
-		driver.DBStats
-		Sizes struct {
-			File     int64 `json:"file"`
-			External int64 `json:"external"`
-			Active   int64 `json:"active"`
-		} `json:"sizes"`
-		UpdateSeq json.RawMessage `json:"update_seq"`
-	}{}
-	if err := json.Unmarshal(resBody, &result); err != nil {
-		return nil, errors.WrapStatus(kivik.StatusBadResponse, err)
-	}
-	stats := &result.DBStats
-	if result.Sizes.File > 0 {
-		stats.DiskSize = result.Sizes.File
-	}
-	if result.Sizes.External > 0 {
-		stats.ExternalSize = result.Sizes.External
-	}
-	if result.Sizes.Active > 0 {
-		stats.ActiveSize = result.Sizes.Active
-	}
-	stats.UpdateSeq = string(bytes.Trim(result.UpdateSeq, `"`))
-	// Reflection is used to preserve backward compatibility with Kivik stable
-	// 1.7.3 and unstable prior to 25 June 2018. The reflection hack can be
-	// removed at some point in the reasonable future.
-	if v := reflect.ValueOf(stats).Elem().FieldByName("RawResponse"); v.CanSet() {
-		v.Set(reflect.ValueOf(resBody))
-	}
-	return stats, nil
 }
 
 func (d *db) Compact(ctx context.Context) error {
@@ -443,7 +416,7 @@ func (d *db) Copy(ctx context.Context, targetID, sourceID string, options map[st
 	if targetID == "" {
 		return "", errors.Status(kivik.StatusBadAPICall, "kivik: targetID required")
 	}
-	fullCommit, err := fullCommit(false, options)
+	fullCommit, err := fullCommit(options)
 	if err != nil {
 		return "", err
 	}
@@ -462,4 +435,13 @@ func (d *db) Copy(ctx context.Context, targetID, sourceID string, options map[st
 	}
 	defer resp.Body.Close() // nolint: errcheck
 	return chttp.GetRev(resp)
+}
+
+func (d *db) Purge(ctx context.Context, docMap map[string][]string) (*driver.PurgeResult, error) {
+	result := &driver.PurgeResult{}
+	options := &chttp.Options{
+		Body: chttp.EncodeBody(docMap),
+	}
+	_, err := d.Client.DoJSON(ctx, kivik.MethodPost, d.path("_purge"), options, &result)
+	return result, err
 }

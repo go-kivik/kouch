@@ -11,7 +11,7 @@ import (
 type Driver interface {
 	// NewClient returns a connection handle to the database. The name is in a
 	// driver-specific format.
-	NewClient(ctx context.Context, name string) (Client, error)
+	NewClient(name string) (Client, error)
 }
 
 // Version represents a server version response.
@@ -43,6 +43,18 @@ type Client interface {
 	DestroyDB(ctx context.Context, dbName string, options map[string]interface{}) error
 	// DB returns a handleto the requested database
 	DB(ctx context.Context, dbName string, options map[string]interface{}) (DB, error)
+}
+
+// DBsStatser is an optional interface, added to support CouchDB 2.2.0's
+// /_dbs_info endpoint. If this is not supported, or if this method returns
+// status 404, Kivik will fall back to calling the method of issuing a
+// GET /{db} for each database requested.
+type DBsStatser interface {
+	// DBsStats returns database statistical information for each database
+	// named in dbNames. The returned values should be in the same order as
+	// the requested database names, and any missing databases should return
+	// a nil *DBStats value.
+	DBsStats(ctx context.Context, dbNames []string) ([]*DBStats, error)
 }
 
 // Replication represents a _replicator document.
@@ -202,6 +214,20 @@ type Attachments interface {
 	Close() error
 }
 
+// Purger is an optional interface which may be implemented by a DB to support
+// document purging.
+type Purger interface {
+	// Purge permanently removes the references to deleted documents from the
+	// database.
+	Purge(ctx context.Context, docRevMap map[string][]string) (*PurgeResult, error)
+}
+
+// PurgeResult is the result of a purge request.
+type PurgeResult struct {
+	Seq    int64               `json:"purge_seq"`
+	Purged map[string][]string `json:"purged"`
+}
+
 // BulkDocer is an optional interface which may be implemented by a DB to
 // support bulk insert/update operations. For any driver that does not support
 // the BulkDocer interface, the Put or CreateDoc methods will be called for each
@@ -325,4 +351,18 @@ type Flusher interface {
 // that the 'rev' option will be removed for the Put call.
 type Copier interface {
 	Copy(ctx context.Context, targetID, sourceID string, options map[string]interface{}) (targetRev string, err error)
+}
+
+// DesignDocer is an optional interface that may be implemented by a DB.
+type DesignDocer interface {
+	// DesignDocs returns all of the design documents in the database, subject
+	// to the options provided.
+	DesignDocs(ctx context.Context, options map[string]interface{}) (Rows, error)
+}
+
+// LocalDocer is an optional interface that may be implemented by a DB.
+type LocalDocer interface {
+	// LocalDocs returns all of the local documents in the database, subject to
+	// the options provided.
+	LocalDocs(ctx context.Context, options map[string]interface{}) (Rows, error)
 }

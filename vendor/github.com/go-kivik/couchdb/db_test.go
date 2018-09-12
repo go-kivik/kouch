@@ -28,6 +28,18 @@ func TestAllDocs(t *testing.T) {
 	testy.Error(t, "Get http://example.com/testdb/_all_docs: test error", err)
 }
 
+func TestDesignDocs(t *testing.T) {
+	db := newTestDB(nil, errors.New("test error"))
+	_, err := db.DesignDocs(context.Background(), nil)
+	testy.Error(t, "Get http://example.com/testdb/_design_docs: test error", err)
+}
+
+func TestLocalDocs(t *testing.T) {
+	db := newTestDB(nil, errors.New("test error"))
+	_, err := db.LocalDocs(context.Background(), nil)
+	testy.Error(t, "Get http://example.com/testdb/_local_docs: test error", err)
+}
+
 func TestQuery(t *testing.T) {
 	db := newTestDB(nil, errors.New("test error"))
 	_, err := db.Query(context.Background(), "ddoc", "view", nil)
@@ -477,145 +489,6 @@ func TestCreateDoc(t *testing.T) {
 	}
 }
 
-func TestStats(t *testing.T) {
-	tests := []struct {
-		name     string
-		db       *db
-		expected *driver.DBStats
-		status   int
-		err      string
-	}{
-		{
-			name:   "network error",
-			db:     newTestDB(nil, errors.New("net error")),
-			status: kivik.StatusNetworkError,
-			err:    "Get http://example.com/testdb: net error",
-		},
-		{
-			name: "read error",
-			db: newTestDB(&http.Response{
-				StatusCode: kivik.StatusOK,
-				Body: &mockReadCloser{
-					ReadFunc: func(_ []byte) (int, error) {
-						return 0, errors.New("read error")
-					},
-					CloseFunc: func() error { return nil },
-				},
-			}, nil),
-			status: kivik.StatusNetworkError,
-			err:    "read error",
-		},
-		{
-			name: "invalid JSON response",
-			db: newTestDB(&http.Response{
-				StatusCode: kivik.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader(`invalid json`)),
-			}, nil),
-			status: kivik.StatusBadResponse,
-			err:    "invalid character 'i' looking for beginning of value",
-		},
-		{
-			name: "error response",
-			db: newTestDB(&http.Response{
-				StatusCode: kivik.StatusBadRequest,
-				Body:       ioutil.NopCloser(strings.NewReader("")),
-			}, nil),
-			status: kivik.StatusBadRequest,
-			err:    "Bad Request",
-		},
-		{
-			name: "1.6.1",
-			db: newTestDB(&http.Response{
-				StatusCode: kivik.StatusOK,
-				Header: http.Header{
-					"Server":         {"CouchDB/1.6.1 (Erlang OTP/17)"},
-					"Date":           {"Thu, 26 Oct 2017 12:58:14 GMT"},
-					"Content-Type":   {"text/plain; charset=utf-8"},
-					"Content-Length": {"235"},
-					"Cache-Control":  {"must-revalidate"},
-				},
-				Body: ioutil.NopCloser(strings.NewReader(`{"db_name":"_users","doc_count":3,"doc_del_count":14,"update_seq":31,"purge_seq":0,"compact_running":false,"disk_size":127080,"data_size":6028,"instance_start_time":"1509022681259533","disk_format_version":6,"committed_update_seq":31}`)),
-			}, nil),
-			expected: &driver.DBStats{
-				Name:         "_users",
-				DocCount:     3,
-				DeletedCount: 14,
-				UpdateSeq:    "31",
-				DiskSize:     127080,
-				ActiveSize:   6028,
-				RawResponse:  []byte(`{"db_name":"_users","doc_count":3,"doc_del_count":14,"update_seq":31,"purge_seq":0,"compact_running":false,"disk_size":127080,"data_size":6028,"instance_start_time":"1509022681259533","disk_format_version":6,"committed_update_seq":31}`),
-			},
-		},
-		{
-			name: "2.0.0",
-			db: newTestDB(&http.Response{
-				StatusCode: kivik.StatusOK,
-				Header: http.Header{
-					"Server":              {"CouchDB/2.0.0 (Erlang OTP/17)"},
-					"Date":                {"Thu, 26 Oct 2017 13:01:13 GMT"},
-					"Content-Type":        {"application/json"},
-					"Content-Length":      {"429"},
-					"Cache-Control":       {"must-revalidate"},
-					"X-Couch-Request-ID":  {"2486f27546"},
-					"X-CouchDB-Body-Time": {"0"},
-				},
-				Body: ioutil.NopCloser(strings.NewReader(`{"db_name":"_users","update_seq":"13-g1AAAAEzeJzLYWBg4MhgTmHgzcvPy09JdcjLz8gvLskBCjMlMiTJ____PyuRAYeCJAUgmWQPVsOCS40DSE08WA0rLjUJIDX1eO3KYwGSDA1ACqhsPiF1CyDq9mclMuFVdwCi7j4hdQ8g6kDuywIAkRBjAw","sizes":{"file":87323,"external":2495,"active":6082},"purge_seq":0,"other":{"data_size":2495},"doc_del_count":6,"doc_count":1,"disk_size":87323,"disk_format_version":6,"data_size":6082,"compact_running":false,"instance_start_time":"0"}`)),
-			}, nil),
-			expected: &driver.DBStats{
-				Name:         "_users",
-				DocCount:     1,
-				DeletedCount: 6,
-				UpdateSeq:    "13-g1AAAAEzeJzLYWBg4MhgTmHgzcvPy09JdcjLz8gvLskBCjMlMiTJ____PyuRAYeCJAUgmWQPVsOCS40DSE08WA0rLjUJIDX1eO3KYwGSDA1ACqhsPiF1CyDq9mclMuFVdwCi7j4hdQ8g6kDuywIAkRBjAw",
-				DiskSize:     87323,
-				ActiveSize:   6082,
-				ExternalSize: 2495,
-				RawResponse:  []byte(`{"db_name":"_users","update_seq":"13-g1AAAAEzeJzLYWBg4MhgTmHgzcvPy09JdcjLz8gvLskBCjMlMiTJ____PyuRAYeCJAUgmWQPVsOCS40DSE08WA0rLjUJIDX1eO3KYwGSDA1ACqhsPiF1CyDq9mclMuFVdwCi7j4hdQ8g6kDuywIAkRBjAw","sizes":{"file":87323,"external":2495,"active":6082},"purge_seq":0,"other":{"data_size":2495},"doc_del_count":6,"doc_count":1,"disk_size":87323,"disk_format_version":6,"data_size":6082,"compact_running":false,"instance_start_time":"0"}`),
-			},
-		},
-		{
-			name: "2.1.1",
-			db: newTestDB(&http.Response{
-				StatusCode: kivik.StatusOK,
-				Header: http.Header{
-					"Server":              {"CouchDB/2.0.0 (Erlang OTP/17)"},
-					"Date":                {"Thu, 26 Oct 2017 13:01:13 GMT"},
-					"Content-Type":        {"application/json"},
-					"Content-Length":      {"429"},
-					"Cache-Control":       {"must-revalidate"},
-					"X-Couch-Request-ID":  {"2486f27546"},
-					"X-CouchDB-Body-Time": {"0"},
-				},
-				Body: ioutil.NopCloser(strings.NewReader(`{"db_name":"_users","update_seq":"13-g1AAAAEzeJzLYWBg4MhgTmHgzcvPy09JdcjLz8gvLskBCjMlMiTJ____PyuRAYeCJAUgmWQPVsOCS40DSE08WA0rLjUJIDX1eO3KYwGSDA1ACqhsPiF1CyDq9mclMuFVdwCi7j4hdQ8g6kDuywIAkRBjAw","sizes":{"file":87323,"external":2495,"active":6082},"purge_seq":0,"other":{"data_size":2495},"doc_del_count":6,"doc_count":1,"disk_size":87323,"disk_format_version":6,"data_size":6082,"compact_running":false,"instance_start_time":"0","cluster":{"n":1,"q":2,"r":3,"w":4}}`)),
-			}, nil),
-			expected: &driver.DBStats{
-				Name:         "_users",
-				DocCount:     1,
-				DeletedCount: 6,
-				UpdateSeq:    "13-g1AAAAEzeJzLYWBg4MhgTmHgzcvPy09JdcjLz8gvLskBCjMlMiTJ____PyuRAYeCJAUgmWQPVsOCS40DSE08WA0rLjUJIDX1eO3KYwGSDA1ACqhsPiF1CyDq9mclMuFVdwCi7j4hdQ8g6kDuywIAkRBjAw",
-				DiskSize:     87323,
-				ActiveSize:   6082,
-				ExternalSize: 2495,
-				Cluster: &driver.ClusterStats{
-					Replicas:    1,
-					Shards:      2,
-					ReadQuorum:  3,
-					WriteQuorum: 4,
-				},
-				RawResponse: []byte(`{"db_name":"_users","update_seq":"13-g1AAAAEzeJzLYWBg4MhgTmHgzcvPy09JdcjLz8gvLskBCjMlMiTJ____PyuRAYeCJAUgmWQPVsOCS40DSE08WA0rLjUJIDX1eO3KYwGSDA1ACqhsPiF1CyDq9mclMuFVdwCi7j4hdQ8g6kDuywIAkRBjAw","sizes":{"file":87323,"external":2495,"active":6082},"purge_seq":0,"other":{"data_size":2495},"doc_del_count":6,"doc_count":1,"disk_size":87323,"disk_format_version":6,"data_size":6082,"compact_running":false,"instance_start_time":"0","cluster":{"n":1,"q":2,"r":3,"w":4}}`),
-			},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result, err := test.db.Stats(context.Background())
-			testy.StatusError(t, test.err, test.status, err)
-			if d := diff.Interface(test.expected, result); d != nil {
-				t.Error(d)
-			}
-		})
-	}
-}
-
 func TestOptionsToParams(t *testing.T) {
 	type otpTest struct {
 		Name     string
@@ -913,7 +786,7 @@ func TestPut(t *testing.T) {
 		{
 			name: "connection refused",
 			db: func() *db {
-				c, err := chttp.New(context.Background(), "http://127.0.0.1:1/")
+				c, err := chttp.New("http://127.0.0.1:1/")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1271,6 +1144,51 @@ func TestRowsQuery(t *testing.T) {
 						ID:    "_design/_auth",
 						Key:   []byte(`"_design/_auth"`),
 						Value: []byte(`{"rev":"1-75efcce1f083316d622d389f3f9813f7"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "all docs with keys",
+			path: "/_all_docs",
+			options: map[string]interface{}{
+				"keys": []string{"_design/_auth", "foo"},
+			},
+			db: newCustomDB(func(r *http.Request) (*http.Response, error) {
+				if r.Method != kivik.MethodPost {
+					t.Errorf("Unexpected method: %s", r.Method)
+				}
+				defer r.Body.Close() // nolint: errcheck
+				if d := diff.AsJSON(map[string][]string{"keys": {"_design/_auth", "foo"}}, r.Body); d != nil {
+					t.Error(d)
+				}
+				if keys := r.URL.Query().Get("keys"); keys != "" {
+					t.Error("query key 'keys' should be absent")
+				}
+				return &http.Response{
+					StatusCode: kivik.StatusOK,
+					Header: http.Header{
+						"Transfer-Encoding":  {"chunked"},
+						"Date":               {"Sat, 01 Sep 2018 19:01:30 GMT"},
+						"Server":             {"CouchDB/2.2.0 (Erlang OTP/19)"},
+						"Content-Type":       {"application/json"},
+						"Cache-Control":      {"must-revalidate"},
+						"X-Couch-Request-ID": {"24fdb3fd86"},
+						"X-Couch-Body-Time":  {"0"},
+					},
+					Body: ioutil.NopCloser(strings.NewReader(`{"total_rows":1,"offset":null,"rows":[
+{"id":"_design/_auth","key":"_design/_auth","value":{"rev":"1-6e609020e0371257432797b4319c5829"}}
+]}`)),
+				}, nil
+			}),
+			expected: queryResult{
+				TotalRows: 1,
+				UpdateSeq: "",
+				Rows: []driver.Row{
+					{
+						ID:    "_design/_auth",
+						Key:   []byte(`"_design/_auth"`),
+						Value: []byte(`{"rev":"1-6e609020e0371257432797b4319c5829"}`),
 					},
 				},
 			},
@@ -1767,4 +1685,101 @@ func TestMultipartAttachmentsClose(t *testing.T) {
 	}
 
 	testy.Error(t, err, atts.Close())
+}
+
+func TestPurge(t *testing.T) {
+	expectedDocMap := map[string][]string{
+		"foo": {"1-abc", "2-def"},
+		"bar": {"3-ghi"},
+	}
+	tests := []struct {
+		name   string
+		db     *db
+		docMap map[string][]string
+
+		expected *driver.PurgeResult
+		err      string
+		status   int
+	}{
+		{
+			name: "1.7.1, nothing deleted",
+			db: newCustomDB(func(r *http.Request) (*http.Response, error) {
+				if r.Method != "POST" {
+					return nil, errors.Errorf("Unexpected method: %s", r.Method)
+				}
+				if r.URL.Path != "/testdb/_purge" {
+					return nil, errors.Errorf("Unexpected path: %s", r.URL.Path)
+				}
+				if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+					return nil, errors.Errorf("Unexpected Content-Type: %s", ct)
+				}
+				defer r.Body.Close() // nolint: errcheck
+				var result interface{}
+				if err := json.NewDecoder(r.Body).Decode(&result); err != nil {
+					return nil, err
+				}
+				if d := diff.AsJSON(expectedDocMap, result); d != nil {
+					return nil, errors.Errorf("Unexpected payload:\n%s", d)
+				}
+				return &http.Response{
+					StatusCode: kivik.StatusOK,
+					Header: http.Header{
+						"Server":         []string{"CouchDB/1.7.1 (Erlang OTP/17)"},
+						"Date":           []string{"Thu, 06 Sep 2018 16:55:26 GMT"},
+						"Content-Type":   []string{"text/plain; charset=utf-8"},
+						"Content-Length": []string{"28"},
+						"Cache-Control":  []string{"must-revalidate"},
+					},
+					Body: ioutil.NopCloser(strings.NewReader(`{"purge_seq":3,"purged":{}}`)),
+				}, nil
+			}),
+			docMap:   expectedDocMap,
+			expected: &driver.PurgeResult{Seq: 3, Purged: map[string][]string{}},
+		},
+		{
+			name: "1.7.1, all deleted",
+			db: newTestDB(&http.Response{
+				StatusCode: kivik.StatusOK,
+				Header: http.Header{
+					"Server":         []string{"CouchDB/1.7.1 (Erlang OTP/17)"},
+					"Date":           []string{"Thu, 06 Sep 2018 16:55:26 GMT"},
+					"Content-Type":   []string{"text/plain; charset=utf-8"},
+					"Content-Length": []string{"168"},
+					"Cache-Control":  []string{"must-revalidate"},
+				},
+				Body: ioutil.NopCloser(strings.NewReader(`{"purge_seq":5,"purged":{"foo":["1-abc","2-def"],"bar":["3-ghi"]}}`)),
+			}, nil),
+			docMap:   expectedDocMap,
+			expected: &driver.PurgeResult{Seq: 5, Purged: expectedDocMap},
+		},
+		{
+			name: "2.2.0, not supported",
+			db: newTestDB(&http.Response{
+				StatusCode:    501,
+				ContentLength: 75,
+				Header: http.Header{
+					"Server":              []string{"CouchDB/2.2.0 (Erlang OTP/19)"},
+					"Date":                []string{"Thu, 06 Sep 2018 16:55:26 GMT"},
+					"Content-Type":        []string{"application/json"},
+					"Content-Length":      []string{"75"},
+					"Cache-Control":       []string{"must-revalidate"},
+					"X-Couch-Request-ID":  []string{"03e91291c8"},
+					"X-CouchDB-Body-Time": []string{"0"},
+				},
+				Body: ioutil.NopCloser(strings.NewReader(`{"error":"not_implemented","reason":"this feature is not yet implemented"}`)),
+			}, nil),
+			docMap: expectedDocMap,
+			err:    "Not Implemented: this feature is not yet implemented",
+			status: kivik.StatusNotImplemented,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := test.db.Purge(context.Background(), test.docMap)
+			testy.StatusError(t, test.err, test.status, err)
+			if d := diff.Interface(test.expected, result); d != nil {
+				t.Error(d)
+			}
+		})
+	}
 }
