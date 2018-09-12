@@ -60,7 +60,7 @@ func TestClientTrace(t *testing.T) {
 	buf := &bytes.Buffer{}
 	ctx := trace(context.Background(), buf)
 
-	c, err := chttp.New(ctx, s.URL)
+	c, err := chttp.New(s.URL)
 	if err != nil {
 		t.Fatal(err)
 	}

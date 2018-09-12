@@ -22,7 +22,7 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	defer close(body)
 	nilBody := body == nil || reflect.ValueOf(body).IsNil()
 	nilHead := head == nil || reflect.ValueOf(head).IsNil()
-	c, err := chttp.New(ctx, o.Root)
+	c, err := chttp.New(o.Root)
 	if err != nil {
 		return err
 	}

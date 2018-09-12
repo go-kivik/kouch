@@ -11,7 +11,7 @@ import (
 
 // FetchRev fetches the document revision from the server
 func FetchRev(ctx context.Context, o *kouch.Options) (string, error) {
-	c, err := chttp.New(ctx, o.Root)
+	c, err := chttp.New(o.Root)
 	if err != nil {
 		return "", nil
 	}
