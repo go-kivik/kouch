@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -84,6 +85,7 @@ func TestClientTrace(t *testing.T) {
 > Host: %[1]s
 > Accept: application/json
 > Content-Type: application/json
+> User-Agent: Kivik chttp/`+chttp.Version+` (Language=`+runtime.Version()+`; Platform=`+runtime.GOARCH+`/`+runtime.GOOS+`)
 >
 * upload completely sent off: 3 of 3 bytes
 < HTTP/1.1 200 OK
