@@ -14,16 +14,16 @@
   version = "v0.1.3"
 
 [[projects]]
+  branch = "master"
   name = "github.com/flimzy/testy"
   packages = ["."]
-  revision = "f038d1aeea45c7b85765cefb0b24afb2aeb6670e"
-  version = "v0.0.13"
+  revision = "b46690025c95107bc2ab6aa9d20436df38327eff"
 
 [[projects]]
   branch = "master"
   name = "github.com/go-kivik/couchdb"
   packages = [".","chttp"]
-  revision = "45d47756dc0f4a126cd65f5149a4db16df12f71c"
+  revision = "f97302a6ea02087605ce20b17de86f22f5724219"
 
 [[projects]]
   branch = "master"
