@@ -16,6 +16,7 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/go-kivik/kouch/internal/util"
 )
 
 func TestVerbose(t *testing.T) {
@@ -61,7 +62,7 @@ func TestClientTrace(t *testing.T) {
 	buf := &bytes.Buffer{}
 	ctx := trace(context.Background(), buf)
 
-	c, err := chttp.New(s.URL)
+	c, err := util.NewChttp(s.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +86,7 @@ func TestClientTrace(t *testing.T) {
 > Host: %[1]s
 > Accept: application/json
 > Content-Type: application/json
-> User-Agent: Kivik chttp/`+chttp.Version+` (Language=`+runtime.Version()+`; Platform=`+runtime.GOARCH+`/`+runtime.GOOS+`)
+> User-Agent: Kivik chttp/`+chttp.Version+` (Language=`+runtime.Version()+`; Platform=`+runtime.GOARCH+`/`+runtime.GOOS+`) Kouch/`+kouch.Version+`
 >
 * upload completely sent off: 3 of 3 bytes
 < HTTP/1.1 200 OK
