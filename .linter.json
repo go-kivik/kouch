@@ -1,5 +1,5 @@
 {
-    "Enable":   ["vet", "vetshadow", "gotype", "deadcode", "gocyclo", "golint", "varcheck", "structcheck", "errcheck", "ineffassign", "unconvert", "goconst", "gosimple", "staticcheck", "gas", "misspell", "gofmt" ],
+    "Enable":   ["vet", "vetshadow", "gotype", "deadcode", "gocyclo", "golint", "varcheck", "structcheck", "errcheck", "ineffassign", "unconvert", "goconst", "gosimple", "staticcheck", "misspell", "gofmt" ],
     "Exclude":  ["Errors unhandled\\..*\\(gas\\)"],
     "Vendor":   true,
     "Test":     true,
