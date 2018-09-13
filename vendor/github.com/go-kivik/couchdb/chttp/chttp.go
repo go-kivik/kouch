@@ -5,13 +5,16 @@ package chttp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/go-kivik/kivik"
@@ -22,21 +25,31 @@ const (
 	typeJSON = "application/json"
 )
 
+// The default UserAgent values
+const (
+	UserAgent = "Kivik chttp"
+	Version   = "2.0.0-prerelease"
+)
+
 // Client represents a client connection. It embeds an *http.Client
 type Client struct {
+	// UserAgents is appended to set the User-Agent header. Typically it should
+	// contain pairs of product name and version.
+	UserAgents []string
+
 	*http.Client
 
 	rawDSN string
 	dsn    *url.URL
 	auth   Authenticator
+	authMU sync.Mutex
 }
 
 // New returns a connection to a remote CouchDB server. If credentials are
-// included in the URL, CookieAuth is attempted first, with BasicAuth used as
-// a fallback. If both fail, an error is returned. If you wish to use some other
-// authentication mechanism, do not specify credentials in the URL, and instead
-// call the Auth() method later.
-func New(ctx context.Context, dsn string) (*Client, error) {
+// included in the URL, requests will be authenticated using Cookie Auth. To
+// use HTTP BasicAuth or some other authentication mechanism, do not specify
+// credentials in the URL, and instead call the Auth() method later.
+func New(dsn string) (*Client, error) {
 	dsnURL, err := parseDSN(dsn)
 	if err != nil {
 		return nil, err
@@ -50,7 +63,11 @@ func New(ctx context.Context, dsn string) (*Client, error) {
 	}
 	if user != nil {
 		password, _ := user.Password()
-		if err := c.defaultAuth(ctx, user.Username(), password); err != nil {
+		err := c.Auth(&CookieAuth{
+			Username: user.Username(),
+			Password: password,
+		})
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -79,26 +96,12 @@ func (c *Client) DSN() string {
 	return c.rawDSN
 }
 
-func (c *Client) defaultAuth(ctx context.Context, username, password string) error {
-	err := c.Auth(ctx, &CookieAuth{
-		Username: username,
-		Password: password,
-	})
-	if err == nil {
-		return nil
-	}
-	return c.Auth(ctx, &BasicAuth{
-		Username: username,
-		Password: password,
-	})
-}
-
 // Auth authenticates using the provided Authenticator.
-func (c *Client) Auth(ctx context.Context, a Authenticator) error {
+func (c *Client) Auth(a Authenticator) error {
 	if c.auth != nil {
-		return errors.New("auth already set; log out first")
+		return errors.New("auth already set")
 	}
-	if err := a.Authenticate(ctx, c); err != nil {
+	if err := a.Authenticate(c); err != nil {
 		return err
 	}
 	c.auth = a
@@ -153,7 +156,13 @@ type Response struct {
 // closes the response body.
 func DecodeJSON(r *http.Response, i interface{}) error {
 	defer r.Body.Close() // nolint: errcheck
-	return errors.WrapStatus(kivik.StatusBadResponse, json.NewDecoder(r.Body).Decode(i))
+	err := json.NewDecoder(r.Body).Decode(i)
+	switch err.(type) {
+	case *json.SyntaxError, *json.UnmarshalFieldError, *json.UnmarshalTypeError:
+		return errors.WrapStatus(kivik.StatusBadResponse, err)
+	default:
+		return errors.WrapStatus(kivik.StatusNetworkError, err)
+	}
 }
 
 // DoJSON combines DoReq() and, ResponseError(), and (*Response).DecodeJSON(), and
@@ -181,13 +190,14 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body io.Re
 	if err != nil {
 		return nil, fullError(kivik.StatusBadAPICall, ExitStatusURLMalformed, err)
 	}
-	url := *c.dsn // Make a copy
-	url.Path = reqPath.Path
-	url.RawQuery = reqPath.RawQuery
-	req, err := http.NewRequest(method, url.String(), body)
+	u := *c.dsn // Make a copy
+	u.Path = reqPath.Path
+	u.RawQuery = reqPath.RawQuery
+	req, err := http.NewRequest(method, u.String(), body)
 	if err != nil {
 		return nil, errors.WrapStatus(kivik.StatusBadAPICall, err)
 	}
+	req.Header.Add("User-Agent", c.userAgent())
 	return req.WithContext(ctx), nil
 }
 
@@ -202,6 +212,7 @@ func (c *Client) DoReq(ctx context.Context, method, path string, opts *Options) 
 	if opts != nil {
 		if opts.Body != nil {
 			body = opts.Body
+			defer opts.Body.Close() // nolint: errcheck
 		}
 	}
 	req, err := c.NewRequest(ctx, method, path, body)
@@ -282,12 +293,13 @@ func fixPath(req *http.Request, path string) {
 	req.URL.RawPath = "/" + strings.TrimPrefix(parts[0], "/")
 }
 
-// EncodeBody JSON encodes i to r. A call to errFunc will block until encoding
-// has completed, then return the errur status of the encoding job. If an
-// encoding error occurs, cancel() called.
+// EncodeBody JSON encodes i to an io.ReadCloser. If an encoding error
+// occurs, it will be returned on the next read.
 func EncodeBody(i interface{}) io.ReadCloser {
+	done := make(chan struct{})
 	r, w := io.Pipe()
 	go func() {
+		defer close(done)
 		var err error
 		switch t := i.(type) {
 		case []byte:
@@ -305,7 +317,23 @@ func EncodeBody(i interface{}) io.ReadCloser {
 		}
 		_ = w.CloseWithError(err)
 	}()
-	return r
+	return &ebReader{
+		ReadCloser: r,
+		done:       done,
+	}
+}
+
+type ebReader struct {
+	io.ReadCloser
+	done <-chan struct{}
+}
+
+var _ io.ReadCloser = &ebReader{}
+
+func (r *ebReader) Close() error {
+	err := r.ReadCloser.Close()
+	<-r.done
+	return err
 }
 
 func setHeaders(req *http.Request, opts *Options) {
@@ -334,7 +362,7 @@ func setHeaders(req *http.Request, opts *Options) {
 }
 
 func setQuery(req *http.Request, opts *Options) {
-	if opts == nil || opts.Query == nil {
+	if opts == nil || len(opts.Query) == 0 {
 		return
 	}
 	if req.URL.RawQuery == "" {
@@ -352,7 +380,7 @@ func (c *Client) DoError(ctx context.Context, method, path string, opts *Options
 	if err != nil {
 		return res, err
 	}
-	defer func() { _ = res.Body.Close() }()
+	defer res.Body.Close() // nolint: errcheck
 	err = ResponseError(res)
 	return res, err
 }
@@ -400,4 +428,10 @@ func ExitStatus(err error) int {
 		return statuser.ExitStatus()
 	}
 	return 0
+}
+
+func (c *Client) userAgent() string {
+	ua := fmt.Sprintf("%s/%s (Language=%s; Platform=%s/%s)",
+		UserAgent, Version, runtime.Version(), runtime.GOARCH, runtime.GOOS)
+	return strings.Join(append([]string{ua}, c.UserAgents...), " ")
 }

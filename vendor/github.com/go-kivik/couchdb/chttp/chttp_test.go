@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +22,11 @@ import (
 	"github.com/go-kivik/kivik"
 	"github.com/go-kivik/kivik/errors"
 )
+
+var defaultUA = func() string {
+	c := &Client{}
+	return c.userAgent()
+}()
 
 func TestNew(t *testing.T) {
 	type newTest struct {
@@ -61,44 +67,31 @@ func TestNew(t *testing.T) {
 		},
 		func() newTest {
 			h := func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(kivik.StatusUnauthorized)
-			}
-			s := httptest.NewServer(http.HandlerFunc(h))
-			dsn, _ := url.Parse(s.URL)
-			dsn.User = url.UserPassword("user", "password")
-			return newTest{
-				name:       "auth failed",
-				dsn:        dsn.String(),
-				status:     kivik.StatusUnauthorized,
-				curlStatus: ExitNotRetrieved,
-				err:        "Unauthorized",
-			}
-		}(),
-		func() newTest {
-			h := func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(kivik.StatusOK)
-				fmt.Fprintf(w, `{"userCtx":{"name":"user"}}`)
+				fmt.Fprintf(w, `{"userCtx":{"name":"user"}}`) // nolint: errcheck
 			}
 			s := httptest.NewServer(http.HandlerFunc(h))
 			authDSN, _ := url.Parse(s.URL)
 			dsn, _ := url.Parse(s.URL + "/")
 			authDSN.User = url.UserPassword("user", "password")
 			jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+			c := &Client{
+				Client: &http.Client{Jar: jar},
+				rawDSN: authDSN.String(),
+				dsn:    dsn,
+			}
+			auth := &CookieAuth{
+				Username:  "user",
+				Password:  "password",
+				client:    c,
+				transport: http.DefaultTransport,
+			}
+			c.auth = auth
+			c.Client.Transport = auth
 			return newTest{
-				name: "auth success",
-				dsn:  authDSN.String(),
-				expected: &Client{
-					Client: &http.Client{Jar: jar},
-					rawDSN: authDSN.String(),
-					dsn:    dsn,
-					auth: &CookieAuth{
-						Username: "user",
-						Password: "password",
-						dsn:      dsn,
-						setJar:   true,
-						jar:      jar,
-					},
-				},
+				name:     "auth success",
+				dsn:      authDSN.String(),
+				expected: c,
 			}
 		}(),
 		{
@@ -117,7 +110,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := New(context.Background(), test.dsn)
+			result, err := New(test.dsn)
 			curlStatusErrorRE(t, test.err, test.status, test.curlStatus, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
@@ -345,9 +338,15 @@ func TestSetQuery(t *testing.T) {
 		expected *http.Request
 	}{
 		{
-			name:     "no query",
+			name:     "nil query",
 			req:      &http.Request{URL: &url.URL{}},
 			expected: &http.Request{URL: &url.URL{}},
+		},
+		{
+			name:     "empty query",
+			req:      &http.Request{URL: &url.URL{RawQuery: "a=b"}},
+			opts:     &Options{Query: url.Values{}},
+			expected: &http.Request{URL: &url.URL{RawQuery: "a=b"}},
 		},
 		{
 			name:     "options query",
@@ -614,8 +613,10 @@ func TestNewRequest(t *testing.T) {
 				Proto:      "HTTP/1.1",
 				ProtoMajor: 1,
 				ProtoMinor: 1,
-				Header:     http.Header{},
-				Host:       "example.com",
+				Header: http.Header{
+					"User-Agent": []string{defaultUA},
+				},
+				Host: "example.com",
 			},
 		},
 	}
@@ -746,6 +747,7 @@ func TestDoReq(t *testing.T) {
 						expected := httptest.NewRequest("PUT", "/foo", nil)
 						expected.Header.Add("Accept", "application/json")
 						expected.Header.Add("Content-Type", "application/json")
+						expected.Header.Add("User-Agent", defaultUA)
 						if d := diff.HTTPRequest(expected, r); d != nil {
 							t.Error(d)
 						}
@@ -772,6 +774,7 @@ func TestDoReq(t *testing.T) {
 						expected := httptest.NewRequest("PUT", "/foo", Body("bar"))
 						expected.Header.Add("Accept", "application/json")
 						expected.Header.Add("Content-Type", "application/json")
+						expected.Header.Add("User-Agent", defaultUA)
 						if d := diff.HTTPRequest(expected, r); d != nil {
 							t.Error(d)
 						}
@@ -794,6 +797,17 @@ func TestDoReq(t *testing.T) {
 			client: newCustomClient("http://foo.com/dbroot/", func(r *http.Request) (*http.Response, error) {
 				if r.URL.Path != "/dbroot/foo" {
 					return nil, errors.Errorf("Unexpected path: %s", r.URL.Path)
+				}
+				return &http.Response{}, nil
+			}),
+			method: "GET",
+			path:   "/foo",
+		},
+		{
+			name: "user agent",
+			client: newCustomClient("http://foo.com/", func(r *http.Request) (*http.Response, error) {
+				if ua := r.UserAgent(); ua != defaultUA {
+					return nil, errors.Errorf("Unexpected User Agent: %s", ua)
 				}
 				return &http.Response{}, nil
 			}),
@@ -981,6 +995,43 @@ func TestNetError(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := netError(test.input)
 			curlStatusErrorRE(t, test.err, test.status, test.curlStatus, err)
+		})
+	}
+}
+
+func TestUserAgent(t *testing.T) {
+	tests := []struct {
+		name     string
+		ua       []string
+		expected string
+	}{
+		{
+			name: "defaults",
+			expected: fmt.Sprintf("%s/%s (Language=%s; Platform=%s/%s)",
+				UserAgent, Version, runtime.Version(), runtime.GOARCH, runtime.GOOS),
+		},
+		{
+			name: "custom",
+			ua:   []string{"Oinky/1.2.3"},
+			expected: fmt.Sprintf("%s/%s (Language=%s; Platform=%s/%s) Oinky/1.2.3",
+				UserAgent, Version, runtime.Version(), runtime.GOARCH, runtime.GOOS),
+		},
+		{
+			name: "multiple",
+			ua:   []string{"Oinky/1.2.3", "Moo/5.4.3"},
+			expected: fmt.Sprintf("%s/%s (Language=%s; Platform=%s/%s) Oinky/1.2.3 Moo/5.4.3",
+				UserAgent, Version, runtime.Version(), runtime.GOARCH, runtime.GOOS),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			c := &Client{
+				UserAgents: test.ua,
+			}
+			result := c.userAgent()
+			if result != test.expected {
+				t.Errorf("Unexpected user agent: %s", result)
+			}
 		})
 	}
 }

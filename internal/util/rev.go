@@ -5,13 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 )
 
 // FetchRev fetches the document revision from the server
 func FetchRev(ctx context.Context, o *kouch.Options) (string, error) {
-	c, err := chttp.New(ctx, o.Root)
+	c, err := NewChttp(o.Root)
 	if err != nil {
 		return "", nil
 	}

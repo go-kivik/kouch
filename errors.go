@@ -35,7 +35,7 @@ func ExitStatus(err error) int {
 // in the error.
 func Exit(err error) {
 	msg, exitStatus := exit(err)
-	fmt.Fprintf(os.Stderr, "kouch: (%d) %s\n", exitStatus, msg)
+	_, _ = fmt.Fprintf(os.Stderr, "kouch: (%d) %s\n", exitStatus, msg)
 	os.Exit(exitStatus)
 }
 

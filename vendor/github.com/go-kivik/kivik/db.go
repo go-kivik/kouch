@@ -42,6 +42,40 @@ func (db *DB) AllDocs(ctx context.Context, options ...Options) (*Rows, error) {
 	return newRows(ctx, rowsi), nil
 }
 
+// DesignDocs returns a list of all documents in the database.
+func (db *DB) DesignDocs(ctx context.Context, options ...Options) (*Rows, error) {
+	ddocer, ok := db.driverDB.(driver.DesignDocer)
+	if !ok {
+		return nil, errors.Status(StatusNotImplemented, "kivik: design doc view not supported by driver")
+	}
+	opts, err := mergeOptions(options...)
+	if err != nil {
+		return nil, err
+	}
+	rowsi, err := ddocer.DesignDocs(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	return newRows(ctx, rowsi), nil
+}
+
+// LocalDocs returns a list of all documents in the database.
+func (db *DB) LocalDocs(ctx context.Context, options ...Options) (*Rows, error) {
+	ldocer, ok := db.driverDB.(driver.LocalDocer)
+	if !ok {
+		return nil, errors.Status(StatusNotImplemented, "kivik: local doc view not supported by driver")
+	}
+	opts, err := mergeOptions(options...)
+	if err != nil {
+		return nil, err
+	}
+	rowsi, err := ldocer.LocalDocs(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	return newRows(ctx, rowsi), nil
+}
+
 // Query executes the specified view function from the specified design
 // document. ddoc and view may or may not be be prefixed with '_design/'
 // and '_view/' respectively. No other
@@ -312,6 +346,10 @@ func (db *DB) Stats(ctx context.Context) (*DBStats, error) {
 	if err != nil {
 		return nil, err
 	}
+	return driverStats2kivikStats(i), nil
+}
+
+func driverStats2kivikStats(i *driver.DBStats) *DBStats {
 	var cluster *ClusterConfig
 	if i.Cluster != nil {
 		c := ClusterConfig(*i.Cluster)
@@ -328,7 +366,7 @@ func (db *DB) Stats(ctx context.Context) (*DBStats, error) {
 		ExternalSize:   i.ExternalSize,
 		Cluster:        cluster,
 		RawResponse:    i.RawResponse,
-	}, nil
+	}
 }
 
 // Compact begins compaction of the database. Check the CompactRunning field
@@ -503,4 +541,34 @@ func (db *DB) DeleteAttachment(ctx context.Context, docID, rev, filename string,
 		return "", err
 	}
 	return db.driverDB.DeleteAttachment(ctx, docID, rev, filename, opts)
+}
+
+// PurgeResult is the result of a purge request.
+type PurgeResult struct {
+	// Seq is the purge sequence number.
+	Seq int64 `json:"purge_seq"`
+	// Purged is a map of document ids to revisions, indicated the
+	// document/revision pairs that were successfully purged.
+	Purged map[string][]string `json:"purged"`
+}
+
+// Purge permanently removes the reference to deleted documents from the
+// database. Normal deletion only marks the document with the key/value pair
+// `_deleted=true`, to ensure proper replication of deleted documents. By
+// using Purge, the document can be completely removed. But note that this
+// operation is not replication safe, so great care must be taken when using
+// Purge, and this should only be used as a last resort.
+//
+// Purge expects as input a map with document ID as key, and slice of
+// revisions as value.
+func (db *DB) Purge(ctx context.Context, docRevMap map[string][]string) (*PurgeResult, error) {
+	if purger, ok := db.driverDB.(driver.Purger); ok {
+		res, err := purger.Purge(ctx, docRevMap)
+		if err != nil {
+			return nil, err
+		}
+		r := PurgeResult(*res)
+		return &r, nil
+	}
+	return nil, errors.Status(StatusNotImplemented, "kivik: purge not supported by driver")
 }
