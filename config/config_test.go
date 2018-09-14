@@ -10,6 +10,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/spf13/cobra"
 )
@@ -255,5 +256,90 @@ func readConfigTest(t *testing.T, test rcTest) {
 	}
 	if d := diff.Interface(test.expected, conf); d != nil {
 		t.Fatal(d)
+	}
+}
+
+func TestConstructContext(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		expected *kouch.Context
+		err      string
+		status   int
+	}{
+		{
+			name:     "standard root url",
+			args:     []string{"--root", "http://foo.com/"},
+			expected: &kouch.Context{Root: "http://foo.com/"},
+		},
+		{
+			name: "auth credentials",
+			args: []string{"--root", "http://foo.com/", "--user", "foo", "--password", "bar"},
+			expected: &kouch.Context{
+				Root:     "http://foo.com/",
+				User:     "foo",
+				Password: "bar",
+			},
+		},
+		{
+			name: "curl-style combined creds",
+			args: []string{"--root", "http://foo.com/", "--user", "foo:bar"},
+			expected: &kouch.Context{
+				Root:     "http://foo.com/",
+				User:     "foo",
+				Password: "bar",
+			},
+		},
+		{
+			name: "url with credentials",
+			args: []string{"--root", "http://foo:bar@foo.com/"},
+			expected: &kouch.Context{
+				Root:     "http://foo.com/",
+				User:     "foo",
+				Password: "bar",
+			},
+		},
+		{
+			name:   "invalid url",
+			args:   []string{"--root", "http://foo.com/%xx"},
+			err:    `parse http://foo.com/%xx: invalid URL escape "%xx"`,
+			status: chttp.ExitStatusURLMalformed,
+		},
+		{
+			name:     "nothing",
+			expected: nil,
+		},
+		{
+			name: "url with credentials, and command line user",
+			args: []string{"--root", "http://abc:xyz@foo.com/", "--user", "foo"},
+			expected: &kouch.Context{
+				Root: "http://foo.com/",
+				User: "foo",
+			},
+		},
+		{
+			name: "url with credentials, and command line password",
+			args: []string{"--root", "http://abc:xyz@foo.com/", "--password", "foo"},
+			expected: &kouch.Context{
+				Root:     "http://foo.com/",
+				User:     "abc",
+				Password: "foo",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			AddFlags(cmd.PersistentFlags())
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
+
+			result, err := constructContext(cmd.Flags())
+			testy.ExitStatusError(t, test.err, test.status, err)
+			if d := diff.Interface(test.expected, result); d != nil {
+				t.Error(d)
+			}
+		})
 	}
 }

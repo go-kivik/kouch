@@ -2,12 +2,15 @@ package config
 
 import (
 	"io"
+	"net/url"
 	"os"
 	"path"
 	"strings"
 	"syscall"
 
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
@@ -36,33 +39,15 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	root, err := cmd.Flags().GetString(kouch.FlagServerRoot)
+	dynCtx, err := constructContext(cmd.Flags())
 	if err != nil {
 		return nil, err
 	}
-	user, err := cmd.Flags().GetString(kouch.FlagUser)
-	if err != nil {
-		return nil, err
-	}
-	var password string
-	if !cmd.Flags().Changed(kouch.FlagPassword) {
-		parts := append(strings.SplitN(user, ":", 2), "")
-		user, password = parts[0], parts[1]
-	} else {
-		password, err = cmd.Flags().GetString(kouch.FlagPassword)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if root != "" || user != "" || password != "" {
+	if dynCtx != nil {
 		conf.DefaultContext = dynamicContextName
 		conf.Contexts = append(conf.Contexts, kouch.NamedContext{
-			Name: dynamicContextName,
-			Context: &kouch.Context{
-				Root:     root,
-				User:     user,
-				Password: password,
-			},
+			Name:    dynamicContextName,
+			Context: dynCtx,
 		})
 	}
 	context, err := cmd.Flags().GetString(flagContext)
@@ -73,6 +58,46 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 		conf.DefaultContext = context
 	}
 	return conf, nil
+}
+
+func constructContext(flags *pflag.FlagSet) (*kouch.Context, error) {
+	root, err := flags.GetString(kouch.FlagServerRoot)
+	if err != nil {
+		return nil, err
+	}
+	addr, err := url.Parse(root)
+	if err != nil {
+		return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
+	}
+	var user, password string
+	if u := addr.User; u != nil {
+		user = u.Username()
+		password, _ = u.Password()
+		addr.User = nil
+	}
+	if flags.Changed(kouch.FlagUser) {
+		user, err = flags.GetString(kouch.FlagUser)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if flags.Changed(kouch.FlagUser) && !flags.Changed(kouch.FlagPassword) {
+		parts := append(strings.SplitN(user, ":", 2), "")
+		user, password = parts[0], parts[1]
+	} else if flags.Changed(kouch.FlagPassword) {
+		password, err = flags.GetString(kouch.FlagPassword)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if root == "" && user == "" && password == "" {
+		return nil, nil
+	}
+	return &kouch.Context{
+		Root:     addr.String(),
+		User:     user,
+		Password: password,
+	}, nil
 }
 
 func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
