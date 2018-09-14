@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 	"syscall"
 
 	"github.com/go-kivik/kouch"
@@ -39,12 +40,28 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	if root != "" {
+	user, err := cmd.Flags().GetString(kouch.FlagUser)
+	if err != nil {
+		return nil, err
+	}
+	var password string
+	if !cmd.Flags().Changed(kouch.FlagPassword) {
+		parts := append(strings.SplitN(user, ":", 2), "")
+		user, password = parts[0], parts[1]
+	} else {
+		password, err = cmd.Flags().GetString(kouch.FlagPassword)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if root != "" || user != "" || password != "" {
 		conf.DefaultContext = dynamicContextName
 		conf.Contexts = append(conf.Contexts, kouch.NamedContext{
 			Name: dynamicContextName,
 			Context: &kouch.Context{
-				Root: root,
+				Root:     root,
+				User:     user,
+				Password: password,
 			},
 		})
 	}
@@ -95,4 +112,6 @@ func AddFlags(flags *pflag.FlagSet) {
 	flags.String(kouch.FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
 	flags.StringP(kouch.FlagServerRoot, kouch.FlagShortServerRoot, "", "The root URL")
 	flags.String(flagContext, "", "The named context to use")
+	flags.StringP(kouch.FlagUser, kouch.FlagShortUser, "", "Specify the username, and possibly password, to user for server authentication. If the password is not set with the "+kouch.FlagShortPassword+"/"+kouch.FlagPassword+" option, then the first colon in this option will be considered a separator for the username and password. To specificy a username with a colon, you must provide a password as a separate option.")
+	flags.StringP(kouch.FlagPassword, kouch.FlagShortPassword, "", "Specify the password for server authentication.")
 }

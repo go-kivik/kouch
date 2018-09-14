@@ -136,6 +136,73 @@ contexts:
 				},
 			},
 		},
+		{
+			name: "default config + username on commandline",
+			files: map[string]string{
+				".kouch/config": `default-context: foo
+contexts:
+- context:
+    root: http://foo.com/
+  name: foo
+`,
+			},
+			args: []string{"--user", "foo"},
+			expected: &kouch.Config{DefaultContext: dynamicContextName,
+				Contexts: []kouch.NamedContext{
+					{
+						Name:    "foo",
+						Context: &kouch.Context{Root: "http://foo.com/"},
+					},
+					{
+						Name:    dynamicContextName,
+						Context: &kouch.Context{User: "foo"},
+					},
+				},
+			},
+			expectedFile: "^/tmp/TestReadConfig_default_config_\\+_username_on_commandline-\\d+/.kouch/config$",
+		},
+		{
+			name: "default config + auth on commandline",
+			files: map[string]string{
+				".kouch/config": `default-context: foo
+contexts:
+- context:
+    root: http://foo.com/
+  name: foo
+`,
+			},
+			args: []string{"--user", "foo", "--password", "bar"},
+			expected: &kouch.Config{DefaultContext: dynamicContextName,
+				Contexts: []kouch.NamedContext{
+					{
+						Name:    "foo",
+						Context: &kouch.Context{Root: "http://foo.com/"},
+					},
+					{
+						Name:    dynamicContextName,
+						Context: &kouch.Context{User: "foo", Password: "bar"},
+					},
+				},
+			},
+			expectedFile: "^/tmp/TestReadConfig_default_config_\\+_auth_on_commandline-\\d+/.kouch/config$",
+		},
+		{
+			name: "no config, curl-style user/pass combined",
+			args: []string{"--root", "foo.com", "--user", "foo:bar"},
+			expected: &kouch.Config{
+				DefaultContext: dynamicContextName,
+				Contexts: []kouch.NamedContext{
+					{
+						Name: dynamicContextName,
+						Context: &kouch.Context{
+							Root:     "foo.com",
+							User:     "foo",
+							Password: "bar",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
