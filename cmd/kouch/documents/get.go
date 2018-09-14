@@ -56,34 +56,14 @@ func getDocumentCmd(cmd *cobra.Command, args []string) error {
 }
 
 func getDocumentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
-	o := kouch.NewOptions()
-	if tgt := kouch.GetTarget(ctx); tgt != "" {
-		var err error
-		o.Target, err = target.Parse(target.Document, tgt)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := o.Target.DocumentFromFlags(flags); err != nil {
-		return nil, err
-	}
-	if err := o.Target.DatabaseFromFlags(flags); err != nil {
-		return nil, err
-	}
-
-	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if o.Root == "" {
-			o.Root = defCtx.Root
-		}
-	}
-	var err error
-	o.Options.IfNoneMatch, err = flags.GetString(kouch.FlagIfNoneMatch)
+	o, err := util.CommonOptions(ctx, target.Document, flags)
 	if err != nil {
 		return nil, err
 	}
-	if e := o.SetParamString(flags, kouch.FlagRev); e != nil {
-		return nil, e
+
+	o.Options.IfNoneMatch, err = flags.GetString(kouch.FlagIfNoneMatch)
+	if err != nil {
+		return nil, err
 	}
 	for _, flag := range []string{flagAttsSince, flagOpenRevs} {
 		if e := o.SetParamStringSlice(flags, flag); e != nil {
