@@ -2,6 +2,7 @@ package testy
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -21,11 +22,19 @@ func RedirIO(in io.Reader, fn func()) (stdout, stderr io.Reader) {
 	tmpout, cleanupOut := replaceOutput(&os.Stdout)
 	tmperr, cleanupErr := replaceOutput(&os.Stderr)
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Print(tmpout)
+			_, _ = fmt.Fprint(os.Stderr, tmperr)
+			panic(r)
+		}
+	}()
+	defer cleanupIn()
+	defer cleanupOut()
+	defer cleanupErr()
+
 	fn()
 
-	cleanupIn()
-	cleanupOut()
-	cleanupErr()
 	return tmpout, tmperr
 }
 
