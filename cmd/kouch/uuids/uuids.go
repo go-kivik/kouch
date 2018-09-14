@@ -31,19 +31,9 @@ func uuidsCmd() *cobra.Command {
 
 func getUUIDsOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
-	o := kouch.NewOptions()
-	if tgt := kouch.GetTarget(ctx); tgt != "" {
-		var err error
-		o.Target, err = target.Parse(target.Root, tgt)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if o.Root == "" {
-			o.Root = defCtx.Root
-		}
+	o, err := util.CommonOptions(ctx, target.Root, cmd.Flags())
+	if err != nil {
+		return nil, err
 	}
 
 	count, err := cmd.Flags().GetInt("count")

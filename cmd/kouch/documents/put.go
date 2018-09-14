@@ -37,47 +37,16 @@ func putDocCmd() *cobra.Command {
 
 func putDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
-	o := kouch.NewOptions()
-	if tgt := kouch.GetTarget(ctx); tgt != "" {
-		var err error
-		o.Target, err = target.Parse(target.Document, tgt)
-		if err != nil {
-			return nil, err
-		}
+	o, err := util.CommonOptions(ctx, target.Document, cmd.Flags())
+	if err != nil {
+		return nil, err
 	}
 
-	if err := o.Target.DocumentFromFlags(cmd.Flags()); err != nil {
-		return nil, err
-	}
-	if err := o.Target.DatabaseFromFlags(cmd.Flags()); err != nil {
-		return nil, err
-	}
-	var err error
 	o.Options.FullCommit, err = cmd.Flags().GetBool(kouch.FlagFullCommit)
 	if err != nil {
 		return nil, err
 	}
 
-	if defCtx, e := kouch.Conf(ctx).DefaultCtx(); e == nil {
-		if o.Root == "" {
-			o.Root = defCtx.Root
-		}
-	}
-	autoRev, err := cmd.Flags().GetBool(kouch.FlagAutoRev)
-	if err != nil {
-		return nil, err
-	}
-	if autoRev {
-		rev, err := util.FetchRev(ctx, o)
-		if err != nil {
-			return nil, err
-		}
-		o.Query().Set("rev", rev)
-	} else {
-		if e := o.SetParamString(cmd.Flags(), kouch.FlagRev); e != nil {
-			return nil, e
-		}
-	}
 	if e := setBatch(o, cmd.Flags()); e != nil {
 		return nil, e
 	}
