@@ -58,9 +58,9 @@ type Target struct {
 	Document string
 	// Filename is the attachment filename.
 	Filename string
-	// Username is the HTTP Basic Auth username
-	Username string
-	// Password is the HTTP Basic Auth password
+	// User is the Auth username
+	User string
+	// Password is the Auth password
 	Password string
 }
 
@@ -108,7 +108,7 @@ func ParseTarget(scope TargetScope, src string) (*Target, error) {
 		}
 		src = url.EscapedPath()
 		target.Root = fmt.Sprintf("%s://%s", url.Scheme, url.Host)
-		target.Username = url.User.Username()
+		target.User = url.User.Username()
 		target.Password, _ = url.User.Password()
 	}
 	switch scope {
@@ -190,9 +190,9 @@ func (t *Target) NewClient() (*chttp.Client, error) {
 		return nil, err
 	}
 	c.UserAgents = append(c.UserAgents, "Kouch/"+Version)
-	if t.Username != "" || t.Password != "" {
+	if t.User != "" || t.Password != "" {
 		return c, c.Auth(&chttp.BasicAuth{
-			Username: t.Username,
+			Username: t.User,
 			Password: t.Password,
 		})
 	}

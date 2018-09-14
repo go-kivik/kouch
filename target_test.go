@@ -174,7 +174,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetRoot,
 			name:     "url with auth",
 			src:      "http://xxx:yyy@foo.com/",
-			expected: &Target{Root: "http://foo.com/", Username: "xxx", Password: "yyy"},
+			expected: &Target{Root: "http://foo.com/", User: "xxx", Password: "yyy"},
 		},
 		{
 			scope:    TargetRoot,
@@ -217,7 +217,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetDatabase,
 			name:     "url with auth",
 			src:      "http://a:b@foo.com/dbname",
-			expected: &Target{Root: "http://foo.com", Username: "a", Password: "b", Database: "dbname"},
+			expected: &Target{Root: "http://foo.com", User: "a", Password: "b", Database: "dbname"},
 		},
 		{
 			scope:  TargetDatabase,
@@ -315,7 +315,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetDocument,
 			name:     "url with auth",
 			src:      "http://foo:bar@localhost:5984/foo/bar",
-			expected: &Target{Root: "http://localhost:5984", Username: "foo", Password: "bar", Database: "foo", Document: "bar"},
+			expected: &Target{Root: "http://localhost:5984", User: "foo", Password: "bar", Database: "foo", Document: "bar"},
 		},
 		{
 			scope:    TargetDocument,
@@ -390,7 +390,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetAttachment,
 			name:     "url with auth",
 			src:      "https://admin:abc123@localhost:5984/foo/bar/baz.pdf",
-			expected: &Target{Root: "https://localhost:5984", Username: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
+			expected: &Target{Root: "https://localhost:5984", User: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
 		},
 		{
 			scope:    TargetAttachment,
