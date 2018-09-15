@@ -3,6 +3,7 @@ package documents
 import (
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -193,13 +194,13 @@ func TestGetDocumentCmd(t *testing.T) {
 		}
 	})
 	tests.Add("slashes", func(t *testing.T) interface{} {
-		s := testy.ServeResponseValidator(t, &http.Response{
+		var s *httptest.Server
+		s = testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 200,
 			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
-		}, func(t *testing.T, r *http.Request) {
-			if r.URL.RawPath != "/foo%2Fba+r/123%2Fb" {
-				t.Errorf("Unexpected req path: %s", r.URL.Path)
-			}
+		}, func(t *testing.T, req *http.Request) {
+			expected := test.NewRequest(t, "GET", s.URL+"/foo%2Fba+r/123%2Fb", nil)
+			test.CheckRequest(t, expected, req)
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{
@@ -212,16 +213,14 @@ func TestGetDocumentCmd(t *testing.T) {
 		}
 	})
 	tests.Add("if-none-match", func(t *testing.T) interface{} {
-		s := testy.ServeResponseValidator(t, &http.Response{
+		var s *httptest.Server
+		s = testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 200,
 			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
 		}, func(t *testing.T, req *http.Request) {
-			if req.URL.Path != "/foo/bar" {
-				t.Errorf("Unexpected req path: %s", req.URL.Path)
-			}
-			if inm := req.Header.Get("If-None-Match"); inm != "\"oink\"" {
-				t.Errorf("Unexpected If-None-Match header: %s", inm)
-			}
+			expected := test.NewRequest(t, "GET", s.URL+"/foo/bar", nil)
+			expected.Header.Set("If-None-Match", `"oink"`)
+			test.CheckRequest(t, expected, req)
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{
@@ -230,16 +229,13 @@ func TestGetDocumentCmd(t *testing.T) {
 		}
 	})
 	tests.Add("rev", func(t *testing.T) interface{} {
-		s := testy.ServeResponseValidator(t, &http.Response{
+		var s *httptest.Server
+		s = testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 200,
 			Body:       ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
 		}, func(t *testing.T, req *http.Request) {
-			if req.URL.Path != "/foo/bar" {
-				t.Errorf("Unexpected req path: %s", req.URL.Path)
-			}
-			if rev := req.URL.Query().Get("rev"); rev != "oink" {
-				t.Errorf("Unexpected rev: %s", rev)
-			}
+			expected := test.NewRequest(t, "GET", s.URL+"/foo/bar?rev=oink", nil)
+			test.CheckRequest(t, expected, req)
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{
@@ -248,7 +244,8 @@ func TestGetDocumentCmd(t *testing.T) {
 		}
 	})
 	tests.Add("head", func(t *testing.T) interface{} {
-		s := testy.ServeResponseValidator(t, &http.Response{
+		var s *httptest.Server
+		s = testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 200,
 			Header: http.Header{
 				"Content-Type": []string{"application/json"},
@@ -256,12 +253,8 @@ func TestGetDocumentCmd(t *testing.T) {
 			},
 			Body: ioutil.NopCloser(strings.NewReader(`{"foo":123}`)),
 		}, func(t *testing.T, req *http.Request) {
-			if req.Method != http.MethodHead {
-				t.Errorf("Unexpected method: %s", req.Method)
-			}
-			if req.URL.Path != "/foo/bar/baz.txt" {
-				t.Errorf("Unexpected req path: %s", req.URL.Path)
-			}
+			expected := test.NewRequest(t, "HEAD", s.URL+"/foo/bar/baz.txt", nil)
+			test.CheckRequest(t, expected, req)
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{

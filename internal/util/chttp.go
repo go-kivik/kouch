@@ -14,14 +14,17 @@ import (
 	kio "github.com/go-kivik/kouch/io"
 )
 
+func isNil(i interface{}) bool {
+	return i == nil || reflect.ValueOf(i).IsNil()
+}
+
 // ChttpDo performs an HTTP request (GET is downgraded to HEAD if
 // body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
 func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	head, body := kouch.HeadDumper(ctx), kouch.Output(ctx)
+	nilHead, nilBody := isNil(head), isNil(body)
 	defer close(head) // nolint: errcheck
 	defer close(body) // nolint: errcheck
-	nilBody := body == nil || reflect.ValueOf(body).IsNil()
-	nilHead := head == nil || reflect.ValueOf(head).IsNil()
 	c, err := o.NewClient()
 	if err != nil {
 		return err
@@ -54,13 +57,11 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 		}
 	}
 
-	if !nilBody {
-		if e := CopyAll(body, res.Body); e != nil {
-			return e
-		}
+	if nilBody {
+		return nil
 	}
 
-	return nil
+	return CopyAll(body, res.Body)
 }
 
 func sameFd(w1, w2 io.Writer) bool {
