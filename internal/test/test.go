@@ -24,7 +24,9 @@ type CmdTest struct {
 func ValidateCmdTest(args []string) func(*testing.T, CmdTest) {
 	return func(t *testing.T, test CmdTest) {
 		defer testy.RestoreEnv()()
-		os.Setenv("HOME", "/dev/null")
+		if e := os.Setenv("HOME", "/dev/null"); e != nil {
+			t.Fatal(e)
+		}
 		var err error
 		stdout, stderr := testy.RedirIO(nil, func() {
 			root := registry.Root()

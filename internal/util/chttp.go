@@ -18,8 +18,8 @@ import (
 // body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
 func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	head, body := kouch.HeadDumper(ctx), kouch.Output(ctx)
-	defer close(head)
-	defer close(body)
+	defer close(head) // nolint: errcheck
+	defer close(body) // nolint: errcheck
 	nilBody := body == nil || reflect.ValueOf(body).IsNil()
 	nilHead := head == nil || reflect.ValueOf(head).IsNil()
 	c, err := o.NewClient()
@@ -38,7 +38,7 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	if err = chttp.ResponseError(res); err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // nolint: errcheck
 
 	if !nilHead {
 		if e := res.Header.Write(head); e != nil {
@@ -50,7 +50,7 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 				return e
 			}
 		} else {
-			close(head)
+			_ = close(head)
 		}
 	}
 

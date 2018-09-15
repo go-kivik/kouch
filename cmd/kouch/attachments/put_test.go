@@ -70,7 +70,9 @@ func TestPutAttachmentOpts(t *testing.T) {
 				test.conf = &kouch.Config{}
 			}
 			cmd := putAttCmd()
-			cmd.ParseFlags(test.args)
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
 			ctx := kouch.GetContext(cmd)
 			ctx = kouch.SetConf(ctx, test.conf)
 			ctx = kouch.SetInput(ctx, input)
@@ -134,7 +136,7 @@ func TestPutAttachmentCmd(t *testing.T) {
 				t.Errorf("Unexpected rev: %s", rev)
 			}
 			w.WriteHeader(200)
-			w.Write([]byte(`{"ok":true,"id":"bar","rev":"2-967a00dff5e02add41819138abb3284d"}`))
+			_, _ = w.Write([]byte(`{"ok":true,"id":"bar","rev":"2-967a00dff5e02add41819138abb3284d"}`))
 		}))
 		tests.Cleanup(s.Close)
 		return test.CmdTest{

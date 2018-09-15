@@ -144,7 +144,9 @@ contexts:
 			for k, v := range test.env {
 				env[k] = strings.Replace(v, "${HOME}", *tmpDir, -1)
 			}
-			testy.SetEnv(env)
+			if e := testy.SetEnv(env); e != nil {
+				t.Fatal(e)
+			}
 			for filename, content := range test.files {
 				file := path.Join(*tmpDir, filename)
 				if err := os.MkdirAll(path.Dir(file), 0777); err != nil {
@@ -160,7 +162,9 @@ contexts:
 			for i, v := range test.args {
 				test.args[i] = strings.Replace(v, "${HOME}", *tmpDir, -1)
 			}
-			cmd.ParseFlags(test.args)
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
 
 			conf, err := ReadConfig(cmd)
 			testy.ErrorRE(t, test.err, err)

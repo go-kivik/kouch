@@ -66,7 +66,9 @@ func TestGetUUIDsOpts(t *testing.T) {
 				test.conf = &kouch.Config{}
 			}
 			cmd := uuidsCmd()
-			cmd.ParseFlags(test.args)
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
 			ctx := kouch.GetContext(cmd)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {
 				ctx = kouch.SetTarget(ctx, flags[0])

@@ -63,7 +63,7 @@ func (p *processor) init() {
 	p.done = done
 	go func() {
 		defer func() { close(done) }()
-		defer p.r.Close()
+		defer p.r.Close() // nolint: errcheck
 		unmarshaled, err := unmarshal(p.r)
 		if err != nil {
 			p.err = err

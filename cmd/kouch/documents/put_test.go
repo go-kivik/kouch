@@ -215,7 +215,7 @@ func TestPutDocCmd(t *testing.T) {
 				t.Errorf("Unexpected rev: %s", rev)
 			}
 			w.WriteHeader(200)
-			w.Write([]byte(`{"ok":true,"id":"bar","rev":"2-967a00dff5e02add41819138abb3284d"}`))
+			_, _ = w.Write([]byte(`{"ok":true,"id":"bar","rev":"2-967a00dff5e02add41819138abb3284d"}`))
 		}))
 		tests.Cleanup(s.Close)
 		return test.CmdTest{
