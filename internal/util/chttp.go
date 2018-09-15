@@ -14,16 +14,6 @@ import (
 	kio "github.com/go-kivik/kouch/io"
 )
 
-// NewChttp wraps chttp.New
-func NewChttp(addr string) (*chttp.Client, error) {
-	c, err := chttp.New(addr)
-	if err != nil {
-		return nil, err
-	}
-	c.UserAgents = append(c.UserAgents, "Kouch/"+kouch.Version)
-	return c, nil
-}
-
 // ChttpDo performs an HTTP request (GET is downgraded to HEAD if
 // body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
 func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
@@ -32,11 +22,7 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	defer close(body)
 	nilBody := body == nil || reflect.ValueOf(body).IsNil()
 	nilHead := head == nil || reflect.ValueOf(head).IsNil()
-	addr, err := o.ServerURL()
-	if err != nil {
-		return err
-	}
-	c, err := NewChttp(addr)
+	c, err := o.NewClient()
 	if err != nil {
 		return err
 	}

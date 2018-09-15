@@ -16,7 +16,6 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/internal/util"
 )
 
 func TestVerbose(t *testing.T) {
@@ -62,7 +61,8 @@ func TestClientTrace(t *testing.T) {
 	buf := &bytes.Buffer{}
 	ctx := trace(context.Background(), buf)
 
-	c, err := util.NewChttp(s.URL)
+	target := &kouch.Target{Root: s.URL}
+	c, err := target.NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}

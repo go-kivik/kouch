@@ -25,6 +25,20 @@ type Target struct {
 	Password string
 }
 
+// NewClient returns a chttp.Client, connected to the target server
+func (t *Target) NewClient() (*chttp.Client, error) {
+	dsn, err := t.ServerURL()
+	if err != nil {
+		return nil, err
+	}
+	c, err := chttp.New(dsn)
+	if err != nil {
+		return nil, err
+	}
+	c.UserAgents = append(c.UserAgents, "Kouch/"+Version)
+	return c, nil
+}
+
 // ServerURL returns the URL to the server root.
 func (t *Target) ServerURL() (string, error) {
 	if t.Root == "" {
