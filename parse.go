@@ -1,9 +1,6 @@
 package kouch
 
 import (
-	"net/url"
-	"strings"
-
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/pflag"
@@ -25,19 +22,23 @@ type Target struct {
 	Password string
 }
 
-// ServerURL returns the URL to the server root.
-func (t *Target) ServerURL() (string, error) {
+// NewClient returns a chttp.Client, connected to the target server
+func (t *Target) NewClient() (*chttp.Client, error) {
 	if t.Root == "" {
-		return "", errors.NewExitError(chttp.ExitFailedToInitialize, "no server root specified")
+		return nil, errors.NewExitError(chttp.ExitFailedToInitialize, "no server root specified")
 	}
-	addr, err := url.Parse(t.Root)
+	c, err := chttp.New(t.Root)
 	if err != nil {
-		return "", errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
+		return nil, err
 	}
+	c.UserAgents = append(c.UserAgents, "Kouch/"+Version)
 	if t.Username != "" || t.Password != "" {
-		addr.User = url.UserPassword(t.Username, t.Password)
+		return c, c.Auth(&chttp.BasicAuth{
+			Username: t.Username,
+			Password: t.Password,
+		})
 	}
-	return strings.TrimPrefix(addr.String(), "//"), nil
+	return c, nil
 }
 
 var duplicateConfigErrors = map[string]error{
