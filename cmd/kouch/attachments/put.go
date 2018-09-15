@@ -9,7 +9,6 @@ import (
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -31,7 +30,7 @@ func putAttCmd() *cobra.Command {
 		Aliases: []string{"att"},
 		Short:   "Upload an attachment.",
 		Long: "Upload the supplied content as an attachment to the specified document\n\n" +
-			target.HelpText(kouch.TargetAttachment),
+			kouch.TargetHelpText(kouch.TargetAttachment),
 		RunE: putAttachmentCmd,
 	}
 	addCommonFlags(cmd.Flags())

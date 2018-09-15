@@ -1,21 +1,19 @@
-package target
+package kouch
 
-import "github.com/go-kivik/kouch"
-
-// HelpText returns the help text to describe the valid target format(s)
+// TargetHelpText returns the help text to describe the valid target format(s)
 // for the specified scope, or "" if the scope isn't defined.
-func HelpText(scope kouch.TargetScope) string {
+func TargetHelpText(scope TargetScope) string {
 	return helpText[scope]
 }
 
-var helpText = map[kouch.TargetScope]string{
-	kouch.TargetRoot: `[target] should be the URL to the root of the CouchDB server. Examples:
+var helpText = map[TargetScope]string{
+	TargetRoot: `[target] should be the URL to the root of the CouchDB server. Examples:
 
   - http://localhost:5984/
   - example.com:5000
   - foo.com/couchdb/
 `,
-	kouch.TargetDatabase: `[target] may be a full or relative URL to the database. Examples:
+	TargetDatabase: `[target] may be a full or relative URL to the database. Examples:
 
   - foo                          -- Database 'foo', relative to the Root URL
   - http://localhost:5984/_users -- The '_users' database on localhost
@@ -23,7 +21,7 @@ var helpText = map[kouch.TargetScope]string{
 
 Any slashes in the database name, must be URL-encoded.
 `,
-	kouch.TargetDocument: `[target] may be a full or relative URL to the document. Examples:
+	TargetDocument: `[target] may be a full or relative URL to the document. Examples:
 
   - bar                           -- Document 'bar' in the default database and Root URL
   - foo/bar                       -- Document 'bar' in the database 'foo' at the default Root URL
@@ -34,7 +32,7 @@ Any slashes in the database name, must be URL-encoded.
 
 Except for _design/ and _local/ documents, any slashes in a database name or document ID must be URL-encoded.
 `,
-	kouch.TargetAttachment: `[target] may be a full or relative URL to the attachment. Examples:
+	TargetAttachment: `[target] may be a full or relative URL to the attachment. Examples:
 
   - baz.txt                          -- Attachment 'baz.txt' from the current document
   - bar/baz.jpg                      -- Attachment 'baz.jpg' from the 'bar' document in the current database
@@ -45,13 +43,3 @@ Except for _design/ and _local/ documents, any slashes in a database name or doc
   Except for _design/ and _local/ documents, any slashes in a database name, document id, or filename must be URL-encoded.
 `,
 }
-
-/*
-Attachments formats:
-
-- {filename} -- The filename only. Alternately, the filename may be passed with the --` + kouch.FlagFilename + ` option, particularly for filenames with slashes.
-- {id}/{filename} -- The document ID and filename.
-- /{db}/{id}/{filename} -- With leading slash, the database name, document ID, and filename.
-- http://host.com/{db}/{id}/{filename} -- A fully qualified URL, may include auth credentials.
-
-*/

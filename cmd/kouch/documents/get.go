@@ -7,7 +7,6 @@ import (
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -22,7 +21,7 @@ func getDocCmd() *cobra.Command {
 		Aliases: []string{"doc"},
 		Short:   "Fetches a single document.",
 		Long: "Fetches a single document.\n\n" +
-			target.HelpText(kouch.TargetDocument),
+			kouch.TargetHelpText(kouch.TargetDocument),
 		RunE: getDocumentCmd,
 	}
 	f := cmd.Flags()

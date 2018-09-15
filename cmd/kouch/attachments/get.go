@@ -11,7 +11,6 @@ import (
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
 	"github.com/go-kivik/kouch/io"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -26,7 +25,7 @@ func getAttCmd() *cobra.Command {
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment.",
 		Long: "Fetches a file attachment.\n\n" +
-			target.HelpText(kouch.TargetAttachment),
+			kouch.TargetHelpText(kouch.TargetAttachment),
 		RunE: getAttachmentCmd,
 	}
 	addCommonFlags(cmd.Flags())

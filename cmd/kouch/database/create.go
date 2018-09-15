@@ -7,7 +7,6 @@ import (
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -22,7 +21,7 @@ func createDbCmd() *cobra.Command {
 		Aliases: []string{"db"},
 		Short:   "Creates a new database.",
 		Long: "Creates a new database.\n\n" +
-			target.HelpText(kouch.TargetDatabase),
+			kouch.TargetHelpText(kouch.TargetDatabase),
 		RunE: createDatabaseCmd,
 	}
 	cmd.Flags().IntP(kouch.FlagShards, kouch.FlagShortShards, 0, "Shards, aka the number of range partitions.")
