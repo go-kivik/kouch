@@ -27,7 +27,7 @@ const (
 	// List
 	// Update
 	// Rewrite ??
-	TargetLastScope = iota - 1
+	targetLastScope = iota - 1
 )
 
 var _ = targetLastScope // lastScope only use in tests; this prevents linter warnings

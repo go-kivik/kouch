@@ -10,7 +10,7 @@ import (
 )
 
 func TestTargetScopeName(t *testing.T) {
-	for scope := TargetScope(0); scope < TargetLastScope+1; scope++ {
+	for scope := TargetScope(0); scope < targetLastScope+1; scope++ {
 		result := TargetScopeName(scope)
 		if result == "" {
 			t.Errorf("No name defined for scope #%d", scope)
@@ -35,7 +35,7 @@ func TestParseTarget(t *testing.T) {
 			status: 1,
 		},
 		{
-			scope:  TargetLastScope + 1,
+			scope:  targetLastScope + 1,
 			name:   "invalid scope",
 			src:    "xxx",
 			err:    "invalid scope",
