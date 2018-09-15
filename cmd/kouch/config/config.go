@@ -7,10 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	dynamicContextName = "$dynamic$"
-)
-
 func init() {
 	registry.Register([]string{"config"}, configCmd)
 }

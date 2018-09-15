@@ -200,7 +200,6 @@ func TestOpen(t *testing.T) {
 
 func TestSetOutput(t *testing.T) {
 	type soTest struct {
-		name       string
 		addFlags   func(*pflag.FlagSet)
 		args       []string
 		outputNil  bool
@@ -209,7 +208,6 @@ func TestSetOutput(t *testing.T) {
 		headNil    bool
 		headFd     uintptr
 		headName   string
-		err        string
 	}
 	tests := testy.NewTable()
 	tests.Add("defaults", soTest{
