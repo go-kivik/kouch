@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/pflag"
 )
 
@@ -13,7 +12,7 @@ func CommonOptions(ctx context.Context, scope kouch.TargetScope, flags *pflag.Fl
 	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		o.Target, err = target.Parse(scope, tgt)
+		o.Target, err = kouch.ParseTarget(scope, tgt)
 		if err != nil {
 			return nil, err
 		}
