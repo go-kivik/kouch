@@ -5,7 +5,6 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
-	"github.com/go-kivik/couchdb/chttp"
 	"github.com/spf13/pflag"
 )
 
@@ -169,53 +168,6 @@ func TestDatabaseFromFlags(t *testing.T) {
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, test.target); d != nil {
 				t.Error(d)
-			}
-		})
-	}
-}
-
-func TestServerURL(t *testing.T) {
-	tests := []struct {
-		name     string
-		target   *Target
-		expected string
-		err      string
-		status   int
-	}{
-		{
-			name:   "empty",
-			target: &Target{},
-			err:    "no server root specified",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name:     "full url",
-			target:   &Target{Root: "http://foo.com/"},
-			expected: "http://foo.com/",
-		},
-		{
-			name:   "invalid url",
-			target: &Target{Root: "http://foo.com/%xx"},
-			err:    `parse http://foo.com/%xx: invalid URL escape "%xx"`,
-			status: chttp.ExitStatusURLMalformed,
-		},
-		{
-			name:     "no scheme",
-			target:   &Target{Root: "foo.com"},
-			expected: "foo.com",
-		},
-		{
-			name:     "auth",
-			target:   &Target{Root: "foo.com", Username: "admin", Password: "abc123"},
-			expected: "admin:abc123@foo.com",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result, err := test.target.ServerURL()
-			testy.ExitStatusError(t, test.err, test.status, err)
-			if result != test.expected {
-				t.Errorf("Unexpected result: %s", result)
 			}
 		})
 	}

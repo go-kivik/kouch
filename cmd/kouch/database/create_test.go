@@ -67,17 +67,6 @@ func TestCreateDatabaseCmd(t *testing.T) {
 	tests.Add("authenticated", func(t *testing.T) interface{} {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			if r.Method == kivik.MethodPost && r.URL.Path == "/_session" {
-				http.SetCookie(w, &http.Cookie{
-					Name:     kivik.SessionCookieName,
-					Value:    "auth-token",
-					Path:     "/",
-					HttpOnly: true,
-				})
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{}`))
-				return
-			}
 			if r.Method != kivik.MethodPut {
 				t.Errorf("Unexpected method: %s", r.Method)
 			}
@@ -87,7 +76,7 @@ func TestCreateDatabaseCmd(t *testing.T) {
 			if q := r.URL.Query().Get("q"); q != "5" {
 				t.Errorf("Unexpected q value: %v", q)
 			}
-			if auth := r.Header.Get("Cookie"); auth != "AuthSession=auth-token" {
+			if auth := r.Header.Get("Authorization"); auth != "Basic YWRtaW46YWJjMTIz" {
 				t.Errorf("Unexpected Authorization header: %s", auth)
 			}
 			w.WriteHeader(kivik.StatusCreated)
