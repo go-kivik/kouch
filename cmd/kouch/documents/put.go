@@ -20,7 +20,7 @@ func putDocCmd() *cobra.Command {
 		Aliases: []string{"doc"},
 		Short:   "Create or update a single document.",
 		Long: "Fetches a single document.\n\n" +
-			target.HelpText(target.Document),
+			target.HelpText(kouch.TargetDocument),
 		RunE: putDocumentCmd,
 	}
 	f := cmd.Flags()
@@ -37,7 +37,7 @@ func putDocCmd() *cobra.Command {
 
 func putDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
-	o, err := util.CommonOptions(ctx, target.Document, cmd.Flags())
+	o, err := util.CommonOptions(ctx, kouch.TargetDocument, cmd.Flags())
 	if err != nil {
 		return nil, err
 	}

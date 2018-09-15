@@ -31,7 +31,7 @@ func putAttCmd() *cobra.Command {
 		Aliases: []string{"att"},
 		Short:   "Upload an attachment.",
 		Long: "Upload the supplied content as an attachment to the specified document\n\n" +
-			target.HelpText(target.Attachment),
+			target.HelpText(kouch.TargetAttachment),
 		RunE: putAttachmentCmd,
 	}
 	addCommonFlags(cmd.Flags())
@@ -56,7 +56,7 @@ func putAttachmentCmd(cmd *cobra.Command, _ []string) error {
 }
 
 func putAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
-	o, err := util.CommonOptions(ctx, target.Attachment, flags)
+	o, err := util.CommonOptions(ctx, kouch.TargetAttachment, flags)
 	if err != nil {
 		return nil, err
 	}

@@ -1,19 +1,21 @@
 package target
 
+import "github.com/go-kivik/kouch"
+
 // HelpText returns the help text to describe the valid target format(s)
 // for the specified scope, or "" if the scope isn't defined.
-func HelpText(scope Scope) string {
+func HelpText(scope kouch.TargetScope) string {
 	return helpText[scope]
 }
 
-var helpText = map[Scope]string{
-	Root: `[target] should be the URL to the root of the CouchDB server. Examples:
+var helpText = map[kouch.TargetScope]string{
+	kouch.TargetRoot: `[target] should be the URL to the root of the CouchDB server. Examples:
 
   - http://localhost:5984/
   - example.com:5000
   - foo.com/couchdb/
 `,
-	Database: `[target] may be a full or relative URL to the database. Examples:
+	kouch.TargetDatabase: `[target] may be a full or relative URL to the database. Examples:
 
   - foo                          -- Database 'foo', relative to the Root URL
   - http://localhost:5984/_users -- The '_users' database on localhost
@@ -21,7 +23,7 @@ var helpText = map[Scope]string{
 
 Any slashes in the database name, must be URL-encoded.
 `,
-	Document: `[target] may be a full or relative URL to the document. Examples:
+	kouch.TargetDocument: `[target] may be a full or relative URL to the document. Examples:
 
   - bar                           -- Document 'bar' in the default database and Root URL
   - foo/bar                       -- Document 'bar' in the database 'foo' at the default Root URL
@@ -32,7 +34,7 @@ Any slashes in the database name, must be URL-encoded.
 
 Except for _design/ and _local/ documents, any slashes in a database name or document ID must be URL-encoded.
 `,
-	Attachment: `[target] may be a full or relative URL to the attachment. Examples:
+	kouch.TargetAttachment: `[target] may be a full or relative URL to the attachment. Examples:
 
   - baz.txt                          -- Attachment 'baz.txt' from the current document
   - bar/baz.jpg                      -- Attachment 'baz.jpg' from the 'bar' document in the current database

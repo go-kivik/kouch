@@ -6,6 +6,41 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// TargetScope represents the scope for a target, as relative targets have different
+// meanings in different contexts.
+type TargetScope int
+
+// The supported target scopes
+const (
+	TargetRoot TargetScope = iota
+	TargetDatabase
+	TargetDocument
+	TargetAttachment
+	// View
+	// Show
+	// List
+	// Update
+	// Rewrite ??
+	TargetLastScope = iota - 1
+)
+
+var _ = targetLastScope // lastScope only use in tests; this prevents linter warnings
+
+// TargetScopeName returns the name of the scope, or "" if scope is invalid.
+func TargetScopeName(scope TargetScope) string {
+	switch scope {
+	case TargetRoot:
+		return "root"
+	case TargetDatabase:
+		return "database"
+	case TargetDocument:
+		return "document"
+	case TargetAttachment:
+		return "attachment"
+	}
+	return ""
+}
+
 // Target is a parsed target passed on the command line.
 type Target struct {
 	// Root is the root URL.

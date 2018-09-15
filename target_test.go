@@ -8,6 +8,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+func TestTargetScopeName(t *testing.T) {
+	for scope := TargetScope(0); scope < TargetLastScope+1; scope++ {
+		result := TargetScopeName(scope)
+		if result == "" {
+			t.Errorf("No name defined for scope #%d", scope)
+		}
+	}
+}
+
 func TestFilenameFromFlags(t *testing.T) {
 	filenameFlagSet := func() *pflag.FlagSet {
 		return flagSet(func(pf *pflag.FlagSet) {

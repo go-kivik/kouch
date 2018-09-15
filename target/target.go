@@ -10,41 +10,6 @@ import (
 	"github.com/go-kivik/kouch/internal/errors"
 )
 
-// Scope represents the scope for a target, as relative targets have different
-// meanings in different contexts.
-type Scope int
-
-// The supported target scopes
-const (
-	Root Scope = iota
-	Database
-	Document
-	Attachment
-	// View
-	// Show
-	// List
-	// Update
-	// Rewrite ??
-	lastScope = iota - 1
-)
-
-var _ = lastScope // lastScope only use in tests; this prevents linter warnings
-
-// ScopeName returns the name of the scope, or "" if scope is invalid.
-func ScopeName(scope Scope) string {
-	switch scope {
-	case Root:
-		return "root"
-	case Database:
-		return "database"
-	case Document:
-		return "document"
-	case Attachment:
-		return "attachment"
-	}
-	return ""
-}
-
 var errIncompleteURL = errors.NewExitError(chttp.ExitFailedToInitialize, "incomplete target URL")
 
 func validate(t *kouch.Target) error {
@@ -87,7 +52,7 @@ func attachment(t *kouch.Target, src string) (*kouch.Target, error) {
 }
 
 // Parse parses src as a CouchDB target, according to the rules for scope.
-func Parse(scope Scope, src string) (*kouch.Target, error) {
+func Parse(scope kouch.TargetScope, src string) (*kouch.Target, error) {
 	target := &kouch.Target{}
 	if src == "" {
 		return target, nil
@@ -103,13 +68,13 @@ func Parse(scope Scope, src string) (*kouch.Target, error) {
 		target.Password, _ = url.User.Password()
 	}
 	switch scope {
-	case Root:
+	case kouch.TargetRoot:
 		return root(target, src)
-	case Database:
+	case kouch.TargetDatabase:
 		return database(target, src)
-	case Document:
+	case kouch.TargetDocument:
 		return document(target, src)
-	case Attachment:
+	case kouch.TargetAttachment:
 		return attachment(target, src)
 	}
 	return nil, errors.New("invalid scope")

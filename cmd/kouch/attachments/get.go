@@ -26,7 +26,7 @@ func getAttCmd() *cobra.Command {
 		Aliases: []string{"att"},
 		Short:   "Fetches a file attachment.",
 		Long: "Fetches a file attachment.\n\n" +
-			target.HelpText(target.Attachment),
+			target.HelpText(kouch.TargetAttachment),
 		RunE: getAttachmentCmd,
 	}
 	addCommonFlags(cmd.Flags())
@@ -45,7 +45,7 @@ func getAttachmentCmd(cmd *cobra.Command, _ []string) error {
 }
 
 func getAttachmentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
-	o, err := util.CommonOptions(ctx, target.Attachment, flags)
+	o, err := util.CommonOptions(ctx, kouch.TargetAttachment, flags)
 	if err != nil {
 		return nil, err
 	}
