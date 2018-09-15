@@ -17,16 +17,16 @@ func TestRootCmd(t *testing.T) {
 		version  string
 		expected *cobra.Command
 	}{
-	// {
-	// 	name:    "normal",
-	// 	log:     discardLogger,
-	// 	version: "1.2.3",
-	// 	expected: &cobra.Command{
-	// 		Version: "1.2.3",
-	// 		Use:     "kouch",
-	// 		Short:   "kouch is a command-line tool for interacting with CouchDB",
-	// 	},
-	// },
+		// {
+		// 	name:    "normal",
+		// 	log:     discardLogger,
+		// 	version: "1.2.3",
+		// 	expected: &cobra.Command{
+		// 		Version: "1.2.3",
+		// 		Use:     "kouch",
+		// 		Short:   "kouch is a command-line tool for interacting with CouchDB",
+		// 	},
+		// },
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

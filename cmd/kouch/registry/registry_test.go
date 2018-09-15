@@ -57,9 +57,9 @@ func TestRegister(t *testing.T) {
 			fn:     nilFn,
 			expected: &subCommand{
 				children: map[string]*subCommand{
-					"foo": &subCommand{
+					"foo": {
 						children: map[string]*subCommand{
-							"bar": &subCommand{
+							"bar": {
 								children: map[string]*subCommand{},
 								inits:    []InitFunc{nilFn},
 							},
