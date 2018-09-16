@@ -10,7 +10,6 @@ import (
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
-	"github.com/go-kivik/kouch/target"
 )
 
 func init() {
@@ -22,7 +21,7 @@ func uuidsCmd() *cobra.Command {
 		Use:   "uuids [target]",
 		Short: "Returns one or more server-generated UUIDs",
 		Long: "Returns Universally Unique Identifiers (UUIDs) from the CouchDB server.\n\n" +
-			target.HelpText(target.Root),
+			kouch.TargetHelpText(kouch.TargetRoot),
 		RunE: getUUIDsCmd,
 	}
 	cmd.Flags().IntP("count", "C", 1, "Number of UUIDs to return")
@@ -31,7 +30,7 @@ func uuidsCmd() *cobra.Command {
 
 func getUUIDsOpts(cmd *cobra.Command, args []string) (*kouch.Options, error) {
 	ctx := kouch.GetContext(cmd)
-	o, err := util.CommonOptions(ctx, target.Root, cmd.Flags())
+	o, err := util.CommonOptions(ctx, kouch.TargetRoot, cmd.Flags())
 	if err != nil {
 		return nil, err
 	}

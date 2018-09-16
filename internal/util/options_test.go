@@ -8,7 +8,6 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -25,7 +24,7 @@ func TestCommonOpts(t *testing.T) {
 	tests := []struct {
 		name     string
 		addFlags func(*pflag.FlagSet)
-		scope    target.Scope
+		scope    kouch.TargetScope
 		conf     *kouch.Config
 		args     []string
 		expected interface{}
@@ -34,7 +33,7 @@ func TestCommonOpts(t *testing.T) {
 	}{
 		{
 			name:     "no extra flags",
-			scope:    target.Database,
+			scope:    kouch.TargetDatabase,
 			addFlags: func(_ *pflag.FlagSet) {},
 			expected: &kouch.Options{
 				Target:  &kouch.Target{},
@@ -43,14 +42,14 @@ func TestCommonOpts(t *testing.T) {
 		},
 		{
 			name:   "duplicate filenames",
-			scope:  target.Attachment,
+			scope:  kouch.TargetAttachment,
 			args:   []string{"--" + kouch.FlagFilename, "foo.txt", "foo.txt"},
 			err:    "Must not use --" + kouch.FlagFilename + " and pass separate filename",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:  "id from target",
-			scope: target.Attachment,
+			scope: kouch.TargetAttachment,
 			conf: &kouch.Config{
 				DefaultContext: "foo",
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
@@ -68,14 +67,14 @@ func TestCommonOpts(t *testing.T) {
 		},
 		{
 			name:   "doc ID provided twice",
-			scope:  target.Attachment,
+			scope:  kouch.TargetAttachment,
 			args:   []string{"123/foo.txt", "--" + kouch.FlagDocument, "321"},
 			err:    "Must not use --id and pass document ID as part of the target",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:  "db included in target",
-			scope: target.Attachment,
+			scope: kouch.TargetAttachment,
 			conf: &kouch.Config{
 				DefaultContext: "foo",
 				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
@@ -93,14 +92,14 @@ func TestCommonOpts(t *testing.T) {
 		},
 		{
 			name:   "db provided twice",
-			scope:  target.Attachment,
+			scope:  kouch.TargetAttachment,
 			args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
 			err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
 			status: chttp.ExitFailedToInitialize,
 		},
 		{
 			name:  "full url target",
-			scope: target.Attachment,
+			scope: kouch.TargetAttachment,
 			args:  []string{"http://foo.com/foo/123/foo.txt"},
 			expected: &kouch.Options{
 				Target: &kouch.Target{
@@ -114,7 +113,7 @@ func TestCommonOpts(t *testing.T) {
 		},
 		{
 			name:  "rev",
-			scope: target.Attachment,
+			scope: kouch.TargetAttachment,
 			args:  []string{"--" + kouch.FlagRev, "xyz", "foo.txt"},
 			expected: &kouch.Options{
 				Target: &kouch.Target{Filename: "foo.txt"},

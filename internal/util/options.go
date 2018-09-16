@@ -4,16 +4,15 @@ import (
 	"context"
 
 	"github.com/go-kivik/kouch"
-	"github.com/go-kivik/kouch/target"
 	"github.com/spf13/pflag"
 )
 
 // CommonOptions parses options common to most or all commands.
-func CommonOptions(ctx context.Context, scope target.Scope, flags *pflag.FlagSet) (*kouch.Options, error) {
+func CommonOptions(ctx context.Context, scope kouch.TargetScope, flags *pflag.FlagSet) (*kouch.Options, error) {
 	o := kouch.NewOptions()
 	if tgt := kouch.GetTarget(ctx); tgt != "" {
 		var err error
-		o.Target, err = target.Parse(scope, tgt)
+		o.Target, err = kouch.ParseTarget(scope, tgt)
 		if err != nil {
 			return nil, err
 		}
