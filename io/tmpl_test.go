@@ -144,7 +144,7 @@ func TestTmplOutput(t *testing.T) {
 			p, err := mode.new(cmd.Flags(), buf)
 			testy.Error(t, test.newErr, err)
 
-			defer p.Close()
+			defer p.Close() // nolint: errcheck
 			_, err = io.Copy(p, strings.NewReader(test.input))
 			if err == nil {
 				err = p.Close()

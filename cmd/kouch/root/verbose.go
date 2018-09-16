@@ -52,53 +52,53 @@ type clientTrace struct {
 }
 
 func (ct *clientTrace) getConn(hostPort string) {
-	fmt.Fprintf(ct.out, "*   Trying %s...\n", hostPort)
+	_, _ = fmt.Fprintf(ct.out, "*   Trying %s...\n", hostPort)
 }
 
 func (ct *clientTrace) gotConn(info httptrace.GotConnInfo) {
 	host, port, _ := net.SplitHostPort(info.Conn.RemoteAddr().String())
-	fmt.Fprintf(ct.out, "* Connected to %s port %s\n", host, port)
+	_, _ = fmt.Fprintf(ct.out, "* Connected to %s port %s\n", host, port)
 }
 
 func (ct *clientTrace) httpRequestBody(r *http.Request) {
 	ct.req = r
 	if r.Body != nil {
-		defer r.Body.Close()
+		defer r.Body.Close() // nolint: errcheck
 		ct.uploadSize, _ = io.Copy(ioutil.Discard, r.Body)
 	}
 }
 
 func (ct *clientTrace) wroteRequest(i httptrace.WroteRequestInfo) {
 	if i.Err != nil {
-		fmt.Fprintf(ct.out, "Error writing request: %s\n", i.Err)
+		_, _ = fmt.Fprintf(ct.out, "Error writing request: %s\n", i.Err)
 		return
 	}
 	dump, err := httputil.DumpRequest(ct.req, false)
 	if err != nil {
-		fmt.Fprintf(ct.out, "ERROR: %s\n", err)
+		_, _ = fmt.Fprintf(ct.out, "ERROR: %s\n", err)
 	}
 	ct.dump(">", dump)
 	if ct.uploadSize > 0 {
-		fmt.Fprintf(ct.out, "* upload completely sent off: %d of %[1]d bytes\n", ct.uploadSize)
+		_, _ = fmt.Fprintf(ct.out, "* upload completely sent off: %d of %[1]d bytes\n", ct.uploadSize)
 	}
 }
 
 func (ct *clientTrace) httpResponse(r *http.Response) {
 	dump, err := httputil.DumpResponse(r, false)
 	if err != nil {
-		fmt.Fprintf(ct.out, "ERROR: %s\n", err)
+		_, _ = fmt.Fprintf(ct.out, "ERROR: %s\n", err)
 	}
 	ct.dump("<", dump)
-	fmt.Fprintf(ct.out, "* Closing connection\n")
+	_, _ = fmt.Fprintf(ct.out, "* Closing connection\n")
 }
 
 func (ct *clientTrace) dump(prefix string, body []byte) {
 	scanner := bufio.NewScanner(bytes.NewReader(body))
 	for scanner.Scan() {
 		if text := scanner.Text(); text != "" {
-			fmt.Fprintf(ct.out, "%s %s\n", prefix, text)
+			_, _ = fmt.Fprintf(ct.out, "%s %s\n", prefix, text)
 		} else {
-			fmt.Fprintln(ct.out, prefix)
+			_, _ = fmt.Fprintln(ct.out, prefix)
 		}
 	}
 }

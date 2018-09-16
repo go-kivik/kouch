@@ -135,7 +135,9 @@ func TestCommonOpts(t *testing.T) {
 				addFlags = addCommonFlags
 			}
 			addFlags(cmd.Flags())
-			cmd.ParseFlags(test.args)
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
 			ctx := kouch.GetContext(cmd)
 			ctx = kouch.SetConf(ctx, test.conf)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {

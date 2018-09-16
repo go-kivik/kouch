@@ -38,7 +38,9 @@ func TestVerbose(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := rootCmd("1.2.3")
-			cmd.ParseFlags(test.args)
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
 			ctx, err := verbose(kouch.GetContext(cmd), cmd)
 			testy.Error(t, test.err, err)
 			if verbose := kouch.Verbose(ctx); verbose != test.expected {
@@ -75,7 +77,7 @@ func TestClientTrace(t *testing.T) {
 	if err = chttp.ResponseError(res); err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // nolint: errcheck
 
 	sURL, _ := url.Parse(s.URL)
 	host, port, _ := net.SplitHostPort(sURL.Host)

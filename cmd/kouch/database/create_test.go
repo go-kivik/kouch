@@ -80,7 +80,7 @@ func TestCreateDatabaseCmd(t *testing.T) {
 				t.Errorf("Unexpected Authorization header: %s", auth)
 			}
 			w.WriteHeader(kivik.StatusCreated)
-			w.Write([]byte(`{"ok":true}`))
+			_, _ = w.Write([]byte(`{"ok":true}`))
 		}))
 		tests.Cleanup(s.Close)
 		addr, _ := url.Parse(s.URL)

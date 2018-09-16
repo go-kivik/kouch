@@ -27,7 +27,9 @@ func TestHome(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			defer testy.RestoreEnv()()
 			os.Clearenv()
-			testy.SetEnv(test.env)
+			if e := testy.SetEnv(test.env); e != nil {
+				t.Fatal(e)
+			}
 			home := Home()
 			if home != test.expected {
 				t.Errorf("Unexpected home result: '%s', expected '%s'\n", home, test.expected)

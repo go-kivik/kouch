@@ -113,7 +113,7 @@ func TestOpen(t *testing.T) {
 	tests.Add("stdout", oTest{
 		flags: func() *pflag.FlagSet {
 			f := newFlags()
-			f.Set(kouch.FlagOutputFile, "-")
+			_ = f.Set(kouch.FlagOutputFile, "-")
 			return f
 		}(),
 		flagName:     kouch.FlagOutputFile,
@@ -123,7 +123,7 @@ func TestOpen(t *testing.T) {
 	tests.Add("stderr", oTest{
 		flags: func() *pflag.FlagSet {
 			f := newFlags()
-			f.Set(kouch.FlagOutputFile, "%")
+			_ = f.Set(kouch.FlagOutputFile, "%")
 			return f
 		}(),
 		flagName:     kouch.FlagOutputFile,
@@ -138,10 +138,10 @@ func TestOpen(t *testing.T) {
 		tests.Cleanup(func() error {
 			return os.Remove(file.Name())
 		})
-		file.Close()
+		_ = file.Close()
 
 		flags := newFlags()
-		flags.Set(kouch.FlagOutputFile, file.Name())
+		_ = flags.Set(kouch.FlagOutputFile, file.Name())
 		return oTest{
 			flags:        flags,
 			flagName:     kouch.FlagOutputFile,
@@ -152,7 +152,7 @@ func TestOpen(t *testing.T) {
 	tests.Add("missing parent dir", oTest{
 		flags: func() *pflag.FlagSet {
 			f := newFlags()
-			f.Set(kouch.FlagOutputFile, "./foo/bar/baz")
+			_ = f.Set(kouch.FlagOutputFile, "./foo/bar/baz")
 			return f
 		}(),
 		flagName:     kouch.FlagOutputFile,
@@ -164,11 +164,11 @@ func TestOpen(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		file.Close()
+		_ = file.Close()
 
 		flags := newFlags()
-		flags.Set(kouch.FlagOutputFile, file.Name())
-		flags.Set(kouch.FlagClobber, "true")
+		_ = flags.Set(kouch.FlagOutputFile, file.Name())
+		_ = flags.Set(kouch.FlagClobber, "true")
 
 		tests.Cleanup(func() error {
 			return os.Remove(file.Name())
@@ -200,7 +200,6 @@ func TestOpen(t *testing.T) {
 
 func TestSetOutput(t *testing.T) {
 	type soTest struct {
-		name       string
 		addFlags   func(*pflag.FlagSet)
 		args       []string
 		outputNil  bool
@@ -209,7 +208,6 @@ func TestSetOutput(t *testing.T) {
 		headNil    bool
 		headFd     uintptr
 		headName   string
-		err        string
 	}
 	tests := testy.NewTable()
 	tests.Add("defaults", soTest{
@@ -253,7 +251,9 @@ func TestSetOutput(t *testing.T) {
 		if fn := test.addFlags; fn != nil {
 			fn(cmd.PersistentFlags())
 		}
-		cmd.ParseFlags(test.args)
+		if e := cmd.ParseFlags(test.args); e != nil {
+			t.Fatal(e)
+		}
 		ctx := context.Background()
 		var err error
 		ctx, err = setOutput(ctx, cmd.Flags())
@@ -389,7 +389,9 @@ func TestRedirStderr(t *testing.T) {
 			t.Run("group", func(t *testing.T) {
 				cmd := &cobra.Command{}
 				AddFlags(cmd.PersistentFlags())
-				cmd.ParseFlags(test.args)
+				if e := cmd.ParseFlags(test.args); e != nil {
+					t.Fatal(e)
+				}
 				err := RedirStderr(cmd.Flags())
 				testy.ExitStatusErrorRE(t, test.err, test.status, err)
 				filename := os.Stderr.Name()
@@ -419,8 +421,8 @@ func TestSelectInput(t *testing.T) {
 			}
 			os.Stdin = r
 			go func() {
-				w.Write([]byte("stdin data"))
-				w.Close()
+				_, _ = w.Write([]byte("stdin data"))
+				_ = w.Close()
 			}()
 			return siTest{
 				name:     "defaults",
@@ -441,7 +443,7 @@ func TestSelectInput(t *testing.T) {
 			if _, e := f.Write([]byte("file data")); e != nil {
 				t.Fatal(e)
 			}
-			f.Close()
+			_ = f.Close()
 			return siTest{
 				name:     "read from file",
 				args:     []string{"--" + kouch.FlagData, "@" + f.Name()},
@@ -491,7 +493,9 @@ func TestSelectInput(t *testing.T) {
 			}
 			cmd := &cobra.Command{}
 			AddFlags(cmd.PersistentFlags())
-			cmd.ParseFlags(test.args)
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
 			f, err := SelectInput(cmd)
 			testy.ExitStatusError(t, test.err, test.status, err)
 			content, err := ioutil.ReadAll(f)

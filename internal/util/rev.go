@@ -18,6 +18,6 @@ func FetchRev(ctx context.Context, o *kouch.Options) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() // nolint: errcheck
 	return strings.Trim(res.Header.Get("Etag"), "\""), nil
 }

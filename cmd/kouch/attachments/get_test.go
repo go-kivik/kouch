@@ -3,6 +3,7 @@ package attachments
 import (
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -51,7 +52,9 @@ func TestGetAttachmentOpts(t *testing.T) {
 				test.conf = &kouch.Config{}
 			}
 			cmd := getAttCmd()
-			cmd.ParseFlags(test.args)
+			if e := cmd.ParseFlags(test.args); e != nil {
+				t.Fatal(e)
+			}
 			ctx := kouch.GetContext(cmd)
 			ctx = kouch.SetConf(ctx, test.conf)
 			if flags := cmd.Flags().Args(); len(flags) > 0 {
@@ -75,13 +78,13 @@ func TestGetAttachmentCmd(t *testing.T) {
 		Status: chttp.ExitFailedToInitialize,
 	})
 	tests.Add("slashes", func(t *testing.T) interface{} {
-		s := testy.ServeResponseValidator(t, &http.Response{
+		var s *httptest.Server
+		s = testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 200,
 			Body:       ioutil.NopCloser(strings.NewReader("attachment content")),
-		}, func(t *testing.T, r *http.Request) {
-			if r.URL.RawPath != "/foo%2Fba+r/123%2Fb/foo%2Fbar.txt" {
-				t.Errorf("Unexpected req path: %s", r.URL.Path)
-			}
+		}, func(t *testing.T, req *http.Request) {
+			expected := test.NewRequest(t, "GET", s.URL+"/foo%2Fba+r/123%2Fb/foo%2Fbar.txt", nil)
+			test.CheckRequest(t, expected, req)
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{

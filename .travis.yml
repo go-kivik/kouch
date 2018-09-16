@@ -7,7 +7,7 @@ install:
 
 script:
   - ./script/test_version.sh
-  - gometalinter.v2 --config .linter.json
+  - gometalinter.v2 --config .linter.json ./...
   - go test -race ./...
   - ./script/codecov.sh
 

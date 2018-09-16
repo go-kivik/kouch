@@ -20,7 +20,9 @@ func (w *errWriter) Write(_ []byte) (int, error) {
 
 func testOptions(t *testing.T, expected []string, cmd *cobra.Command) {
 	found := make([]string, 0)
-	cmd.ParseFlags(nil)
+	if e := cmd.ParseFlags(nil); e != nil {
+		t.Fatal(e)
+	}
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		found = append(found, f.Name)
 	})

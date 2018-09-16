@@ -72,16 +72,18 @@ contexts:
 	}
 }
 
+type rcTest struct {
+	name         string
+	files        map[string]string
+	env          map[string]string
+	args         []string
+	expected     *kouch.Config
+	expectedFile string
+	err          string
+}
+
 func TestReadConfig(t *testing.T) {
-	tests := []struct {
-		name         string
-		files        map[string]string
-		env          map[string]string
-		args         []string
-		expected     *kouch.Config
-		expectedFile string
-		err          string
-	}{
+	tests := []rcTest{
 		{
 			name:     "no config",
 			expected: &kouch.Config{},
@@ -137,42 +139,54 @@ contexts:
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tmpDir := new(string)
-			defer testy.TempDir(t, tmpDir)()
-			defer testy.RestoreEnv()()
-			env := map[string]string{"HOME": *tmpDir}
-			for k, v := range test.env {
-				env[k] = strings.Replace(v, "${HOME}", *tmpDir, -1)
-			}
-			testy.SetEnv(env)
-			for filename, content := range test.files {
-				file := path.Join(*tmpDir, filename)
-				if err := os.MkdirAll(path.Dir(file), 0777); err != nil {
-					t.Fatal(err)
-				}
-				if err := ioutil.WriteFile(file, []byte(content), 0777); err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			cmd := &cobra.Command{}
-			AddFlags(cmd.PersistentFlags())
-			for i, v := range test.args {
-				test.args[i] = strings.Replace(v, "${HOME}", *tmpDir, -1)
-			}
-			cmd.ParseFlags(test.args)
-
-			conf, err := ReadConfig(cmd)
-			testy.ErrorRE(t, test.err, err)
-			if test.expectedFile != "" {
-				if !regexp.MustCompile(test.expectedFile).MatchString(conf.File) {
-					t.Errorf("Conf file\nExpected: %s\n  Actual: %s\n", test.expectedFile, conf.File)
-				}
-				conf.File = ""
-			}
-			if d := diff.Interface(test.expected, conf); d != nil {
-				t.Fatal(d)
-			}
+			readConfigTest(t, test)
 		})
+	}
+}
+
+func readConfigTestCreateTempFiles(t *testing.T, tmpDir *string, files map[string]string) {
+	for filename, content := range files {
+		file := path.Join(*tmpDir, filename)
+		if err := os.MkdirAll(path.Dir(file), 0777); err != nil {
+			t.Fatal(err)
+		}
+		if err := ioutil.WriteFile(file, []byte(content), 0777); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func readConfigTest(t *testing.T, test rcTest) {
+	tmpDir := new(string)
+	defer testy.TempDir(t, tmpDir)()
+	defer testy.RestoreEnv()()
+	env := map[string]string{"HOME": *tmpDir}
+	for k, v := range test.env {
+		env[k] = strings.Replace(v, "${HOME}", *tmpDir, -1)
+	}
+	if e := testy.SetEnv(env); e != nil {
+		t.Fatal(e)
+	}
+	readConfigTestCreateTempFiles(t, tmpDir, test.files)
+
+	cmd := &cobra.Command{}
+	AddFlags(cmd.PersistentFlags())
+	for i, v := range test.args {
+		test.args[i] = strings.Replace(v, "${HOME}", *tmpDir, -1)
+	}
+	if e := cmd.ParseFlags(test.args); e != nil {
+		t.Fatal(e)
+	}
+
+	conf, err := ReadConfig(cmd)
+	testy.ErrorRE(t, test.err, err)
+	if test.expectedFile != "" {
+		if !regexp.MustCompile(test.expectedFile).MatchString(conf.File) {
+			t.Errorf("Conf file\nExpected: %s\n  Actual: %s\n", test.expectedFile, conf.File)
+		}
+		conf.File = ""
+	}
+	if d := diff.Interface(test.expected, conf); d != nil {
+		t.Fatal(d)
 	}
 }

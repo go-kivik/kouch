@@ -28,6 +28,8 @@ const (
 	lastScope = iota - 1
 )
 
+var _ = lastScope // lastScope only use in tests; this prevents linter warnings
+
 // ScopeName returns the name of the scope, or "" if scope is invalid.
 func ScopeName(scope Scope) string {
 	switch scope {
