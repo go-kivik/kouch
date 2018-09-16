@@ -1,6 +1,7 @@
 package kouch
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strings"
@@ -61,6 +62,37 @@ type Target struct {
 	Username string
 	// Password is the HTTP Basic Auth password
 	Password string
+}
+
+// NewTarget builds a new target from the context and flags.
+func NewTarget(ctx context.Context, scope TargetScope, flags *pflag.FlagSet) (*Target, error) {
+	t := &Target{}
+
+	if tgt := GetTarget(ctx); tgt != "" {
+		var err error
+		t, err = ParseTarget(scope, tgt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := t.FilenameFromFlags(flags); err != nil {
+		return nil, err
+	}
+	if err := t.DocumentFromFlags(flags); err != nil {
+		return nil, err
+	}
+	if err := t.DatabaseFromFlags(flags); err != nil {
+		return nil, err
+	}
+
+	if defCtx, err := Conf(ctx).DefaultCtx(); err == nil {
+		if t.Root == "" {
+			t.Root = defCtx.Root
+		}
+	}
+
+	return t, nil
 }
 
 // ParseTarget parses src as a CouchDB target, according to the rules for scope.
