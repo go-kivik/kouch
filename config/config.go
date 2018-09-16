@@ -75,20 +75,8 @@ func constructContext(flags *pflag.FlagSet) (*kouch.Context, error) {
 		password, _ = u.Password()
 		addr.User = nil
 	}
-	if flags.Changed(kouch.FlagUser) {
-		user, err = flags.GetString(kouch.FlagUser)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if flags.Changed(kouch.FlagUser) && !flags.Changed(kouch.FlagPassword) {
-		parts := append(strings.SplitN(user, ":", 2), "")
-		user, password = parts[0], parts[1]
-	} else if flags.Changed(kouch.FlagPassword) {
-		password, err = flags.GetString(kouch.FlagPassword)
-		if err != nil {
-			return nil, err
-		}
+	if e := credentials(&user, &password, flags); e != nil {
+		return nil, e
 	}
 	if root == "" && user == "" && password == "" {
 		return nil, nil
@@ -98,6 +86,31 @@ func constructContext(flags *pflag.FlagSet) (*kouch.Context, error) {
 		User:     user,
 		Password: password,
 	}, nil
+}
+
+func credentials(user, pass *string, flags *pflag.FlagSet) error {
+	var u string
+	if flags.Changed(kouch.FlagUser) {
+		var err error
+		u, err = flags.GetString(kouch.FlagUser)
+		if err != nil {
+			return err
+		}
+		if !flags.Changed(kouch.FlagPassword) {
+			parts := append(strings.SplitN(u, ":", 2), "")
+			*user, *pass = parts[0], parts[1]
+			return nil
+		}
+		*user = u
+	}
+	if flags.Changed(kouch.FlagPassword) {
+		p, err := flags.GetString(kouch.FlagPassword)
+		if err != nil {
+			return err
+		}
+		*pass = p
+	}
+	return nil
 }
 
 func fileConf(cmd *cobra.Command) (*kouch.Config, error) {

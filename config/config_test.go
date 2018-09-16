@@ -13,6 +13,7 @@ import (
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var expectedConf = &kouch.Config{DefaultContext: "foo",
@@ -339,6 +340,35 @@ func TestConstructContext(t *testing.T) {
 			testy.ExitStatusError(t, test.err, test.status, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
+			}
+		})
+	}
+}
+
+func TestCredentials(t *testing.T) {
+	tests := []struct {
+		name         string
+		user, pass   string
+		flags        *pflag.FlagSet
+		eUser, ePass string
+		err          string
+	}{
+		{
+			name:  "No auth flags",
+			user:  "foo",
+			pass:  "bar",
+			flags: pflag.NewFlagSet("foo", 1),
+			eUser: "foo",
+			ePass: "bar",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := credentials(&test.user, &test.pass, test.flags)
+			testy.Error(t, test.err, err)
+			if test.user != test.eUser || test.pass != test.ePass {
+				t.Errorf("Unexpected results.\n Got: %s/%s\nWant: %s/%s\n",
+					test.user, test.pass, test.eUser, test.ePass)
 			}
 		})
 	}
