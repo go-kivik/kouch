@@ -44,19 +44,14 @@ func TestCreateDatabaseCmd(t *testing.T) {
 		}
 	})
 	tests.Add("shards", func(t *testing.T) interface{} {
-		s := testy.ServeResponseValidator(t, &http.Response{
+		var s *httptest.Server
+		s = testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 201,
 			Body:       ioutil.NopCloser(strings.NewReader(`{"ok":true}`)),
-		}, func(t *testing.T, r *http.Request) {
-			if r.Method != http.MethodPut {
-				t.Errorf("Unexpected method: %s", r.Method)
-			}
-			if r.URL.Path != "/oink" {
-				t.Errorf("Unexpected path: %s", r.URL.Path)
-			}
-			if q := r.URL.Query().Get("q"); q != "5" {
-				t.Errorf("Unexpected q value: %v", q)
-			}
+		}, func(t *testing.T, req *http.Request) {
+			expected := test.NewRequest(t, "PUT", s.URL+"/oink?q=5", nil)
+			expected.Header.Set("Content-Length", "0")
+			test.CheckRequest(t, expected, req)
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{
@@ -65,20 +60,13 @@ func TestCreateDatabaseCmd(t *testing.T) {
 		}
 	})
 	tests.Add("auth in target", func(t *testing.T) interface{} {
-		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var s *httptest.Server
+		s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			expected := test.NewRequest(t, "PUT", s.URL+"/oink?q=5", nil)
+			expected.Header.Set("Content-Length", "0")
+			expected.Header.Set("Authorization", "Basic YWRtaW46YWJjMTIz")
+			test.CheckRequest(t, expected, r)
 			w.Header().Set("Content-Type", "application/json")
-			if r.Method != kivik.MethodPut {
-				t.Errorf("Unexpected method: %s", r.Method)
-			}
-			if r.URL.Path != "/oink" {
-				t.Errorf("Unexpected path: %s", r.URL.Path)
-			}
-			if q := r.URL.Query().Get("q"); q != "5" {
-				t.Errorf("Unexpected q value: %v", q)
-			}
-			if auth := r.Header.Get("Authorization"); auth != "Basic YWRtaW46YWJjMTIz" {
-				t.Errorf("Unexpected Authorization header: %s", auth)
-			}
 			w.WriteHeader(kivik.StatusCreated)
 			_, _ = w.Write([]byte(`{"ok":true}`))
 		}))
