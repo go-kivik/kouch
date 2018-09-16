@@ -224,7 +224,6 @@ func SelectInput(cmd *cobra.Command) (io.ReadCloser, error) {
 	}
 	var in io.ReadCloser
 	if data[0] == '@' {
-		var err error
 		in, err = os.Open(data[1:])
 		if err != nil {
 			return nil, errors.WrapExitError(chttp.ExitReadError, err)
