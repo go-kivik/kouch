@@ -3,8 +3,7 @@ package target
 // HelpText returns the help text to describe the valid target format(s)
 // for the specified scope, or "" if the scope isn't defined.
 func HelpText(scope Scope) string {
-	text, _ := helpText[scope]
-	return text
+	return helpText[scope]
 }
 
 var helpText = map[Scope]string{
