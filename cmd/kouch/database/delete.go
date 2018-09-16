@@ -12,32 +12,31 @@ import (
 )
 
 func init() {
-	registry.Register([]string{"create"}, createDbCmd)
+	registry.Register([]string{"delete"}, deleteDbCmd)
 }
 
-func createDbCmd() *cobra.Command {
+func deleteDbCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "database [target]",
 		Aliases: []string{"db"},
-		Short:   "Creates a new database.",
-		Long: "Creates a new database.\n\n" +
+		Short:   "Deletes a database.",
+		Long: "Deletes a database.\n\n" +
 			kouch.TargetHelpText(kouch.TargetDatabase),
-		RunE: createDatabaseCmd,
+		RunE: deleteDatabaseCmd,
 	}
-	cmd.Flags().IntP(kouch.FlagShards, kouch.FlagShortShards, 0, "Shards, aka the number of range partitions.")
 	return cmd
 }
 
-func createDatabaseCmd(cmd *cobra.Command, _ []string) error {
+func deleteDatabaseCmd(cmd *cobra.Command, _ []string) error {
 	ctx := kouch.GetContext(cmd)
-	o, err := createDatabaseOpts(ctx, cmd.Flags())
+	o, err := deleteDatabaseOpts(ctx, cmd.Flags())
 	if err != nil {
 		return err
 	}
-	return util.ChttpDo(ctx, http.MethodPut, util.DatabasePath(o), o)
+	return util.ChttpDo(ctx, http.MethodDelete, util.DatabasePath(o), o)
 }
 
-func createDatabaseOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
+func deleteDatabaseOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
 	o, err := util.CommonOptions(ctx, kouch.TargetDatabase, flags)
 
 	if e := o.SetParamInt(flags, kouch.FlagShards); e != nil {
