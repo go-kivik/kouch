@@ -9,6 +9,7 @@ import (
 
 	// Top-level sub-commands
 	_ "github.com/go-kivik/kouch/cmd/kouch/create"
+	_ "github.com/go-kivik/kouch/cmd/kouch/delete"
 	_ "github.com/go-kivik/kouch/cmd/kouch/get"
 	_ "github.com/go-kivik/kouch/cmd/kouch/put"
 
