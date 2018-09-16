@@ -22,7 +22,7 @@ func isNil(i interface{}) bool {
 // body is nil), writing the header to head, and body to body. If either head or body is nil, that write is skipped.
 func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	head, body := kouch.HeadDumper(ctx), kouch.Output(ctx)
-	nilHead, nilBody := isNil(head), isNil(body)
+	nilBody := isNil(body)
 	defer close(head) // nolint: errcheck
 	defer close(body) // nolint: errcheck
 	c, err := o.NewClient()
@@ -43,18 +43,8 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	}
 	defer res.Body.Close() // nolint: errcheck
 
-	if !nilHead {
-		if e := res.Header.Write(head); e != nil {
-			return e
-		}
-		// If head and body go to the same place, output a blank line between them
-		if sameFd(head, body) {
-			if _, e := head.Write([]byte("\r\n")); e != nil {
-				return e
-			}
-		} else {
-			_ = close(head)
-		}
+	if e := writeHead(head, res, !sameFd(head, body)); e != nil {
+		return e
 	}
 
 	if nilBody {
@@ -62,6 +52,21 @@ func ChttpDo(ctx context.Context, method, path string, o *kouch.Options) error {
 	}
 
 	return CopyAll(body, res.Body)
+}
+
+// when closeHead is true, head is closed before return
+func writeHead(head io.WriteCloser, res *http.Response, closeHead bool) error {
+	if isNil(head) {
+		return nil
+	}
+	if e := res.Header.Write(head); e != nil {
+		return e
+	}
+	if closeHead {
+		return head.Close()
+	}
+	_, err := head.Write([]byte("\r\n"))
+	return err
 }
 
 func sameFd(w1, w2 io.Writer) bool {
