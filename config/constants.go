@@ -5,7 +5,5 @@ const (
 	// home directory.
 	homeDir = ".kouch"
 
-	flagContext = "context"
-
 	dynamicContextName = "$dynamic$"
 )

@@ -26,6 +26,7 @@ const (
 	FlagAutoRev      = "auto-rev"
 	FlagShards       = "shards"
 	FlagPassword     = "password"
+	FlagContext      = "context"
 
 	// Curl-equivalent short flags
 	FlagShortVerbose    = "v"

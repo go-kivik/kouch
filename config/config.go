@@ -50,7 +50,7 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 			Context: dynCtx,
 		})
 	}
-	context, err := cmd.Flags().GetString(flagContext)
+	context, err := cmd.Flags().GetString(kouch.FlagContext)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func isNotExist(err error) bool {
 func AddFlags(flags *pflag.FlagSet) {
 	flags.String(kouch.FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
 	flags.StringP(kouch.FlagServerRoot, kouch.FlagShortServerRoot, "", "The root URL")
-	flags.String(flagContext, "", "The named context to use")
+	flags.String(kouch.FlagContext, "", "The named context to use")
 	flags.StringP(kouch.FlagUser, kouch.FlagShortUser, "", "Specify the username, and possibly password, to user for server authentication. If the password is not set with the "+kouch.FlagShortPassword+"/"+kouch.FlagPassword+" option, then the first colon in this option will be considered a separator for the username and password. To specificy a username with a colon, you must provide a password as a separate option.")
 	flags.StringP(kouch.FlagPassword, kouch.FlagShortPassword, "", "Specify the password for server authentication.")
 }
