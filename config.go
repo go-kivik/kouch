@@ -29,7 +29,9 @@ type NamedContext struct {
 // Context is a server context (URL, auth info, session store, etc)
 type Context struct {
 	// Root is the URL to the server's root.
-	Root string `json:"root"`
+	Root     string `json:"root"`
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 // DefaultCtx returns the default context.

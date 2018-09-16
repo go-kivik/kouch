@@ -44,19 +44,14 @@ func TestCreateDatabaseCmd(t *testing.T) {
 		}
 	})
 	tests.Add("shards", func(t *testing.T) interface{} {
-		s := testy.ServeResponseValidator(t, &http.Response{
+		var s *httptest.Server
+		s = testy.ServeResponseValidator(t, &http.Response{
 			StatusCode: 201,
 			Body:       ioutil.NopCloser(strings.NewReader(`{"ok":true}`)),
-		}, func(t *testing.T, r *http.Request) {
-			if r.Method != http.MethodPut {
-				t.Errorf("Unexpected method: %s", r.Method)
-			}
-			if r.URL.Path != "/oink" {
-				t.Errorf("Unexpected path: %s", r.URL.Path)
-			}
-			if q := r.URL.Query().Get("q"); q != "5" {
-				t.Errorf("Unexpected q value: %v", q)
-			}
+		}, func(t *testing.T, req *http.Request) {
+			expected := test.NewRequest(t, "PUT", s.URL+"/oink?q=5", nil)
+			expected.Header.Set("Content-Length", "0")
+			test.CheckRequest(t, expected, req)
 		})
 		tests.Cleanup(s.Close)
 		return test.CmdTest{
@@ -64,7 +59,27 @@ func TestCreateDatabaseCmd(t *testing.T) {
 			Stdout: `{"ok":true}`,
 		}
 	})
-	tests.Add("authenticated", func(t *testing.T) interface{} {
+	tests.Add("auth in target", func(t *testing.T) interface{} {
+		var s *httptest.Server
+		s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			expected := test.NewRequest(t, "PUT", s.URL+"/oink?q=5", nil)
+			expected.Header.Set("Content-Length", "0")
+			expected.Header.Set("Authorization", "Basic YWRtaW46YWJjMTIz")
+			test.CheckRequest(t, expected, r)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(kivik.StatusCreated)
+			_, _ = w.Write([]byte(`{"ok":true}`))
+		}))
+		tests.Cleanup(s.Close)
+		addr, _ := url.Parse(s.URL)
+		addr.User = url.UserPassword("admin", "abc123")
+		addr.Path = "/oink"
+		return test.CmdTest{
+			Args:   []string{addr.String(), "--" + kouch.FlagShards, "5"},
+			Stdout: `{"ok":true}`,
+		}
+	})
+	tests.Add("auth in cli opts", func(t *testing.T) interface{} {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			if r.Method != kivik.MethodPut {
@@ -83,11 +98,8 @@ func TestCreateDatabaseCmd(t *testing.T) {
 			_, _ = w.Write([]byte(`{"ok":true}`))
 		}))
 		tests.Cleanup(s.Close)
-		addr, _ := url.Parse(s.URL)
-		addr.User = url.UserPassword("admin", "abc123")
-		addr.Path = "/oink"
 		return test.CmdTest{
-			Args:   []string{addr.String(), "--" + kouch.FlagShards, "5"},
+			Args:   []string{s.URL + "/oink", "--" + kouch.FlagShards, "5", "--" + kouch.FlagUser, "admin", "--" + kouch.FlagPassword, "abc123"},
 			Stdout: `{"ok":true}`,
 		}
 	})

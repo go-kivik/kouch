@@ -58,9 +58,9 @@ type Target struct {
 	Document string
 	// Filename is the attachment filename.
 	Filename string
-	// Username is the HTTP Basic Auth username
-	Username string
-	// Password is the HTTP Basic Auth password
+	// User is the Auth username
+	User string
+	// Password is the Auth password
 	Password string
 }
 
@@ -89,7 +89,16 @@ func NewTarget(ctx context.Context, scope TargetScope, flags *pflag.FlagSet) (*T
 	if defCtx, err := Conf(ctx).DefaultCtx(); err == nil {
 		if t.Root == "" {
 			t.Root = defCtx.Root
+			t.User = defCtx.User
+			t.Password = defCtx.Password
 		}
+	}
+
+	if err := setFromFlags(&t.User, flags, FlagUser, true); err != nil {
+		return nil, err
+	}
+	if err := setFromFlags(&t.Password, flags, FlagPassword, true); err != nil {
+		return nil, err
 	}
 
 	return t, nil
@@ -108,7 +117,7 @@ func ParseTarget(scope TargetScope, src string) (*Target, error) {
 		}
 		src = url.EscapedPath()
 		target.Root = fmt.Sprintf("%s://%s", url.Scheme, url.Host)
-		target.Username = url.User.Username()
+		target.User = url.User.Username()
 		target.Password, _ = url.User.Password()
 	}
 	switch scope {
@@ -190,9 +199,9 @@ func (t *Target) NewClient() (*chttp.Client, error) {
 		return nil, err
 	}
 	c.UserAgents = append(c.UserAgents, "Kouch/"+Version)
-	if t.Username != "" || t.Password != "" {
+	if t.User != "" || t.Password != "" {
 		return c, c.Auth(&chttp.BasicAuth{
-			Username: t.Username,
+			Username: t.User,
 			Password: t.Password,
 		})
 	}
@@ -208,7 +217,7 @@ var duplicateConfigErrors = map[string]error{
 		"Must not use --%s and pass separate filename", FlagFilename),
 }
 
-func setFromFlags(target *string, flags *pflag.FlagSet, flagName string) error {
+func setFromFlags(target *string, flags *pflag.FlagSet, flagName string, allowOverride bool) error {
 	if flag := flags.Lookup(flagName); flag == nil {
 		return nil
 	}
@@ -219,7 +228,7 @@ func setFromFlags(target *string, flags *pflag.FlagSet, flagName string) error {
 	if value == "" {
 		return nil
 	}
-	if *target != "" {
+	if !allowOverride && *target != "" {
 		return duplicateConfigErrors[flagName]
 	}
 	*target = value
@@ -228,15 +237,15 @@ func setFromFlags(target *string, flags *pflag.FlagSet, flagName string) error {
 
 // DocumentFromFlags sets t.DocID from the passed flagset.
 func (t *Target) DocumentFromFlags(flags *pflag.FlagSet) error {
-	return setFromFlags(&t.Document, flags, FlagDocument)
+	return setFromFlags(&t.Document, flags, FlagDocument, false)
 }
 
 // DatabaseFromFlags sets t.Database from the passed flagset.
 func (t *Target) DatabaseFromFlags(flags *pflag.FlagSet) error {
-	return setFromFlags(&t.Database, flags, FlagDatabase)
+	return setFromFlags(&t.Database, flags, FlagDatabase, false)
 }
 
 // FilenameFromFlags sets t.Filename from the passed flagset.
 func (t *Target) FilenameFromFlags(flags *pflag.FlagSet) error {
-	return setFromFlags(&t.Filename, flags, FlagFilename)
+	return setFromFlags(&t.Filename, flags, FlagFilename, false)
 }

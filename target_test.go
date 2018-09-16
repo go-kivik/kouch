@@ -19,8 +19,18 @@ func TestTargetScopeName(t *testing.T) {
 	}
 }
 
+// borrowed from config package
+func addGlobalFlags(flags *pflag.FlagSet) {
+	flags.String(FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
+	flags.StringP(FlagServerRoot, FlagShortServerRoot, "", "The root URL")
+	flags.String(FlagContext, "", "The named context to use")
+	flags.StringP(FlagUser, FlagShortUser, "", "Specify the username, and possibly password, to user for server authentication. If the password is not set with the "+FlagShortPassword+"/"+FlagPassword+" option, then the first colon in this option will be considered a separator for the username and password. To specificy a username with a colon, you must provide a password as a separate option.")
+	flags.StringP(FlagPassword, FlagShortPassword, "", "Specify the password for server authentication.")
+}
+
 // borrowed from attachments
 func addCommonFlags(flags *pflag.FlagSet) {
+	addGlobalFlags(flags)
 	flags.String(FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	flags.String(FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
 	flags.String(FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
@@ -113,6 +123,17 @@ func TestNewTarget(t *testing.T) {
 			Filename: "tuv.txt",
 		},
 	})
+	tests.Add("auth", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addGlobalFlags,
+		conf:     defaultConfig,
+		args:     []string{"--" + FlagUser, "admin", "--" + FlagPassword, "abc123"},
+		expected: &Target{
+			Root:     "foo.com",
+			User:     "admin",
+			Password: "abc123",
+		},
+	})
 
 	tests.Run(t, func(t *testing.T, test newTargetTest) {
 		cmd := &cobra.Command{}
@@ -174,7 +195,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetRoot,
 			name:     "url with auth",
 			src:      "http://xxx:yyy@foo.com/",
-			expected: &Target{Root: "http://foo.com/", Username: "xxx", Password: "yyy"},
+			expected: &Target{Root: "http://foo.com/", User: "xxx", Password: "yyy"},
 		},
 		{
 			scope:    TargetRoot,
@@ -217,7 +238,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetDatabase,
 			name:     "url with auth",
 			src:      "http://a:b@foo.com/dbname",
-			expected: &Target{Root: "http://foo.com", Username: "a", Password: "b", Database: "dbname"},
+			expected: &Target{Root: "http://foo.com", User: "a", Password: "b", Database: "dbname"},
 		},
 		{
 			scope:  TargetDatabase,
@@ -315,7 +336,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetDocument,
 			name:     "url with auth",
 			src:      "http://foo:bar@localhost:5984/foo/bar",
-			expected: &Target{Root: "http://localhost:5984", Username: "foo", Password: "bar", Database: "foo", Document: "bar"},
+			expected: &Target{Root: "http://localhost:5984", User: "foo", Password: "bar", Database: "foo", Document: "bar"},
 		},
 		{
 			scope:    TargetDocument,
@@ -390,7 +411,7 @@ func TestParseTarget(t *testing.T) {
 			scope:    TargetAttachment,
 			name:     "url with auth",
 			src:      "https://admin:abc123@localhost:5984/foo/bar/baz.pdf",
-			expected: &Target{Root: "https://localhost:5984", Username: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
+			expected: &Target{Root: "https://localhost:5984", User: "admin", Password: "abc123", Database: "foo", Document: "bar", Filename: "baz.pdf"},
 		},
 		{
 			scope:    TargetAttachment,

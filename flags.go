@@ -8,6 +8,7 @@ const (
 	FlagData       = "data"
 	FlagHead       = "head"
 	FlagDumpHeader = "dump-header"
+	FlagUser       = "user"
 
 	// Custom flags
 	FlagClobber      = "force"
@@ -24,6 +25,8 @@ const (
 	FlagRev          = "rev"
 	FlagAutoRev      = "auto-rev"
 	FlagShards       = "shards"
+	FlagPassword     = "password"
+	FlagContext      = "context"
 
 	// Curl-equivalent short flags
 	FlagShortVerbose    = "v"
@@ -31,6 +34,7 @@ const (
 	FlagShortData       = "d"
 	FlagShortHead       = "I"
 	FlagShortDumpHeader = "D"
+	FlagShortUser       = "u"
 
 	// Short versions, custom
 	FlagShortServerRoot   = "S"
@@ -38,4 +42,5 @@ const (
 	FlagShortRev          = "r"
 	FlagShortAutoRev      = "R"
 	FlagShortShards       = "q"
+	FlagShortPassword     = "p"
 )

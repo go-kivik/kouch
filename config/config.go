@@ -2,11 +2,15 @@ package config
 
 import (
 	"io"
+	"net/url"
 	"os"
 	"path"
+	"strings"
 	"syscall"
 
+	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
@@ -35,20 +39,18 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	root, err := cmd.Flags().GetString(kouch.FlagServerRoot)
+	dynCtx, err := constructContext(cmd.Flags())
 	if err != nil {
 		return nil, err
 	}
-	if root != "" {
+	if dynCtx != nil {
 		conf.DefaultContext = dynamicContextName
 		conf.Contexts = append(conf.Contexts, kouch.NamedContext{
-			Name: dynamicContextName,
-			Context: &kouch.Context{
-				Root: root,
-			},
+			Name:    dynamicContextName,
+			Context: dynCtx,
 		})
 	}
-	context, err := cmd.Flags().GetString(flagContext)
+	context, err := cmd.Flags().GetString(kouch.FlagContext)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +58,59 @@ func ReadConfig(cmd *cobra.Command) (*kouch.Config, error) {
 		conf.DefaultContext = context
 	}
 	return conf, nil
+}
+
+func constructContext(flags *pflag.FlagSet) (*kouch.Context, error) {
+	root, err := flags.GetString(kouch.FlagServerRoot)
+	if err != nil {
+		return nil, err
+	}
+	addr, err := url.Parse(root)
+	if err != nil {
+		return nil, errors.WrapExitError(chttp.ExitStatusURLMalformed, err)
+	}
+	var user, password string
+	if u := addr.User; u != nil {
+		user = u.Username()
+		password, _ = u.Password()
+		addr.User = nil
+	}
+	if e := credentials(&user, &password, flags); e != nil {
+		return nil, e
+	}
+	if root == "" && user == "" && password == "" {
+		return nil, nil
+	}
+	return &kouch.Context{
+		Root:     addr.String(),
+		User:     user,
+		Password: password,
+	}, nil
+}
+
+func credentials(user, pass *string, flags *pflag.FlagSet) error {
+	var u string
+	if flags.Changed(kouch.FlagUser) {
+		var err error
+		u, err = flags.GetString(kouch.FlagUser)
+		if err != nil {
+			return err
+		}
+		if !flags.Changed(kouch.FlagPassword) {
+			parts := append(strings.SplitN(u, ":", 2), "")
+			*user, *pass = parts[0], parts[1]
+			return nil
+		}
+		*user = u
+	}
+	if flags.Changed(kouch.FlagPassword) {
+		p, err := flags.GetString(kouch.FlagPassword)
+		if err != nil {
+			return err
+		}
+		*pass = p
+	}
+	return nil
 }
 
 func fileConf(cmd *cobra.Command) (*kouch.Config, error) {
@@ -94,5 +149,7 @@ func isNotExist(err error) bool {
 func AddFlags(flags *pflag.FlagSet) {
 	flags.String(kouch.FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
 	flags.StringP(kouch.FlagServerRoot, kouch.FlagShortServerRoot, "", "The root URL")
-	flags.String(flagContext, "", "The named context to use")
+	flags.String(kouch.FlagContext, "", "The named context to use")
+	flags.StringP(kouch.FlagUser, kouch.FlagShortUser, "", "Specify the username, and possibly password, to user for server authentication. If the password is not set with the "+kouch.FlagShortPassword+"/"+kouch.FlagPassword+" option, then the first colon in this option will be considered a separator for the username and password. To specificy a username with a colon, you must provide a password as a separate option.")
+	flags.StringP(kouch.FlagPassword, kouch.FlagShortPassword, "", "Specify the password for server authentication.")
 }
