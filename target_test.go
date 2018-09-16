@@ -19,8 +19,18 @@ func TestTargetScopeName(t *testing.T) {
 	}
 }
 
+// borrowed from config package
+func addGlobalFlags(flags *pflag.FlagSet) {
+	flags.String(FlagConfigFile, "", "Path to the kouchconfig file to use for CLI requests")
+	flags.StringP(FlagServerRoot, FlagShortServerRoot, "", "The root URL")
+	flags.String(FlagContext, "", "The named context to use")
+	flags.StringP(FlagUser, FlagShortUser, "", "Specify the username, and possibly password, to user for server authentication. If the password is not set with the "+FlagShortPassword+"/"+FlagPassword+" option, then the first colon in this option will be considered a separator for the username and password. To specificy a username with a colon, you must provide a password as a separate option.")
+	flags.StringP(FlagPassword, FlagShortPassword, "", "Specify the password for server authentication.")
+}
+
 // borrowed from attachments
 func addCommonFlags(flags *pflag.FlagSet) {
+	addGlobalFlags(flags)
 	flags.String(FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
 	flags.String(FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
 	flags.String(FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
@@ -111,6 +121,17 @@ func TestNewTarget(t *testing.T) {
 			Database: "qrs",
 			Document: "123",
 			Filename: "tuv.txt",
+		},
+	})
+	tests.Add("auth", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addGlobalFlags,
+		conf:     defaultConfig,
+		args:     []string{"--" + FlagUser, "admin", "--" + FlagPassword, "abc123"},
+		expected: &Target{
+			Root:     "foo.com",
+			User:     "admin",
+			Password: "abc123",
 		},
 	})
 

@@ -64,7 +64,7 @@ func TestCreateDatabaseCmd(t *testing.T) {
 			Stdout: `{"ok":true}`,
 		}
 	})
-	tests.Add("authenticated", func(t *testing.T) interface{} {
+	tests.Add("auth in target", func(t *testing.T) interface{} {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			if r.Method != kivik.MethodPut {
@@ -88,6 +88,30 @@ func TestCreateDatabaseCmd(t *testing.T) {
 		addr.Path = "/oink"
 		return test.CmdTest{
 			Args:   []string{addr.String(), "--" + kouch.FlagShards, "5"},
+			Stdout: `{"ok":true}`,
+		}
+	})
+	tests.Add("auth in cli opts", func(t *testing.T) interface{} {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if r.Method != kivik.MethodPut {
+				t.Errorf("Unexpected method: %s", r.Method)
+			}
+			if r.URL.Path != "/oink" {
+				t.Errorf("Unexpected path: %s", r.URL.Path)
+			}
+			if q := r.URL.Query().Get("q"); q != "5" {
+				t.Errorf("Unexpected q value: %v", q)
+			}
+			if auth := r.Header.Get("Authorization"); auth != "Basic YWRtaW46YWJjMTIz" {
+				t.Errorf("Unexpected Authorization header: %s", auth)
+			}
+			w.WriteHeader(kivik.StatusCreated)
+			_, _ = w.Write([]byte(`{"ok":true}`))
+		}))
+		tests.Cleanup(s.Close)
+		return test.CmdTest{
+			Args:   []string{s.URL + "/oink", "--" + kouch.FlagShards, "5", "--" + kouch.FlagUser, "admin", "--" + kouch.FlagPassword, "abc123"},
 			Stdout: `{"ok":true}`,
 		}
 	})

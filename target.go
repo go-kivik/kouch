@@ -89,7 +89,16 @@ func NewTarget(ctx context.Context, scope TargetScope, flags *pflag.FlagSet) (*T
 	if defCtx, err := Conf(ctx).DefaultCtx(); err == nil {
 		if t.Root == "" {
 			t.Root = defCtx.Root
+			t.User = defCtx.User
+			t.Password = defCtx.Password
 		}
+	}
+
+	if err := setFromFlags(&t.User, flags, FlagUser, true); err != nil {
+		return nil, err
+	}
+	if err := setFromFlags(&t.Password, flags, FlagPassword, true); err != nil {
+		return nil, err
 	}
 
 	return t, nil
@@ -208,7 +217,7 @@ var duplicateConfigErrors = map[string]error{
 		"Must not use --%s and pass separate filename", FlagFilename),
 }
 
-func setFromFlags(target *string, flags *pflag.FlagSet, flagName string) error {
+func setFromFlags(target *string, flags *pflag.FlagSet, flagName string, allowOverride bool) error {
 	if flag := flags.Lookup(flagName); flag == nil {
 		return nil
 	}
@@ -219,7 +228,7 @@ func setFromFlags(target *string, flags *pflag.FlagSet, flagName string) error {
 	if value == "" {
 		return nil
 	}
-	if *target != "" {
+	if !allowOverride && *target != "" {
 		return duplicateConfigErrors[flagName]
 	}
 	*target = value
@@ -228,15 +237,15 @@ func setFromFlags(target *string, flags *pflag.FlagSet, flagName string) error {
 
 // DocumentFromFlags sets t.DocID from the passed flagset.
 func (t *Target) DocumentFromFlags(flags *pflag.FlagSet) error {
-	return setFromFlags(&t.Document, flags, FlagDocument)
+	return setFromFlags(&t.Document, flags, FlagDocument, false)
 }
 
 // DatabaseFromFlags sets t.Database from the passed flagset.
 func (t *Target) DatabaseFromFlags(flags *pflag.FlagSet) error {
-	return setFromFlags(&t.Database, flags, FlagDatabase)
+	return setFromFlags(&t.Database, flags, FlagDatabase, false)
 }
 
 // FilenameFromFlags sets t.Filename from the passed flagset.
 func (t *Target) FilenameFromFlags(flags *pflag.FlagSet) error {
-	return setFromFlags(&t.Filename, flags, FlagFilename)
+	return setFromFlags(&t.Filename, flags, FlagFilename, false)
 }
