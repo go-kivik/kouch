@@ -234,8 +234,23 @@ func SelectInput(cmd *cobra.Command) (io.ReadCloser, error) {
 	if flag == kouch.FlagData {
 		return in, nil
 	}
-	var i interface{}
 	defer in.Close() // nolint: errcheck
+	i, err := convertData(in, flag)
+	if err != nil {
+		return nil, err
+	}
+	r, w := io.Pipe()
+	go func() {
+		err := json.NewEncoder(w).Encode(i)
+		_ = w.CloseWithError(err)
+	}()
+	return r, nil
+}
+
+// convertData converts data read from in, according to the format in flag,
+// to an arbitrary data structure.
+func convertData(in io.Reader, flag string) (interface{}, error) {
+	var i interface{}
 	switch flag {
 	case kouch.FlagDataJSON:
 		if err := json.NewDecoder(in).Decode(&i); err != nil {
@@ -250,10 +265,5 @@ func SelectInput(cmd *cobra.Command) (io.ReadCloser, error) {
 	default:
 		panic("Unknown flag: " + flag)
 	}
-	r, w := io.Pipe()
-	go func() {
-		err := json.NewEncoder(w).Encode(i)
-		_ = w.CloseWithError(err)
-	}()
-	return r, nil
+	return i, nil
 }
