@@ -6,6 +6,7 @@ import (
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -16,6 +17,122 @@ func TestTargetScopeName(t *testing.T) {
 			t.Errorf("No name defined for scope #%d", scope)
 		}
 	}
+}
+
+// borrowed from attachments
+func addCommonFlags(flags *pflag.FlagSet) {
+	flags.String(FlagFilename, "", "The attachment filename to fetch. Only necessary if the filename contains slashes, to disambiguate from {id}/{filename}.")
+	flags.String(FlagDocument, "", "The document ID. May be provided with the target in the format {id}/{filename}.")
+	flags.String(FlagDatabase, "", "The database. May be provided with the target in the format /{db}/{id}/{filename}")
+	flags.StringP(FlagRev, FlagShortRev, "", "Retrieves attachment from document of specified revision.")
+}
+
+func TestNewTarget(t *testing.T) {
+	defaultConfig := &Config{
+		DefaultContext: "foo",
+		Contexts:       []NamedContext{{Name: "foo", Context: &Context{Root: "foo.com"}}},
+	}
+
+	type newTargetTest struct {
+		scope    TargetScope
+		addFlags func(*pflag.FlagSet)
+		conf     *Config
+		args     []string
+		expected *Target
+		err      string
+		status   int
+	}
+	tests := testy.NewTable()
+	tests.Add("no flags", newTargetTest{
+		scope: TargetRoot,
+		conf:  defaultConfig,
+		expected: &Target{
+			Root: "foo.com",
+		},
+	})
+	tests.Add("target only", newTargetTest{
+		scope:    TargetRoot,
+		args:     []string{"http://localhost/"},
+		conf:     defaultConfig,
+		expected: &Target{Root: "http://localhost/"},
+	})
+	tests.Add("duplicate filenames", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addCommonFlags,
+		args:     []string{"--" + FlagFilename, "foo.txt", "foo.txt"},
+		err:      "Must not use --" + FlagFilename + " and pass separate filename",
+		status:   chttp.ExitFailedToInitialize,
+	})
+	tests.Add("id from target", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addCommonFlags,
+		conf:     defaultConfig,
+		args:     []string{"123/foo.txt", "--database", "bar"},
+		expected: &Target{
+			Root:     "foo.com",
+			Database: "bar",
+			Document: "123",
+			Filename: "foo.txt",
+		},
+	})
+	tests.Add("doc ID provided twice", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addCommonFlags,
+		args:     []string{"123/foo.txt", "--" + FlagDocument, "321"},
+		err:      "Must not use --id and pass document ID as part of the target",
+		status:   chttp.ExitFailedToInitialize,
+	})
+	tests.Add("db included in target", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addCommonFlags,
+		conf:     defaultConfig,
+		args:     []string{"/foo/123/foo.txt"},
+		expected: &Target{
+			Root:     "foo.com",
+			Database: "foo",
+			Document: "123",
+			Filename: "foo.txt",
+		},
+	})
+	tests.Add("db provided twice", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addCommonFlags,
+		args:     []string{"/foo/123/foo.txt", "--" + FlagDatabase, "foo"},
+		err:      "Must not use --" + FlagDatabase + " and pass database as part of the target",
+		status:   chttp.ExitFailedToInitialize,
+	})
+	tests.Add("full url target", newTargetTest{
+		scope:    TargetAttachment,
+		addFlags: addCommonFlags,
+		conf:     defaultConfig,
+		args:     []string{"http://xyz.com/qrs/123/tuv.txt"},
+		expected: &Target{
+			Root:     "http://xyz.com",
+			Database: "qrs",
+			Document: "123",
+			Filename: "tuv.txt",
+		},
+	})
+
+	tests.Run(t, func(t *testing.T, test newTargetTest) {
+		cmd := &cobra.Command{}
+		if af := test.addFlags; af != nil {
+			af(cmd.PersistentFlags())
+		}
+		if e := cmd.ParseFlags(test.args); e != nil {
+			t.Fatal(e)
+		}
+		ctx := GetContext(cmd)
+		ctx = SetConf(ctx, test.conf)
+		if flags := cmd.Flags().Args(); len(flags) > 0 {
+			ctx = SetTarget(ctx, flags[0])
+		}
+		target, err := NewTarget(ctx, test.scope, cmd.Flags())
+		testy.ExitStatusError(t, test.err, test.status, err)
+		if d := diff.Interface(test.expected, target); d != nil {
+			t.Error(d)
+		}
+	})
 }
 
 func TestParseTarget(t *testing.T) {

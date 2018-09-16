@@ -32,84 +32,11 @@ func TestCommonOpts(t *testing.T) {
 		status   int
 	}{
 		{
-			name:     "no extra flags",
-			scope:    kouch.TargetDatabase,
-			addFlags: func(_ *pflag.FlagSet) {},
-			expected: &kouch.Options{
-				Target:  &kouch.Target{},
-				Options: &chttp.Options{},
-			},
-		},
-		{
-			name:   "duplicate filenames",
+			name:   "duplicate filenames--test NewTarget() plumbing",
 			scope:  kouch.TargetAttachment,
 			args:   []string{"--" + kouch.FlagFilename, "foo.txt", "foo.txt"},
 			err:    "Must not use --" + kouch.FlagFilename + " and pass separate filename",
 			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name:  "id from target",
-			scope: kouch.TargetAttachment,
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
-			},
-			args: []string{"123/foo.txt", "--database", "bar"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "bar",
-					Document: "123",
-					Filename: "foo.txt",
-				},
-				Options: &chttp.Options{},
-			},
-		},
-		{
-			name:   "doc ID provided twice",
-			scope:  kouch.TargetAttachment,
-			args:   []string{"123/foo.txt", "--" + kouch.FlagDocument, "321"},
-			err:    "Must not use --id and pass document ID as part of the target",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name:  "db included in target",
-			scope: kouch.TargetAttachment,
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
-			},
-			args: []string{"/foo/123/foo.txt"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "foo",
-					Document: "123",
-					Filename: "foo.txt",
-				},
-				Options: &chttp.Options{},
-			},
-		},
-		{
-			name:   "db provided twice",
-			scope:  kouch.TargetAttachment,
-			args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
-			err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name:  "full url target",
-			scope: kouch.TargetAttachment,
-			args:  []string{"http://foo.com/foo/123/foo.txt"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "http://foo.com",
-					Database: "foo",
-					Document: "123",
-					Filename: "foo.txt",
-				},
-				Options: &chttp.Options{},
-			},
 		},
 		{
 			name:  "rev",

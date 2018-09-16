@@ -10,28 +10,10 @@ import (
 // CommonOptions parses options common to most or all commands.
 func CommonOptions(ctx context.Context, scope kouch.TargetScope, flags *pflag.FlagSet) (*kouch.Options, error) {
 	o := kouch.NewOptions()
-	if tgt := kouch.GetTarget(ctx); tgt != "" {
-		var err error
-		o.Target, err = kouch.ParseTarget(scope, tgt)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := o.Target.FilenameFromFlags(flags); err != nil {
+	var err error
+	o.Target, err = kouch.NewTarget(ctx, scope, flags)
+	if err != nil {
 		return nil, err
-	}
-	if err := o.Target.DocumentFromFlags(flags); err != nil {
-		return nil, err
-	}
-	if err := o.Target.DatabaseFromFlags(flags); err != nil {
-		return nil, err
-	}
-
-	if defCtx, err := kouch.Conf(ctx).DefaultCtx(); err == nil {
-		if o.Root == "" {
-			o.Root = defCtx.Root
-		}
 	}
 
 	if e := o.SetParamString(flags, kouch.FlagRev); e != nil {
