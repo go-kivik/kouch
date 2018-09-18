@@ -22,5 +22,6 @@ deploy:
   file_glob: true
   file: build/*
   skip_cleanup: true
+  prerelease: $(./script/octovar.sh prerelease)
   on:
     tags: true
