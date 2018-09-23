@@ -96,27 +96,27 @@ func TestGetDocumentOpts(t *testing.T) {
 		},
 	})
 	tests.Add("attachments since", test.OptionsTest{
-		Args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
+		Args: []string{"--" + kouch.FlagAttsSince, "foo,bar,baz", "docid"},
 		Expected: &kouch.Options{
 			Target: &kouch.Target{Document: "docid"},
 			Options: &chttp.Options{
-				Query: url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
+				Query: url.Values{param(kouch.FlagAttsSince): []string{`["foo","bar","baz"]`}},
 			},
 		},
 	})
 	tests.Add("open revs", test.OptionsTest{
-		Args: []string{"--" + flagOpenRevs, "foo,bar,baz", "docid"},
+		Args: []string{"--" + kouch.FlagOpenRevs, "foo,bar,baz", "docid"},
 		Expected: &kouch.Options{
 			Target: &kouch.Target{Document: "docid"},
 			Options: &chttp.Options{
-				Query: url.Values{param(flagOpenRevs): []string{`["foo","bar","baz"]`}},
+				Query: url.Values{param(kouch.FlagOpenRevs): []string{`["foo","bar","baz"]`}},
 			},
 		},
 	})
 	for _, flag := range []string{
 		kouch.FlagIncludeAttachments, kouch.FlagIncludeAttEncoding,
-		kouch.FlagConflicts, flagIncludeDeletedConflicts, flagForceLatest,
-		flagIncludeLocalSeq, flagMeta, flagRevs, flagRevsInfo,
+		kouch.FlagConflicts, kouch.FlagIncludeDeletedConflicts, kouch.FlagForceLatest,
+		kouch.FlagIncludeLocalSeq, kouch.FlagMeta, kouch.FlagRevs, kouch.FlagRevsInfo,
 	} {
 		tests.Add(flag, test.OptionsTest{
 			Args: []string{"--" + flag, "docid"},

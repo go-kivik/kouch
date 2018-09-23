@@ -31,8 +31,8 @@ func putDocCmd() *cobra.Command {
 	f.Bool(kouch.FlagFullCommit, false, "Overrides server’s commit policy.")
 	f.BoolP(kouch.FlagAutoRev, kouch.FlagShortAutoRev, false, "Fetch the current rev before update. Use with caution!")
 
-	f.Bool(flagBatch, false, "Store document in batch mode.")
-	f.Bool(flagNewEdits, true, "When disabled, prevents insertion of conflicting documents.")
+	f.Bool(kouch.FlagBatch, false, "Store document in batch mode.")
+	f.Bool(kouch.FlagNewEdits, true, "When disabled, prevents insertion of conflicting documents.")
 	return cmd
 }
 
@@ -50,7 +50,7 @@ func putDocumentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options,
 	if e := setBatch(o, flags); e != nil {
 		return nil, e
 	}
-	if e := o.SetParamBool(flags, flagNewEdits); e != nil {
+	if e := o.SetParam(flags, kouch.FlagNewEdits); e != nil {
 		return nil, e
 	}
 

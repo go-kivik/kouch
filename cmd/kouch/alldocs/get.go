@@ -70,19 +70,12 @@ func getAllDocsOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, 
 		kouch.FlagEndKey, kouch.FlagEndKeyDocID, kouch.FlagKey, kouch.FlagStale,
 		kouch.FlagStartKey, kouch.FlagStartKeyDocID, kouch.FlagUpdate,
 		kouch.FlagKeys, kouch.FlagGroupLevel, kouch.FlagLimit, kouch.FlagSkip,
-	); e != nil {
-		return nil, e
-	}
-
-	for _, flag := range []string{
 		kouch.FlagConflicts, kouch.FlagDescending, kouch.FlagGroup,
 		kouch.FlagIncludeDocs, kouch.FlagIncludeAttachments,
 		kouch.FlagIncludeAttEncoding, kouch.FlagInclusiveEnd, kouch.FlagReduce,
 		kouch.FlagSorted, kouch.FlagStable, kouch.FlagUpdateSeq,
-	} {
-		if e := o.SetParamBool(flags, flag); e != nil {
-			return nil, e
-		}
+	); e != nil {
+		return nil, e
 	}
 
 	return o, nil

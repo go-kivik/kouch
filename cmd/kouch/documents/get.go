@@ -33,15 +33,15 @@ func getDocCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolP(kouch.FlagHead, kouch.FlagShortHead, false, "Fetch the headers only.")
 	f.Bool(kouch.FlagIncludeAttachments, false, "Include Base64-encoded content of attachments in response.")
 	f.Bool(kouch.FlagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
-	f.StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
+	f.StringSlice(kouch.FlagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
 	f.Bool(kouch.FlagConflicts, false, "Include document conflicts information.")
-	f.Bool(flagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
-	f.Bool(flagForceLatest, false, `Force retrieving latest “leaf” revision, no matter what rev was requested.`)
-	f.Bool(flagIncludeLocalSeq, false, "Include last update sequence for the document.")
-	f.Bool(flagMeta, false, "Same as: --"+kouch.FlagConflicts+" --"+flagIncludeDeletedConflicts+" --"+flagRevsInfo)
-	f.StringSlice(flagOpenRevs, nil, "Retrieve documents of specified leaf revisions. May use the value 'all' to return all leaf revisions.")
-	f.Bool(flagRevs, false, "Include list of all known document revisions.")
-	f.Bool(flagRevsInfo, false, "Include detailed information for all known document revisions")
+	f.Bool(kouch.FlagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
+	f.Bool(kouch.FlagForceLatest, false, `Force retrieving latest “leaf” revision, no matter what rev was requested.`)
+	f.Bool(kouch.FlagIncludeLocalSeq, false, "Include last update sequence for the document.")
+	f.Bool(kouch.FlagMeta, false, "Same as: --"+kouch.FlagConflicts+" --"+kouch.FlagIncludeDeletedConflicts+" --"+kouch.FlagRevsInfo)
+	f.StringSlice(kouch.FlagOpenRevs, nil, "Retrieve documents of specified leaf revisions. May use the value 'all' to return all leaf revisions.")
+	f.Bool(kouch.FlagRevs, false, "Include list of all known document revisions.")
+	f.Bool(kouch.FlagRevsInfo, false, "Include detailed information for all known document revisions")
 	return cmd
 }
 
@@ -64,20 +64,14 @@ func getDocumentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options,
 	if err != nil {
 		return nil, err
 	}
-	for _, flag := range []string{flagAttsSince, flagOpenRevs} {
-		if e := o.SetParamStringSlice(flags, flag); e != nil {
-			return nil, e
-		}
-	}
-
-	for _, flag := range []string{
+	if e := o.SetParams(flags,
+		kouch.FlagAttsSince, kouch.FlagOpenRevs,
 		kouch.FlagIncludeAttachments, kouch.FlagIncludeAttEncoding,
-		kouch.FlagConflicts, flagIncludeDeletedConflicts, flagForceLatest,
-		flagIncludeLocalSeq, flagMeta, flagRevs, flagRevsInfo,
-	} {
-		if e := o.SetParamBool(flags, flag); e != nil {
-			return nil, e
-		}
+		kouch.FlagConflicts, kouch.FlagIncludeDeletedConflicts,
+		kouch.FlagForceLatest, kouch.FlagIncludeLocalSeq, kouch.FlagMeta,
+		kouch.FlagRevs, kouch.FlagRevsInfo,
+	); e != nil {
+		return nil, e
 	}
 
 	return o, nil
