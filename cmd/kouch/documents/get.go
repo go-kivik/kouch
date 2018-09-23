@@ -31,8 +31,8 @@ func getDocCmd() *cobra.Command {
 	f.String(kouch.FlagIfNoneMatch, "", "Optionally fetch the document, only if the current rev does not match the one provided")
 
 	cmd.PersistentFlags().BoolP(kouch.FlagHead, kouch.FlagShortHead, false, "Fetch the headers only.")
-	f.Bool(flagIncludeAttachments, false, "Include attachments bodies in response.")
-	f.Bool(flagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
+	f.Bool(kouch.FlagIncludeAttachments, false, "Include Base64-encoded content of attachments in response.")
+	f.Bool(kouch.FlagIncludeAttEncoding, false, "Include encoding information in attachment stubs for compressed attachments.")
 	f.StringSlice(flagAttsSince, nil, "Include attachments only since, but not including, the specified revisions.")
 	f.Bool(flagIncludeConflicts, false, "Include document conflicts information.")
 	f.Bool(flagIncludeDeletedConflicts, false, "Include information about deleted conflicted revisions.")
@@ -45,7 +45,7 @@ func getDocCmd() *cobra.Command {
 	return cmd
 }
 
-func getDocumentCmd(cmd *cobra.Command, args []string) error {
+func getDocumentCmd(cmd *cobra.Command, _ []string) error {
 	ctx := kouch.GetContext(cmd)
 	o, err := getDocumentOpts(ctx, cmd.Flags())
 	if err != nil {
@@ -71,7 +71,7 @@ func getDocumentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options,
 	}
 
 	for _, flag := range []string{
-		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
+		kouch.FlagIncludeAttachments, kouch.FlagIncludeAttEncoding, flagIncludeConflicts,
 		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
 		flagMeta, flagRevs, flagRevsInfo,
 	} {
