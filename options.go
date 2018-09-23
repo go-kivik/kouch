@@ -97,17 +97,8 @@ func (o *Options) SetParamStringSlice(f *pflag.FlagSet, flagName string) error {
 	return err
 }
 
-// SetParamStringArray sets the query param string slice value specified by
-// flagName.
-func (o *Options) SetParamStringArray(f *pflag.FlagSet, flagName string) error {
-	v, err := f.GetStringArray(flagName)
-	if err != nil {
-		return err
-	}
-	for _, value := range v {
-		o.Query().Add(param(flagName), value)
-	}
-	return nil
+func parseParamStringArray(f *pflag.FlagSet, flag string) ([]string, error) {
+	return f.GetStringArray(flag)
 }
 
 func parseParamString(f *pflag.FlagSet, flag string) ([]string, error) {

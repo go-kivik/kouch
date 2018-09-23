@@ -85,6 +85,7 @@ var flagParsers = map[string]paramParser{
 	FlagStartKeyDocID: parseParamString,
 	FlagUpdate:        parseParamString,
 	FlagRev:           parseParamString,
+	FlagKeys:          parseParamStringArray,
 }
 
 type paramValidator func(flag string, value []string) error
