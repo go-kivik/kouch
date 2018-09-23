@@ -45,6 +45,16 @@ func param(flagName string) string {
 	return strings.Replace(flagName, "-", "_", -1)
 }
 
+// SetParams sets parameters based on the provided flags
+func (o *Options) SetParams(f *pflag.FlagSet, flags ...string) error {
+	for _, flag := range flags {
+		if err := o.SetParam(f, flag); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SetParam sets the named parameter
 func (o *Options) SetParam(f *pflag.FlagSet, flag string) error {
 	parser, ok := flagParsers[flag]
