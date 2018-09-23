@@ -41,11 +41,11 @@ func getAllDocsCmd() *cobra.Command {
 	f.Bool(kouch.FlagReduce, true, "Use the reduction function. Default is true when a reduce function is defined, false otherwise.")
 	f.Int(kouch.FlagSkip, 0, "Skip this number of records before starting to return the results.")
 	f.Bool(kouch.FlagSorted, true, "Sort returned rows. Setting this to false offers a performance boost. The `total_rows` and `offset` fields are not available in the result when this is disabled.")
-	f.Bool(kouch.FlagStable, false, "Whether or not the view results should be returned from a stable set of shards.")
+	f.Bool(kouch.FlagStable, false, "Whether or not the view results should be returned from a stable set of shards. Supported values: `ok`, `update_after` and `false`.")
 	f.String(kouch.FlagStale, "false", "Allow the results from a stale view to be used.")
 	f.String(kouch.FlagStartKey, "", "Return records starting with the specified key.")
 	f.String(kouch.FlagStartKeyDocID, "", "Return records starting with the specified document ID. Ignored if --"+kouch.FlagStartKey+" is not set.")
-	f.String(kouch.FlagUpdate, "true", "Whether or not the view in question should be updated prior to responding to the user. Supported values: `true`, ``false`, `lazy`.")
+	f.String(kouch.FlagUpdate, "true", "Whether or not the view in question should be updated prior to responding to the user. Supported values: `true`, `false`, `lazy`.")
 	f.Bool(kouch.FlagUpdateSeq, false, "Whether to include in the response an `update_seq` value indicating the sequence id of the database the view reflects.")
 
 	return cmd
@@ -64,6 +64,42 @@ func getAllDocsOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, 
 	o, err := util.CommonOptions(ctx, kouch.TargetDocument, flags)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, flag := range []string{
+		kouch.FlagEndKey, kouch.FlagEndKeyDocID, kouch.FlagKey, kouch.FlagStale,
+		kouch.FlagStartKey, kouch.FlagStartKeyDocID, kouch.FlagUpdate,
+	} {
+		if e := o.SetParamString(flags, flag); e != nil {
+			return nil, e
+		}
+	}
+
+	for _, flag := range []string{
+		kouch.FlagKeys,
+	} {
+		if e := o.SetParamStringArray(flags, flag); e != nil {
+			return nil, e
+		}
+	}
+
+	for _, flag := range []string{
+		kouch.FlagGroupLevel, kouch.FlagLimit, kouch.FlagSkip,
+	} {
+		if e := o.SetParamInt(flags, flag); e != nil {
+			return nil, e
+		}
+	}
+
+	for _, flag := range []string{
+		kouch.FlagConflicts, kouch.FlagDescending, kouch.FlagGroup,
+		kouch.FlagIncludeDocs, kouch.FlagIncludeAttachments,
+		kouch.FlagIncludeAttEncoding, kouch.FlagInclusiveEnd, kouch.FlagReduce,
+		kouch.FlagSorted, kouch.FlagStable, kouch.FlagUpdateSeq,
+	} {
+		if e := o.SetParamBool(flags, flag); e != nil {
+			return nil, e
+		}
 	}
 
 	return o, nil
