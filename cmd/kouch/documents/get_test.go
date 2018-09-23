@@ -132,7 +132,7 @@ func TestGetDocumentOpts(t *testing.T) {
 		},
 	}
 	for _, flag := range []string{
-		flagIncludeAttachments, flagIncludeAttEncoding, flagIncludeConflicts,
+		kouch.FlagIncludeAttachments, kouch.FlagIncludeAttEncoding, flagIncludeConflicts,
 		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
 		flagMeta, flagRevs, flagRevsInfo,
 	} {

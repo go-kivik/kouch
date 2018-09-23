@@ -11,8 +11,6 @@ import (
 
 // Get-doc specific flags
 const (
-	flagIncludeAttachments      = "attachments"
-	flagIncludeAttEncoding      = "att-encoding-info"
 	flagAttsSince               = "atts-since"
 	flagIncludeConflicts        = "conflicts"
 	flagIncludeDeletedConflicts = "deleted-conflicts"
