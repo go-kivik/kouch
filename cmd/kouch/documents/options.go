@@ -9,32 +9,14 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Get-doc specific flags
-const (
-	flagAttsSince               = "atts-since"
-	flagIncludeDeletedConflicts = "deleted-conflicts"
-	flagForceLatest             = "latest"
-	flagIncludeLocalSeq         = "local-seq"
-	flagMeta                    = "meta"
-	flagOpenRevs                = "open-revs"
-	flagRevs                    = "revs"
-	flagRevsInfo                = "revs-info"
-)
-
-// Put-doc specific flags
-const (
-	flagBatch    = "batch"
-	flagNewEdits = "new-edits"
-)
-
 func param(flagName string) string {
 	return strings.Replace(flagName, "-", "_", -1)
 }
 
 func setBatch(o *kouch.Options, f *pflag.FlagSet) error {
-	v, err := f.GetBool(flagBatch)
+	v, err := f.GetBool(kouch.FlagBatch)
 	if err == nil && v {
-		o.Query().Add(param(flagBatch), "ok")
+		o.Query().Add(param(kouch.FlagBatch), "ok")
 	}
 	return err
 }

@@ -85,20 +85,20 @@ func TestPutDocumentOpts(t *testing.T) {
 		},
 	})
 	tests.Add("batch", test.OptionsTest{
-		Args: []string{"--" + flagBatch, "docid"},
+		Args: []string{"--" + kouch.FlagBatch, "docid"},
 		Expected: &kouch.Options{
 			Target: &kouch.Target{Document: "docid"},
 			Options: &chttp.Options{
-				Query: url.Values{param(flagBatch): []string{"ok"}},
+				Query: url.Values{param(kouch.FlagBatch): []string{"ok"}},
 			},
 		},
 	})
 	tests.Add("new edits", test.OptionsTest{
-		Args: []string{"--" + flagNewEdits + "=false", "docid"},
+		Args: []string{"--" + kouch.FlagNewEdits + "=false", "docid"},
 		Expected: &kouch.Options{
 			Target: &kouch.Target{Document: "docid"},
 			Options: &chttp.Options{
-				Query: url.Values{param(flagNewEdits): []string{"false"}},
+				Query: url.Values{param(kouch.FlagNewEdits): []string{"false"}},
 			},
 		},
 	})

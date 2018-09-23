@@ -18,44 +18,54 @@ const (
 	FlagCreateDirs = "create-dirs"
 
 	// Custom flags
-	FlagClobber            = "force"
-	FlagConfigFile         = "kouchconfig"
-	FlagServerRoot         = "root"
-	FlagDataJSON           = "data-json"
-	FlagDataYAML           = "data-yaml"
-	FlagOutputFormat       = "output-format"
-	FlagFilename           = "filename"
-	FlagDocument           = "id"
-	FlagDatabase           = "database"
-	FlagFullCommit         = "full-commit"
-	FlagIfNoneMatch        = "if-none-match"
-	FlagRev                = "rev"
-	FlagAutoRev            = "auto-rev"
-	FlagShards             = "shards"
-	FlagPassword           = "password"
-	FlagContext            = "context"
-	FlagConflicts          = "conflicts"
-	FlagDescending         = "descending"
-	FlagEndKey             = "endkey"
-	FlagEndKeyDocID        = "endkey-docid"
-	FlagGroup              = "group"
-	FlagGroupLevel         = "group-level"
-	FlagIncludeDocs        = "include-docs"
-	FlagIncludeAttachments = "attachments"
-	FlagIncludeAttEncoding = "att-encoding-info"
-	FlagInclusiveEnd       = "inclusive-end"
-	FlagKey                = "key"
-	FlagKeys               = "keys"
-	FlagLimit              = "limit"
-	FlagReduce             = "reduce"
-	FlagSkip               = "skip"
-	FlagSorted             = "sorted"
-	FlagStable             = "stable"
-	FlagStale              = "stale"
-	FlagStartKey           = "startkey"
-	FlagStartKeyDocID      = "startkey-docid"
-	FlagUpdate             = "update"
-	FlagUpdateSeq          = "update-seq"
+	FlagClobber                 = "force"
+	FlagConfigFile              = "kouchconfig"
+	FlagServerRoot              = "root"
+	FlagDataJSON                = "data-json"
+	FlagDataYAML                = "data-yaml"
+	FlagOutputFormat            = "output-format"
+	FlagFilename                = "filename"
+	FlagDocument                = "id"
+	FlagDatabase                = "database"
+	FlagFullCommit              = "full-commit"
+	FlagIfNoneMatch             = "if-none-match"
+	FlagRev                     = "rev"
+	FlagAutoRev                 = "auto-rev"
+	FlagShards                  = "shards"
+	FlagPassword                = "password"
+	FlagContext                 = "context"
+	FlagConflicts               = "conflicts"
+	FlagDescending              = "descending"
+	FlagEndKey                  = "endkey"
+	FlagEndKeyDocID             = "endkey-docid"
+	FlagGroup                   = "group"
+	FlagGroupLevel              = "group-level"
+	FlagIncludeDocs             = "include-docs"
+	FlagIncludeAttachments      = "attachments"
+	FlagIncludeAttEncoding      = "att-encoding-info"
+	FlagInclusiveEnd            = "inclusive-end"
+	FlagKey                     = "key"
+	FlagKeys                    = "keys"
+	FlagLimit                   = "limit"
+	FlagReduce                  = "reduce"
+	FlagSkip                    = "skip"
+	FlagSorted                  = "sorted"
+	FlagStable                  = "stable"
+	FlagStale                   = "stale"
+	FlagStartKey                = "startkey"
+	FlagStartKeyDocID           = "startkey-docid"
+	FlagUpdate                  = "update"
+	FlagUpdateSeq               = "update-seq"
+	FlagAttsSince               = "atts-since"
+	FlagIncludeDeletedConflicts = "deleted-conflicts"
+	FlagForceLatest             = "latest"
+	FlagIncludeLocalSeq         = "local-seq"
+	FlagMeta                    = "meta"
+	FlagOpenRevs                = "open-revs"
+	FlagRevs                    = "revs"
+	FlagRevsInfo                = "revs-info"
+	FlagBatch                   = "batch"
+	FlagNewEdits                = "new-edits"
 
 	// Curl-equivalent short flags
 	FlagShortVerbose    = "v"
@@ -77,19 +87,39 @@ const (
 type paramParser func(flags *pflag.FlagSet, flagName string) ([]string, error)
 
 var flagParsers = map[string]paramParser{
-	FlagEndKey:        parseParamString,
-	FlagEndKeyDocID:   parseParamString,
-	FlagKey:           parseParamString,
-	FlagStale:         parseParamString,
-	FlagStartKey:      parseParamString,
-	FlagStartKeyDocID: parseParamString,
-	FlagUpdate:        parseParamString,
-	FlagRev:           parseParamString,
-	FlagKeys:          parseParamStringArray,
-	FlagGroupLevel:    parseParamInt,
-	FlagLimit:         parseParamInt,
-	FlagSkip:          parseParamInt,
-	FlagShards:        parseParamInt,
+	FlagEndKey:                  parseParamString,
+	FlagEndKeyDocID:             parseParamString,
+	FlagKey:                     parseParamString,
+	FlagStale:                   parseParamString,
+	FlagStartKey:                parseParamString,
+	FlagStartKeyDocID:           parseParamString,
+	FlagUpdate:                  parseParamString,
+	FlagRev:                     parseParamString,
+	FlagKeys:                    parseParamStringArray,
+	FlagGroupLevel:              parseParamInt,
+	FlagLimit:                   parseParamInt,
+	FlagSkip:                    parseParamInt,
+	FlagShards:                  parseParamInt,
+	FlagConflicts:               parseParamBool,
+	FlagDescending:              parseParamBool,
+	FlagGroup:                   parseParamBool,
+	FlagIncludeDocs:             parseParamBool,
+	FlagIncludeAttachments:      parseParamBool,
+	FlagIncludeAttEncoding:      parseParamBool,
+	FlagInclusiveEnd:            parseParamBool,
+	FlagReduce:                  parseParamBool,
+	FlagSorted:                  parseParamBool,
+	FlagStable:                  parseParamBool,
+	FlagUpdateSeq:               parseParamBool,
+	FlagIncludeDeletedConflicts: parseParamBool,
+	FlagAttsSince:               parseParamStringSlice,
+	FlagOpenRevs:                parseParamStringSlice,
+	FlagForceLatest:             parseParamBool,
+	FlagIncludeLocalSeq:         parseParamBool,
+	FlagMeta:                    parseParamBool,
+	FlagRevs:                    parseParamBool,
+	FlagRevsInfo:                parseParamBool,
+	FlagNewEdits:                parseParamBool,
 }
 
 type paramValidator func(flag string, value []string) error
