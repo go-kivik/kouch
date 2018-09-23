@@ -3,12 +3,14 @@ package io
 import (
 	"io"
 	"os"
+	"path/filepath"
 )
 
 type delayedOpenWriter struct {
-	filename string
-	clobber  bool
-	w        io.WriteCloser
+	filename   string
+	createDirs bool
+	clobber    bool
+	w          io.WriteCloser
 }
 
 var _ io.WriteCloser = &delayedOpenWriter{}
@@ -29,10 +31,17 @@ func (w *delayedOpenWriter) Close() error {
 }
 
 func (w *delayedOpenWriter) open() (io.WriteCloser, error) {
-	return openOutputFile(w.filename, w.clobber)
+	return openOutputFile(w.filename, w.clobber, w.createDirs)
 }
 
-func openOutputFile(filename string, clobber bool) (*os.File, error) {
+func openOutputFile(filename string, clobber, createDirs bool) (*os.File, error) {
+	if createDirs {
+		if path := filepath.Dir(filename); path != "" {
+			if err := os.MkdirAll(path, os.ModePerm); err != nil {
+				return nil, err
+			}
+		}
+	}
 	if clobber {
 		return os.Create(filename)
 	}
