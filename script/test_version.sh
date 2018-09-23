@@ -10,8 +10,8 @@ if [ "$cur_tag"x == "x" ]; then
     exit 0
 fi
 
-if [ "$cur_tag" != "$cur_ver" ]; then
+if [ "$cur_tag" != "v$cur_ver" ]; then
     echo "Tag must match version"
-    echo "${cur_tag} != ${cur_ver}"
+    echo "${cur_tag} != v${cur_ver}"
     exit 1
 fi

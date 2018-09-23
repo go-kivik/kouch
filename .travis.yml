@@ -8,8 +8,20 @@ install:
 script:
   - ./script/test_version.sh
   - gometalinter.v2 --config .linter.json ./...
-  - go test -race ./...
   - ./script/codecov.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+before_deploy:
+  - ./script/build.sh
+deploy:
+  provider: releases
+  api_key:
+    secure: "g+iy5C3TvFlVVvVGZokrjc43axG7XVHbSk0/fLpT2MDKgxpbgPV+YDYwNP1wCDsDrTITAjZykU42UEW0rniKpcgO9XL2ZbOGUamJmS2HjSLaSk1ct8p7UihImVHsDacLR4WLr9A3a4xjDcTzrvbYugk+1Tg2y9q6fcCSgl1gsIVmq9oNzF/6mUIHglmLIfmPyD96vnjJv7/7kF10K2IRBY8Moj0GgPQlaHuZvEBzm2cuFynQXH7ucps2H+7aT66sbYU7OgjWhWGbsobE2V8Ljs7bALWqA6xXtWiH1GeuE+0Y2riaTKzKYutM+b6B3wBfImTOb78/9/12oPiD6KyY7oWCXanbF0fZP02zrSKfWot3/MlqjUQ93jH+wnqk7WaCbcDwKxLFkMaJJp3i0PuA+C0sU4jaBSlXF6EUG9xigF+LbIMr4RyyrwQP6ve6E5UOeNGgyNM2nQcBMgI+nzhMySP4t/qrKXViaKAke19i8bt0myc8aXs6SSmc9F3Dpbzr5pLjSDzzvNrNts+tbJEggyqz5gLEYzsWKQNt3RsyGNmA8eiMdVQIW1WUSCkDQlkEPuAe88CYj+snpkMKrRfMRZXf3gIOuLikFRORE+zHMKWW/ixG43RF7RKBjsr0b4zF6+Z9jepUVZDv+0kDTpHRRZ2+RA8B+91VMONQiiR2wzg="
+  file_glob: true
+  file: build/*
+  skip_cleanup: true
+  prerelease: $(./script/octovar.sh prerelease)
+  on:
+    tags: true
