@@ -122,15 +122,13 @@ func parseParamString(f *pflag.FlagSet, flag string) ([]string, error) {
 	return nil, err
 }
 
-// SetParamInt sets the query parameter string value specified by flagName,
-// if it differs from the default.
-func (o *Options) SetParamInt(f *pflag.FlagSet, flagName string) error {
-	if flag := f.Lookup(flagName); flag == nil {
-		return nil
+func parseParamInt(f *pflag.FlagSet, flag string) ([]string, error) {
+	if flag := f.Lookup(flag); flag == nil {
+		return nil, nil
 	}
-	v, err := f.GetInt(flagName)
-	if err == nil && strconv.Itoa(v) != f.Lookup(flagName).DefValue {
-		o.Query().Add(param(flagName), strconv.Itoa(v))
+	v, err := f.GetInt(flag)
+	if err == nil && strconv.Itoa(v) != f.Lookup(flag).DefValue {
+		return []string{strconv.Itoa(v)}, nil
 	}
-	return err
+	return nil, err
 }
