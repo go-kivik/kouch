@@ -1,12 +1,14 @@
 package documents
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func init() {
@@ -34,22 +36,21 @@ func putDocCmd() *cobra.Command {
 	return cmd
 }
 
-func putDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
-	ctx := kouch.GetContext(cmd)
-	o, err := util.CommonOptions(ctx, kouch.TargetDocument, cmd.Flags())
+func putDocumentOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
+	o, err := util.CommonOptions(ctx, kouch.TargetDocument, flags)
 	if err != nil {
 		return nil, err
 	}
 
-	o.Options.FullCommit, err = cmd.Flags().GetBool(kouch.FlagFullCommit)
+	o.Options.FullCommit, err = flags.GetBool(kouch.FlagFullCommit)
 	if err != nil {
 		return nil, err
 	}
 
-	if e := setBatch(o, cmd.Flags()); e != nil {
+	if e := setBatch(o, flags); e != nil {
 		return nil, e
 	}
-	if e := o.SetParamBool(cmd.Flags(), flagNewEdits); e != nil {
+	if e := o.SetParamBool(flags, flagNewEdits); e != nil {
 		return nil, e
 	}
 
@@ -58,7 +59,7 @@ func putDocumentOpts(cmd *cobra.Command, _ []string) (*kouch.Options, error) {
 
 func putDocumentCmd(cmd *cobra.Command, args []string) error {
 	ctx := kouch.GetContext(cmd)
-	o, err := putDocumentOpts(cmd, args)
+	o, err := putDocumentOpts(ctx, cmd.Flags())
 	if err != nil {
 		return err
 	}
