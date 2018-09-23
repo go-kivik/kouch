@@ -12,7 +12,6 @@ import (
 // Get-doc specific flags
 const (
 	flagAttsSince               = "atts-since"
-	flagIncludeConflicts        = "conflicts"
 	flagIncludeDeletedConflicts = "deleted-conflicts"
 	flagForceLatest             = "latest"
 	flagIncludeLocalSeq         = "local-seq"
