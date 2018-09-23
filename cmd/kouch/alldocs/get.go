@@ -70,7 +70,7 @@ func getAllDocsOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, 
 		kouch.FlagEndKey, kouch.FlagEndKeyDocID, kouch.FlagKey, kouch.FlagStale,
 		kouch.FlagStartKey, kouch.FlagStartKeyDocID, kouch.FlagUpdate,
 	} {
-		if e := o.SetParamString(flags, flag); e != nil {
+		if e := o.SetParam(flags, flag); e != nil {
 			return nil, e
 		}
 	}

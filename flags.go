@@ -1,5 +1,11 @@
 package kouch
 
+import (
+	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/spf13/pflag"
+)
+
 // Common command line flags
 const (
 	// Curl-equivalent flags
@@ -72,3 +78,35 @@ const (
 	FlagShortShards       = "q"
 	FlagShortPassword     = "p"
 )
+
+type paramParser func(flags *pflag.FlagSet, flagName string) ([]string, error)
+
+var flagParsers = map[string]paramParser{
+	FlagEndKey:        parseParamString,
+	FlagEndKeyDocID:   parseParamString,
+	FlagKey:           parseParamString,
+	FlagStale:         parseParamString,
+	FlagStartKey:      parseParamString,
+	FlagStartKeyDocID: parseParamString,
+	FlagUpdate:        parseParamString,
+	FlagRev:           parseParamString,
+}
+
+type paramValidator func(flag string, value []string) error
+
+var flagValidators = map[string]paramValidator{
+	FlagStale: func(flag string, v []string) error {
+		switch v[0] {
+		case "ok", "update_after", "false":
+			return nil
+		}
+		return errors.NewExitError(chttp.ExitFailedToInitialize, "Invalid value for --%s. Supported options: `ok`, `update_after`, `false`", flag)
+	},
+	FlagUpdate: func(flag string, v []string) error {
+		switch v[0] {
+		case "true", "false", "lazy":
+			return nil
+		}
+		return errors.NewExitError(chttp.ExitFailedToInitialize, "Invalid value for --%s. Supported options: `true`, `false`, `lazy`", flag)
+	},
+}

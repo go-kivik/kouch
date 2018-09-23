@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/go-kivik/couchdb/chttp"
-	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/pflag"
 )
 
@@ -44,6 +43,31 @@ func param(flagName string) string {
 		return exception
 	}
 	return strings.Replace(flagName, "-", "_", -1)
+}
+
+// SetParam sets the named parameter
+func (o *Options) SetParam(f *pflag.FlagSet, flag string) error {
+	parser, ok := flagParsers[flag]
+	if !ok {
+		panic(fmt.Sprintf("No setter for %s flag", flag))
+	}
+	values, err := parser(f, flag)
+	if err != nil {
+		return err
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	if validator, ok := flagValidators[flag]; ok {
+		if e := validator(flag, values); e != nil {
+			return e
+		}
+	}
+	paramName := param(flag)
+	for _, value := range values {
+		o.Query().Add(paramName, value)
+	}
+	return nil
 }
 
 // SetParamBool sets the query paramater boolean value specified by flagName if
@@ -86,29 +110,15 @@ func (o *Options) SetParamStringArray(f *pflag.FlagSet, flagName string) error {
 	return nil
 }
 
-// SetParamString sets the query parameter string value specified by flagName,
-// if it differs from the default.
-func (o *Options) SetParamString(f *pflag.FlagSet, flagName string) error {
-	if flag := f.Lookup(flagName); flag == nil {
-		return nil
+func parseParamString(f *pflag.FlagSet, flag string) ([]string, error) {
+	if flag := f.Lookup(flag); flag == nil {
+		return nil, nil
 	}
-	v, err := f.GetString(flagName)
-	// extra custom validation
-	switch flagName {
-	case FlagStale:
-		if v != "ok" && v != "update_after" && v != "false" {
-			return errors.NewExitError(chttp.ExitFailedToInitialize, "Invalid value for --%s. Supported options: `ok`, `update_after`, `false`", FlagStale)
-		}
-	case FlagUpdate:
-		if v != "true" && v != "false" && v != "lazy" {
-			return errors.NewExitError(chttp.ExitFailedToInitialize, "Invalid value for --%s. Supported options: `true`, `false`, `lazy`", FlagUpdate)
-
-		}
+	v, err := f.GetString(flag)
+	if err == nil && v != f.Lookup(flag).DefValue {
+		return []string{v}, nil
 	}
-	if err == nil && v != f.Lookup(flagName).DefValue {
-		o.Query().Add(param(flagName), v)
-	}
-	return err
+	return nil, err
 }
 
 // SetParamInt sets the query parameter string value specified by flagName,
