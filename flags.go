@@ -9,6 +9,7 @@ const (
 	FlagHead       = "head"
 	FlagDumpHeader = "dump-header"
 	FlagUser       = "user"
+	FlagCreateDirs = "create-dirs"
 
 	// Custom flags
 	FlagClobber      = "force"

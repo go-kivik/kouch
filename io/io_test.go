@@ -20,7 +20,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"data", "data-json", "data-yaml", "dump-header", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
+	testOptions(t, []string{"create-dirs", "data", "data-json", "data-yaml", "dump-header", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {
@@ -87,6 +87,7 @@ func TestOpen(t *testing.T) {
 	newFlags := func() *pflag.FlagSet {
 		f := pflag.NewFlagSet("foo", 1)
 		f.String(kouch.FlagOutputFile, "", "x")
+		f.Bool(kouch.FlagCreateDirs, false, "x")
 		f.Bool(kouch.FlagClobber, false, "x")
 		return f
 	}
@@ -158,6 +159,42 @@ func TestOpen(t *testing.T) {
 		flagName:     kouch.FlagOutputFile,
 		expectedName: "./foo/bar/baz",
 		writeErr:     "open ./foo/bar/baz: no such file or directory",
+	})
+	tests.Add("create parent dir", func(t *testing.T) interface{} {
+		tempDir, err := ioutil.TempDir("", "create-dirs")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tests.Cleanup(func() error {
+			return os.RemoveAll(tempDir)
+		})
+
+		return oTest{
+			flags: func() *pflag.FlagSet {
+				f := newFlags()
+				_ = f.Set(kouch.FlagOutputFile, tempDir+"/foo/bar/baz")
+				_ = f.Set(kouch.FlagCreateDirs, "true")
+				return f
+			}(),
+			flagName:     kouch.FlagOutputFile,
+			expectedName: tempDir + "/foo/bar/baz",
+			/*
+			   file, err := ioutil.TempFile("", "overwrite")
+			   if err != nil {
+			   	t.Fatal(err)
+			   }
+			   _ = file.Close()
+
+			   flags := newFlags()
+			   _ = flags.Set(kouch.FlagOutputFile, file.Name())
+			   _ = flags.Set(kouch.FlagClobber, "true")
+
+			   tests.Cleanup(func() error {
+			   	return os.Remove(file.Name())
+			   })
+			*/
+		}
 	})
 	tests.Add("clobber", func(t *testing.T) interface{} {
 		file, err := ioutil.TempFile("", "overwrite")

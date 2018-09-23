@@ -58,7 +58,8 @@ func AddFlags(flags *pflag.FlagSet) {
 	sort.Strings(formats)
 	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
 	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
-	flags.BoolP(kouch.FlagClobber, "", false, "Overwrite destination files")
+	flags.Bool(kouch.FlagClobber, false, "Overwrite destination files")
+	flags.Bool(kouch.FlagCreateDirs, false, "When used in conjunction with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, kouch will create the necessary local directory hierarchy as needed. This option creates the dirs mentioned with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, nothing else. If the --"+kouch.FlagOutputFile+" file name uses no dir or if the dirs it mentions already exist, no dir will be created.")
 	flags.String(flagStderr, "", `Where to redirect stderr (- = stdout, % = stderr)`)
 
 	flags.StringP(kouch.FlagData, kouch.FlagShortData, "", "HTTP request body data. Prefix with '@' to specify a filename.")
@@ -132,9 +133,14 @@ func open(flags *pflag.FlagSet, flagName string) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+	createDirs, err := flags.GetBool(kouch.FlagCreateDirs)
+	if err != nil {
+		return nil, err
+	}
 	return &delayedOpenWriter{
-		filename: output,
-		clobber:  clobber,
+		filename:   output,
+		createDirs: createDirs,
+		clobber:    clobber,
 	}, nil
 }
 
@@ -181,7 +187,7 @@ func RedirStderr(flags *pflag.FlagSet) error {
 	if err != nil {
 		return err
 	}
-	f, err := openOutputFile(filename, clobber)
+	f, err := openOutputFile(filename, clobber, false)
 	if err != nil {
 		return &errors.ExitError{
 			Err:      err,
