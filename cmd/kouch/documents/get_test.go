@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
@@ -19,127 +18,109 @@ import (
 )
 
 func TestGetDocumentOpts(t *testing.T) {
-	type gdoTest struct {
-		name     string
-		conf     *kouch.Config
-		args     []string
-		expected *kouch.Options
-		err      string
-		status   int
-	}
-	tests := []gdoTest{
-		{
-			name:   "duplicate id",
-			args:   []string{"--" + kouch.FlagDocument, "foo", "bar"},
-			err:    "Must not use --" + kouch.FlagDocument + " and pass document ID as part of the target",
-			status: chttp.ExitFailedToInitialize,
+	tests := testy.NewTable()
+
+	tests.Add("duplicate id", test.OptionsTest{
+		Args:   []string{"--" + kouch.FlagDocument, "foo", "bar"},
+		Err:    "Must not use --" + kouch.FlagDocument + " and pass document ID as part of the target",
+		Status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("id from target", test.OptionsTest{
+		Conf: &kouch.Config{
+			DefaultContext: "foo",
+			Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 		},
-		{
-			name: "id from target",
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
+		Args: []string{"--database", "bar", "123"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "foo.com",
+				Database: "bar",
+				Document: "123",
 			},
-			args: []string{"--database", "bar", "123"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "bar",
-					Document: "123",
-				},
-				Options: &chttp.Options{},
-			},
+			Options: &chttp.Options{},
 		},
-		{
-			name: "db included in target",
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
-			},
-			args: []string{"/foo/123"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "foo",
-					Document: "123",
-				},
-				Options: &chttp.Options{},
-			},
+	})
+	tests.Add("db included in target", test.OptionsTest{
+		Conf: &kouch.Config{
+			DefaultContext: "foo",
+			Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 		},
-		{
-			name:   "db provided twice",
-			args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
-			err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name: "full url target",
-			args: []string{"http://foo.com/foo/123"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "http://foo.com",
-					Database: "foo",
-					Document: "123",
-				},
-				Options: &chttp.Options{},
+		Args: []string{"/foo/123"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "foo.com",
+				Database: "foo",
+				Document: "123",
 			},
+			Options: &chttp.Options{},
 		},
-		{
-			name: "if-none-match",
-			args: []string{"--" + kouch.FlagIfNoneMatch, "foo", "foo.com/bar/baz"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "bar",
-					Document: "baz",
-				},
-				Options: &chttp.Options{IfNoneMatch: "foo"},
+	})
+	tests.Add("db provided twice", test.OptionsTest{
+		Args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
+		Err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
+		Status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("full url target", test.OptionsTest{
+		Args: []string{"http://foo.com/foo/123"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "http://foo.com",
+				Database: "foo",
+				Document: "123",
 			},
+			Options: &chttp.Options{},
 		},
-		{
-			name: "rev",
-			args: []string{"--" + kouch.FlagRev, "foo", "foo.com/bar/baz"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "bar",
-					Document: "baz",
-				},
-				Options: &chttp.Options{
-					Query: url.Values{"rev": []string{"foo"}},
-				},
+	})
+	tests.Add("if-none-match", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagIfNoneMatch, "foo", "foo.com/bar/baz"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "foo.com",
+				Database: "bar",
+				Document: "baz",
+			},
+			Options: &chttp.Options{IfNoneMatch: "foo"},
+		},
+	})
+	tests.Add("rev", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagRev, "foo", "foo.com/bar/baz"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "foo.com",
+				Database: "bar",
+				Document: "baz",
+			},
+			Options: &chttp.Options{
+				Query: url.Values{"rev": []string{"foo"}},
 			},
 		},
-		{
-			name: "attachments since",
-			args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{Document: "docid"},
-				Options: &chttp.Options{
-					Query: url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
-				},
+	})
+	tests.Add("attachments since", test.OptionsTest{
+		Args: []string{"--" + flagAttsSince, "foo,bar,baz", "docid"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{Document: "docid"},
+			Options: &chttp.Options{
+				Query: url.Values{param(flagAttsSince): []string{`["foo","bar","baz"]`}},
 			},
 		},
-		{
-			name: "open revs",
-			args: []string{"--" + flagOpenRevs, "foo,bar,baz", "docid"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{Document: "docid"},
-				Options: &chttp.Options{
-					Query: url.Values{param(flagOpenRevs): []string{`["foo","bar","baz"]`}},
-				},
+	})
+	tests.Add("open revs", test.OptionsTest{
+		Args: []string{"--" + flagOpenRevs, "foo,bar,baz", "docid"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{Document: "docid"},
+			Options: &chttp.Options{
+				Query: url.Values{param(flagOpenRevs): []string{`["foo","bar","baz"]`}},
 			},
 		},
-	}
+	})
 	for _, flag := range []string{
 		kouch.FlagIncludeAttachments, kouch.FlagIncludeAttEncoding, flagIncludeConflicts,
 		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
 		flagMeta, flagRevs, flagRevsInfo,
 	} {
-		tests = append(tests, gdoTest{
-			name: flag,
-			args: []string{"--" + flag, "docid"},
-			expected: &kouch.Options{
+		tests.Add(flag, test.OptionsTest{
+			Args: []string{"--" + flag, "docid"},
+			Expected: &kouch.Options{
 				Target: &kouch.Target{Document: "docid"},
 				Options: &chttp.Options{
 					Query: url.Values{param(flag): []string{"true"}},
@@ -147,28 +128,8 @@ func TestGetDocumentOpts(t *testing.T) {
 			},
 		})
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if test.conf == nil {
-				test.conf = &kouch.Config{}
-			}
-			cmd := getDocCmd()
-			if err := cmd.ParseFlags(test.args); err != nil {
-				t.Fatal(err)
-			}
-			ctx := kouch.GetContext(cmd)
-			ctx = kouch.SetConf(ctx, test.conf)
-			if flags := cmd.Flags().Args(); len(flags) > 0 {
-				ctx = kouch.SetTarget(ctx, flags[0])
-			}
-			kouch.SetContext(ctx, cmd)
-			opts, err := getDocumentOpts(ctx, cmd.Flags())
-			testy.ExitStatusError(t, test.err, test.status, err)
-			if d := diff.Interface(test.expected, opts); d != nil {
-				t.Error(d)
-			}
-		})
-	}
+
+	tests.Run(t, test.Options(getDocCmd, getDocumentOpts))
 }
 
 func TestGetDocumentCmd(t *testing.T) {
