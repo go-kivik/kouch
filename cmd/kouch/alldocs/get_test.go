@@ -1,20 +1,224 @@
 package alldocs
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch"
+	"github.com/go-kivik/kouch/internal/test"
 )
 
+/*
+f.Bool(kouch.FlagUpdateSeq, false, "Whether to include in the response an `update_seq` value indicating the sequence id of the database the view reflects.")
+*/
+
 func TestGetAllDocsOpts(t *testing.T) {
-	type gadoTest struct {
-	}
-
 	tests := testy.NewTable()
-
-	tests.Run(t, func(t *testing.T, test gadoTest) {
-
+	tests.Add("defaults", test.OptionsTest{
+		Expected: &kouch.Options{
+			Target:  &kouch.Target{},
+			Options: &chttp.Options{},
+		},
 	})
+	tests.Add("conflicts", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagConflicts},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"conflicts": []string{"true"},
+				},
+			},
+		},
+	})
+	tests.Add("descending", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagDescending},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"descending": []string{"true"},
+				},
+			},
+		},
+	})
+	tests.Add("endkey", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagEndKey, "oink", "--" + kouch.FlagEndKeyDocID, "moo", "--" + kouch.FlagInclusiveEnd + "=false"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"endkey":        []string{"oink"},
+					"endkey_docid":  []string{"moo"},
+					"inclusive_end": []string{"false"},
+				},
+			},
+		},
+	})
+	tests.Add("startkey", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagStartKey, "oink",
+			"--" + kouch.FlagStartKeyDocID, "moo"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"startkey":       []string{"oink"},
+					"startkey_docid": []string{"moo"},
+				},
+			},
+		},
+	})
+	tests.Add("group", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagGroup, "--" + kouch.FlagGroupLevel, "5"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"group":       []string{"true"},
+					"group_level": []string{"5"},
+				},
+			},
+		},
+	})
+	tests.Add("no reduce", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagReduce + "=false"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"reduce": []string{"false"},
+				},
+			},
+		},
+	})
+	tests.Add("include docs", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagIncludeDocs},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"include_docs": []string{"true"},
+				},
+			},
+		},
+	})
+	tests.Add("attachments", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagIncludeAttachments, "--" + kouch.FlagIncludeAttEncoding},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"attachments":       []string{"true"},
+					"att_encoding_info": []string{"true"},
+				},
+			},
+		},
+	})
+	tests.Add("key", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagKey, "oink"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"key": []string{"oink"},
+				},
+			},
+		},
+	})
+	tests.Add("keys", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagKeys, "oink",
+			"--" + kouch.FlagKeys, "moo"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"keys": []string{"oink", "moo"},
+				},
+			},
+		},
+	})
+	tests.Add("limit & skip", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagLimit, "10",
+			"--" + kouch.FlagSkip, "50"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"limit": []string{"10"},
+					"skip":  []string{"50"},
+				},
+			},
+		},
+	})
+	tests.Add("sorted", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagSorted + "=false"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"sorted": []string{"false"},
+				},
+			},
+		},
+	})
+	tests.Add("stable", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagStable},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"stable": []string{"true"},
+				},
+			},
+		},
+	})
+	tests.Add("stale", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagStale, "ok"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"stale": []string{"ok"},
+				},
+			},
+		},
+	})
+	tests.Add("invalid stale value", test.OptionsTest{
+		Args:   []string{"--" + kouch.FlagStale, "yes"},
+		Err:    "Invalid value for --" + kouch.FlagStale + ". Supported options: `ok`, `update_after`, `false`",
+		Status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("update", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagUpdate, "lazy"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"update": []string{"lazy"},
+				},
+			},
+		},
+	})
+	tests.Add("invalid update value", test.OptionsTest{
+		Args:   []string{"--" + kouch.FlagUpdate, "yes"},
+		Err:    "Invalid value for --" + kouch.FlagUpdate + ". Supported options: `true`, `false`, `lazy`",
+		Status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("update sequence", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagUpdateSeq},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{},
+			Options: &chttp.Options{
+				Query: url.Values{
+					"update_seq": []string{"true"},
+				},
+			},
+		},
+	})
+
+	tests.Run(t, test.Options(getAllDocsCmd, getAllDocsOpts))
 }
 
 /*

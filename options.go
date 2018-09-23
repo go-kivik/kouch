@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-kivik/couchdb/chttp"
+	"github.com/go-kivik/kouch/internal/errors"
 	"github.com/spf13/pflag"
 )
 
@@ -72,6 +73,19 @@ func (o *Options) SetParamStringSlice(f *pflag.FlagSet, flagName string) error {
 	return err
 }
 
+// SetParamStringArray sets the query param string slice value specified by
+// flagName.
+func (o *Options) SetParamStringArray(f *pflag.FlagSet, flagName string) error {
+	v, err := f.GetStringArray(flagName)
+	if err != nil {
+		return err
+	}
+	for _, value := range v {
+		o.Query().Add(param(flagName), value)
+	}
+	return nil
+}
+
 // SetParamString sets the query parameter string value specified by flagName,
 // if it differs from the default.
 func (o *Options) SetParamString(f *pflag.FlagSet, flagName string) error {
@@ -79,6 +93,18 @@ func (o *Options) SetParamString(f *pflag.FlagSet, flagName string) error {
 		return nil
 	}
 	v, err := f.GetString(flagName)
+	// extra custom validation
+	switch flagName {
+	case FlagStale:
+		if v != "ok" && v != "update_after" && v != "false" {
+			return errors.NewExitError(chttp.ExitFailedToInitialize, "Invalid value for --%s. Supported options: `ok`, `update_after`, `false`", FlagStale)
+		}
+	case FlagUpdate:
+		if v != "true" && v != "false" && v != "lazy" {
+			return errors.NewExitError(chttp.ExitFailedToInitialize, "Invalid value for --%s. Supported options: `true`, `false`, `lazy`", FlagUpdate)
+
+		}
+	}
 	if err == nil && v != f.Lookup(flagName).DefValue {
 		o.Query().Add(param(flagName), v)
 	}

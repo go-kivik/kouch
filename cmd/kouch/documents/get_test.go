@@ -23,7 +23,7 @@ func TestGetDocumentOpts(t *testing.T) {
 		name     string
 		conf     *kouch.Config
 		args     []string
-		expected interface{}
+		expected *kouch.Options
 		err      string
 		status   int
 	}
