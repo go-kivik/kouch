@@ -114,9 +114,9 @@ func TestGetDocumentOpts(t *testing.T) {
 		},
 	})
 	for _, flag := range []string{
-		kouch.FlagIncludeAttachments, kouch.FlagIncludeAttEncoding, flagIncludeConflicts,
-		flagIncludeDeletedConflicts, flagForceLatest, flagIncludeLocalSeq,
-		flagMeta, flagRevs, flagRevsInfo,
+		kouch.FlagIncludeAttachments, kouch.FlagIncludeAttEncoding,
+		kouch.FlagConflicts, flagIncludeDeletedConflicts, flagForceLatest,
+		flagIncludeLocalSeq, flagMeta, flagRevs, flagRevsInfo,
 	} {
 		tests.Add(flag, test.OptionsTest{
 			Args: []string{"--" + flag, "docid"},
