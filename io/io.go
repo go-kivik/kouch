@@ -29,8 +29,6 @@ func (m defaultMode) isDefault() bool {
 	return bool(m)
 }
 
-var outputModes = make(map[string]outputMode)
-
 func registerOutputMode(name string, m outputMode) {
 	if _, ok := outputModes[name]; ok {
 		panic(fmt.Sprintf("Output mode '%s' already registered", name))
@@ -157,17 +155,6 @@ func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.Writer, error)
 	}
 	return processor.new(flags, w)
 	// return &exitStatusWriter{p}, err
-}
-
-type outputMode interface {
-	// config sets flags for the passed command, at start-up
-	config(*pflag.FlagSet)
-	// isDefault returns true if this should be the default format. Exactly one
-	// output mode must return true.
-	isDefault() bool
-	// new takes flags, after command line options have been parsed, and returns
-	// a new output processor.
-	new(*pflag.FlagSet, io.Writer) (io.Writer, error)
 }
 
 // RedirStderr redirects stderr based on configuration.
