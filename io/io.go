@@ -29,13 +29,6 @@ func (m defaultMode) isDefault() bool {
 	return bool(m)
 }
 
-func registerOutputMode(name string, m outputMode) {
-	if _, ok := outputModes[name]; ok {
-		panic(fmt.Sprintf("Output mode '%s' already registered", name))
-	}
-	outputModes[name] = m
-}
-
 // AddFlags adds command line flags for all configured output modes.
 func AddFlags(flags *pflag.FlagSet) {
 	defaults := make([]string, 0)

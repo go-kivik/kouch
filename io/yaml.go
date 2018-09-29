@@ -7,10 +7,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func init() {
-	registerOutputMode("yaml", &yamlMode{})
-}
-
 type yamlMode struct {
 	defaultMode
 }

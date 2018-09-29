@@ -6,10 +6,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func init() {
-	registerOutputMode("raw", &rawMode{})
-}
-
 type rawMode struct {
 	defaultMode
 }

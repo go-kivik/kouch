@@ -7,10 +7,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func init() {
-	registerOutputMode("json", &jsonMode{defaultMode: true})
-}
-
 const (
 	optJSONPrefix     = "json-prefix"
 	optJSONIndent     = "json-indent"

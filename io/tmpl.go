@@ -9,10 +9,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func init() {
-	registerOutputMode("template", &tmplMode{})
-}
-
 const (
 	optTemplate     = "template"
 	optTemplateFile = "template-file"

@@ -6,7 +6,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var outputModes = make(map[string]outputMode)
+var outputModes = map[string]outputMode{
+	"json":     &jsonMode{defaultMode: true},
+	"yaml":     &yamlMode{},
+	"raw":      &rawMode{},
+	"template": &tmplMode{},
+}
 
 type outputMode interface {
 	// config sets flags for the passed command, at start-up
