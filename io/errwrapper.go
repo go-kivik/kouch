@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/go-kivik/kouch/kouchio"
 )
 
 type exitStatusWriter struct {
@@ -12,7 +13,7 @@ type exitStatusWriter struct {
 }
 
 var _ io.WriteCloser = &exitStatusWriter{}
-var _ WrappedWriter = &exitStatusWriter{}
+var _ kouchio.WrappedWriter = &exitStatusWriter{}
 
 func (w *exitStatusWriter) Underlying() io.Writer {
 	return w.WriteCloser
