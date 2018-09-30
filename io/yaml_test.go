@@ -8,6 +8,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/cobra"
 )
 
@@ -63,10 +64,10 @@ qux:
 			p, err := mode.new(cmd.Flags(), buf)
 			testy.Error(t, test.newErr, err)
 
-			defer CloseWriter(p) // nolint: errcheck
+			defer kouchio.CloseWriter(p) // nolint: errcheck
 			_, err = io.Copy(p, strings.NewReader(test.input))
 			if err == nil {
-				err = CloseWriter(p)
+				err = kouchio.CloseWriter(p)
 			}
 			testy.Error(t, test.err, err)
 			if d := diff.Text(test.expected, buf.String()); d != nil {
