@@ -16,8 +16,8 @@ var outputModes = map[string]outputMode{
 }
 
 type outputMode interface {
-	// config sets flags for the passed command, at start-up
-	config(*pflag.FlagSet)
+	// AddFlags adds flags for the passed command, at start-up
+	AddFlags(*pflag.FlagSet)
 	// new takes flags, after command line options have been parsed, and returns
 	// a new output processor.
 	new(*pflag.FlagSet, io.Writer) (io.Writer, error)

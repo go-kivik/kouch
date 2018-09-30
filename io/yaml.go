@@ -11,7 +11,7 @@ type yamlMode struct{}
 
 var _ outputMode = &yamlMode{}
 
-func (m *yamlMode) config(_ *pflag.FlagSet) {}
+func (m *yamlMode) AddFlags(_ *pflag.FlagSet) {}
 
 func (m *yamlMode) new(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	return newProcessor(w, func(o io.Writer, i interface{}) error {

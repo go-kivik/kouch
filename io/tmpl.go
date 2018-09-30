@@ -18,7 +18,7 @@ type tmplMode struct{}
 
 var _ outputMode = &tmplMode{}
 
-func (m *tmplMode) config(flags *pflag.FlagSet) {
+func (m *tmplMode) AddFlags(flags *pflag.FlagSet) {
 	flags.String(optTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")
 	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }

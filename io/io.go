@@ -27,7 +27,7 @@ const (
 func AddFlags(flags *pflag.FlagSet) {
 	modes := make([]string, 0, len(outputModes))
 	for name, mode := range outputModes {
-		mode.config(flags)
+		mode.AddFlags(flags)
 		modes = append(modes, name)
 	}
 	sort.Strings(modes)

@@ -15,7 +15,7 @@ import (
 func TestYamlModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
 	mode := &yamlMode{}
-	mode.config(cmd.PersistentFlags())
+	mode.AddFlags(cmd.PersistentFlags())
 
 	testOptions(t, []string{}, cmd)
 }
@@ -55,7 +55,7 @@ qux:
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			mode := &yamlMode{}
-			mode.config(cmd.PersistentFlags())
+			mode.AddFlags(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.flagsErr, err)
