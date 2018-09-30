@@ -23,7 +23,7 @@ func (m *tmplMode) AddFlags(flags *pflag.FlagSet) {
 	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
-func (m *tmplMode) new(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *tmplMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	tmpl, err := newTmpl(flags)
 	if err != nil {
 		return nil, err

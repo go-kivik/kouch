@@ -12,6 +12,6 @@ var _ outputMode = &rawMode{}
 
 func (m *rawMode) AddFlags(_ *pflag.FlagSet) {}
 
-func (m *rawMode) new(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *rawMode) New(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	return w, nil
 }

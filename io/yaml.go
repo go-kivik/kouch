@@ -13,7 +13,7 @@ var _ outputMode = &yamlMode{}
 
 func (m *yamlMode) AddFlags(_ *pflag.FlagSet) {}
 
-func (m *yamlMode) new(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *yamlMode) New(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	return newProcessor(w, func(o io.Writer, i interface{}) error {
 		return yaml.NewEncoder(o).Encode(i)
 	}), nil

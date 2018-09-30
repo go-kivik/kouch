@@ -130,8 +130,7 @@ func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.Writer, error)
 	if !ok {
 		return nil, errors.Errorf("Unrecognized output format '%s'", name)
 	}
-	return processor.new(flags, w)
-	// return &exitStatusWriter{p}, err
+	return processor.New(flags, w)
 }
 
 // RedirStderr redirects stderr based on configuration.

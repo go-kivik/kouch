@@ -61,7 +61,7 @@ qux:
 			testy.Error(t, test.flagsErr, err)
 
 			buf := &bytes.Buffer{}
-			p, err := mode.new(cmd.Flags(), buf)
+			p, err := mode.New(cmd.Flags(), buf)
 			testy.Error(t, test.newErr, err)
 
 			defer kouchio.CloseWriter(p) // nolint: errcheck

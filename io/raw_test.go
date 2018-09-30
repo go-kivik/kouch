@@ -46,7 +46,7 @@ func TestRawNew(t *testing.T) {
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.parseErr, err)
 
-			result, err := mode.new(cmd.Flags(), &bytes.Buffer{})
+			result, err := mode.New(cmd.Flags(), &bytes.Buffer{})
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
