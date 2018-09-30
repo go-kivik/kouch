@@ -23,40 +23,15 @@ const (
 	flagStderr = "stderr"
 )
 
-type defaultMode bool
-
-func (m defaultMode) isDefault() bool {
-	return bool(m)
-}
-
-var outputModes = make(map[string]outputMode)
-
-func registerOutputMode(name string, m outputMode) {
-	if _, ok := outputModes[name]; ok {
-		panic(fmt.Sprintf("Output mode '%s' already registered", name))
-	}
-	outputModes[name] = m
-}
-
 // AddFlags adds command line flags for all configured output modes.
 func AddFlags(flags *pflag.FlagSet) {
-	defaults := make([]string, 0)
-	formats := make([]string, 0, len(outputModes))
+	modes := make([]string, 0, len(outputModes))
 	for name, mode := range outputModes {
-		if mode.isDefault() {
-			defaults = append(defaults, name)
-		}
-		mode.config(flags)
-		formats = append(formats, name)
+		mode.AddFlags(flags)
+		modes = append(modes, name)
 	}
-	if len(defaults) == 0 {
-		panic("No default output mode configured")
-	}
-	if len(defaults) > 1 {
-		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
-	}
-	sort.Strings(formats)
-	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	sort.Strings(modes)
+	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaultOutputMode, fmt.Sprintf("Specify output format. Available options: %s", strings.Join(modes, ", ")))
 	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
 	flags.Bool(kouch.FlagClobber, false, "Overwrite destination files")
 	flags.Bool(kouch.FlagCreateDirs, false, "When used in conjunction with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, kouch will create the necessary local directory hierarchy as needed. This option creates the dirs mentioned with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, nothing else. If the --"+kouch.FlagOutputFile+" file name uses no dir or if the dirs it mentions already exist, no dir will be created.")
@@ -155,19 +130,7 @@ func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.Writer, error)
 	if !ok {
 		return nil, errors.Errorf("Unrecognized output format '%s'", name)
 	}
-	return processor.new(flags, w)
-	// return &exitStatusWriter{p}, err
-}
-
-type outputMode interface {
-	// config sets flags for the passed command, at start-up
-	config(*pflag.FlagSet)
-	// isDefault returns true if this should be the default format. Exactly one
-	// output mode must return true.
-	isDefault() bool
-	// new takes flags, after command line options have been parsed, and returns
-	// a new output processor.
-	new(*pflag.FlagSet, io.Writer) (io.Writer, error)
+	return processor.New(flags, w)
 }
 
 // RedirStderr redirects stderr based on configuration.

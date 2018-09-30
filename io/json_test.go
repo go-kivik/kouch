@@ -8,6 +8,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/kouch/internal/test"
 	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/cobra"
 )
@@ -15,9 +16,9 @@ import (
 func TestJsonModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
 	mode := &jsonMode{}
-	mode.config(cmd.PersistentFlags())
+	mode.AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"json-escape-html", "json-indent", "json-prefix"}, cmd)
+	test.Flags(t, []string{"json-escape-html", "json-indent", "json-prefix"}, cmd)
 }
 
 func TestJSONOutput(t *testing.T) {
@@ -78,13 +79,13 @@ xx}`,
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			mode := &jsonMode{}
-			mode.config(cmd.PersistentFlags())
+			mode.AddFlags(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.flagsErr, err)
 
 			buf := &bytes.Buffer{}
-			p, err := mode.new(cmd.Flags(), buf)
+			p, err := mode.New(cmd.Flags(), buf)
 			testy.Error(t, test.newErr, err)
 
 			defer kouchio.CloseWriter(p) // nolint: errcheck

@@ -9,27 +9,21 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func init() {
-	registerOutputMode("template", &tmplMode{})
-}
-
 const (
 	optTemplate     = "template"
 	optTemplateFile = "template-file"
 )
 
-type tmplMode struct {
-	defaultMode
-}
+type tmplMode struct{}
 
 var _ outputMode = &tmplMode{}
 
-func (m *tmplMode) config(flags *pflag.FlagSet) {
+func (m *tmplMode) AddFlags(flags *pflag.FlagSet) {
 	flags.String(optTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")
 	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
-func (m *tmplMode) new(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *tmplMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	tmpl, err := newTmpl(flags)
 	if err != nil {
 		return nil, err

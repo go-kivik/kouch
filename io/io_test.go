@@ -12,6 +12,7 @@ import (
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
+	"github.com/go-kivik/kouch/internal/test"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -20,7 +21,7 @@ func TestAddFlags(t *testing.T) {
 	cmd := &cobra.Command{}
 	AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"create-dirs", "data", "data-json", "data-yaml", "dump-header", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
+	test.Flags(t, []string{"create-dirs", "data", "data-json", "data-yaml", "dump-header", "force", "json-escape-html", "json-indent", "json-prefix", "output", "output-format", "stderr", "template", "template-file"}, cmd)
 }
 
 func TestSelectOutputProcessor(t *testing.T) {

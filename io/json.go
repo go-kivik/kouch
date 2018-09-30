@@ -7,29 +7,23 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func init() {
-	registerOutputMode("json", &jsonMode{defaultMode: true})
-}
-
 const (
 	optJSONPrefix     = "json-prefix"
 	optJSONIndent     = "json-indent"
 	optJSONEscapeHTML = "json-escape-html"
 )
 
-type jsonMode struct {
-	defaultMode
-}
+type jsonMode struct{}
 
 var _ outputMode = &jsonMode{}
 
-func (m *jsonMode) config(flags *pflag.FlagSet) {
+func (m *jsonMode) AddFlags(flags *pflag.FlagSet) {
 	flags.String(optJSONPrefix, "", "Prefix to begin each line of the JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
 	flags.String(optJSONIndent, "", "Indentation string for JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
 	flags.Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
-func (m *jsonMode) new(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *jsonMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	prefix, err := flags.GetString(optJSONPrefix)
 	if err != nil {
 		return nil, err
