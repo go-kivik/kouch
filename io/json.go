@@ -29,7 +29,7 @@ func (m *jsonMode) config(flags *pflag.FlagSet) {
 	flags.Bool(optJSONEscapeHTML, false, "Enable escaping of special HTML characters. See [https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML].")
 }
 
-func (m *jsonMode) new(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
+func (m *jsonMode) new(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	prefix, err := flags.GetString(optJSONPrefix)
 	if err != nil {
 		return nil, err

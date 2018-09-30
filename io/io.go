@@ -146,7 +146,7 @@ func open(flags *pflag.FlagSet, flagName string) (io.WriteCloser, error) {
 
 // selectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
-func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
+func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	name, err := flags.GetString(kouch.FlagOutputFormat)
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ type outputMode interface {
 	isDefault() bool
 	// new takes flags, after command line options have been parsed, and returns
 	// a new output processor.
-	new(*pflag.FlagSet, io.Writer) (io.WriteCloser, error)
+	new(*pflag.FlagSet, io.Writer) (io.Writer, error)
 }
 
 // RedirStderr redirects stderr based on configuration.
@@ -272,4 +272,12 @@ func convertData(in io.Reader, flag string) (interface{}, error) {
 		panic("Unknown flag: " + flag)
 	}
 	return i, nil
+}
+
+// CloseWriter closes w if it is an io.WriteCloser; else it does nothing
+func CloseWriter(w io.Writer) error {
+	if wc, ok := w.(io.WriteCloser); ok {
+		return wc.Close()
+	}
+	return nil
 }

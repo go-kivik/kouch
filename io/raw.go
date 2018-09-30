@@ -18,7 +18,7 @@ var _ outputMode = &rawMode{}
 
 func (m *rawMode) config(_ *pflag.FlagSet) {}
 
-func (m *rawMode) new(_ *pflag.FlagSet, w io.Writer) (io.WriteCloser, error) {
+func (m *rawMode) new(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	if t, ok := w.(io.WriteCloser); ok {
 		return t, nil
 	}

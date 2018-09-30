@@ -86,10 +86,10 @@ xx}`,
 			p, err := mode.new(cmd.Flags(), buf)
 			testy.Error(t, test.newErr, err)
 
-			defer p.Close() // nolint: errcheck
+			defer CloseWriter(p) // nolint: errcheck
 			_, err = io.Copy(p, strings.NewReader(test.input))
 			if err == nil {
-				err = p.Close()
+				err = CloseWriter(p)
 			}
 			testy.Error(t, test.err, err)
 			if d := diff.Text(test.expected, buf.String()); d != nil {
