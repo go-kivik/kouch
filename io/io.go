@@ -25,13 +25,13 @@ const (
 
 // AddFlags adds command line flags for all configured output modes.
 func AddFlags(flags *pflag.FlagSet) {
-	formats := make([]string, 0, len(outputModes))
+	modes := make([]string, 0, len(outputModes))
 	for name, mode := range outputModes {
 		mode.config(flags)
-		formats = append(formats, name)
+		modes = append(modes, name)
 	}
-	sort.Strings(formats)
-	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaultOutputMode, fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	sort.Strings(modes)
+	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaultOutputMode, fmt.Sprintf("Specify output format. Available options: %s", strings.Join(modes, ", ")))
 	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
 	flags.Bool(kouch.FlagClobber, false, "Overwrite destination files")
 	flags.Bool(kouch.FlagCreateDirs, false, "When used in conjunction with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, kouch will create the necessary local directory hierarchy as needed. This option creates the dirs mentioned with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, nothing else. If the --"+kouch.FlagOutputFile+" file name uses no dir or if the dirs it mentions already exist, no dir will be created.")
