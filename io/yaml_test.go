@@ -8,6 +8,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/kouch/internal/test"
 	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +18,7 @@ func TestYamlModeConfig(t *testing.T) {
 	mode := &yamlMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{}, cmd)
+	test.Flags(t, []string{}, cmd)
 }
 
 func TestYAMLOutput(t *testing.T) {

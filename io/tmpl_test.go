@@ -8,6 +8,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/kouch/internal/test"
 	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +18,7 @@ func TestTmplModeConfig(t *testing.T) {
 	mode := &tmplMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{"template", "template-file"}, cmd)
+	test.Flags(t, []string{"template", "template-file"}, cmd)
 }
 
 // func TestTmplNew(t *testing.T) {

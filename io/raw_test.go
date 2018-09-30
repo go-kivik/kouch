@@ -7,6 +7,7 @@ import (
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/kouch/internal/test"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,7 @@ func TestRawModeConfig(t *testing.T) {
 	mode := &rawMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
-	testOptions(t, []string{}, cmd)
+	test.Flags(t, []string{}, cmd)
 }
 
 func TestRawNew(t *testing.T) {

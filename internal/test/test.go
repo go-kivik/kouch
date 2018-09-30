@@ -12,6 +12,8 @@ import (
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // CmdTest represents a single test for a complete kouch command.
@@ -72,6 +74,20 @@ func CheckRequest(t *testing.T, expected, actual *http.Request) {
 	delete(expected.Header, "User-Agent")
 	delete(actual.Header, "User-Agent")
 	if d := diff.HTTPRequest(expected, actual); d != nil {
+		t.Error(d)
+	}
+}
+
+// Flags tests that the expected flags are defined.
+func Flags(t *testing.T, expected []string, cmd *cobra.Command) {
+	found := make([]string, 0)
+	if e := cmd.ParseFlags(nil); e != nil {
+		t.Fatal(e)
+	}
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		found = append(found, f.Name)
+	})
+	if d := diff.Interface(expected, found); d != nil {
 		t.Error(d)
 	}
 }
