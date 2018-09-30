@@ -7,9 +7,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type yamlMode struct {
-	defaultMode
-}
+type yamlMode struct{}
 
 var _ outputMode = &yamlMode{}
 

@@ -6,9 +6,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type rawMode struct {
-	defaultMode
-}
+type rawMode struct{}
 
 var _ outputMode = &rawMode{}
 

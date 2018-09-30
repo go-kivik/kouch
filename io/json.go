@@ -13,9 +13,7 @@ const (
 	optJSONEscapeHTML = "json-escape-html"
 )
 
-type jsonMode struct {
-	defaultMode
-}
+type jsonMode struct{}
 
 var _ outputMode = &jsonMode{}
 

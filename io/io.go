@@ -23,31 +23,15 @@ const (
 	flagStderr = "stderr"
 )
 
-type defaultMode bool
-
-func (m defaultMode) isDefault() bool {
-	return bool(m)
-}
-
 // AddFlags adds command line flags for all configured output modes.
 func AddFlags(flags *pflag.FlagSet) {
-	defaults := make([]string, 0)
 	formats := make([]string, 0, len(outputModes))
 	for name, mode := range outputModes {
-		if mode.isDefault() {
-			defaults = append(defaults, name)
-		}
 		mode.config(flags)
 		formats = append(formats, name)
 	}
-	if len(defaults) == 0 {
-		panic("No default output mode configured")
-	}
-	if len(defaults) > 1 {
-		panic(fmt.Sprintf("Multiple default output modes configured: %s", strings.Join(defaults, ", ")))
-	}
 	sort.Strings(formats)
-	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaults[0], fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
+	flags.StringP(kouch.FlagOutputFormat, kouch.FlagShortOutputFormat, defaultOutputMode, fmt.Sprintf("Specify output format. Available options: %s", strings.Join(formats, ", ")))
 	flags.StringP(kouch.FlagOutputFile, kouch.FlagShortOutputFile, "-", "Output destination. Use '-' for stdout")
 	flags.Bool(kouch.FlagClobber, false, "Overwrite destination files")
 	flags.Bool(kouch.FlagCreateDirs, false, "When used in conjunction with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, kouch will create the necessary local directory hierarchy as needed. This option creates the dirs mentioned with the -"+kouch.FlagShortOutputFile+", --"+kouch.FlagOutputFile+" option, nothing else. If the --"+kouch.FlagOutputFile+" file name uses no dir or if the dirs it mentions already exist, no dir will be created.")
