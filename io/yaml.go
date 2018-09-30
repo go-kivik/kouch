@@ -3,13 +3,14 @@ package io
 import (
 	"io"
 
+	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
 )
 
 type yamlMode struct{}
 
-var _ outputMode = &yamlMode{}
+var _ kouchio.OutputMode = &yamlMode{}
 
 func (m *yamlMode) AddFlags(_ *pflag.FlagSet) {}
 

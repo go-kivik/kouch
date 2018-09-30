@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/pflag"
 )
 
@@ -15,7 +16,7 @@ const (
 
 type jsonMode struct{}
 
-var _ outputMode = &jsonMode{}
+var _ kouchio.OutputMode = &jsonMode{}
 
 func (m *jsonMode) AddFlags(flags *pflag.FlagSet) {
 	flags.String(optJSONPrefix, "", "Prefix to begin each line of the JSON output. See [https://golang.org/pkg/encoding/json/#Indent] for more information.")
