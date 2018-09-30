@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/go-kivik/kouch/io/outputcommon"
 	"github.com/go-kivik/kouch/kouchio"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -29,7 +30,7 @@ func (m *tmplMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newProcessor(w, func(o io.Writer, i interface{}) error {
+	return outputcommon.NewProcessor(w, func(o io.Writer, i interface{}) error {
 		return tmpl.Execute(o, i)
 	}), nil
 }

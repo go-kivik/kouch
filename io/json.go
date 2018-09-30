@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/go-kivik/kouch/io/outputcommon"
 	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/pflag"
 )
@@ -37,7 +38,7 @@ func (m *jsonMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newProcessor(w, func(o io.Writer, i interface{}) error {
+	return outputcommon.NewProcessor(w, func(o io.Writer, i interface{}) error {
 		enc := json.NewEncoder(o)
 		enc.SetIndent(prefix, indent)
 		enc.SetEscapeHTML(escapeHTML)
