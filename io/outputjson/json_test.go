@@ -1,4 +1,4 @@
-package io
+package outputjson
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 
 func TestJsonModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
-	mode := &jsonMode{}
+	mode := &JSONMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
 	test.Flags(t, []string{"json-escape-html", "json-indent", "json-prefix"}, cmd)
@@ -78,7 +78,7 @@ xx}`,
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			mode := &jsonMode{}
+			mode := &JSONMode{}
 			mode.AddFlags(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
