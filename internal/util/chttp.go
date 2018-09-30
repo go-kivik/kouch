@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
-	kio "github.com/go-kivik/kouch/io"
+	"github.com/go-kivik/kouch/kouchio"
 )
 
 func isNil(i interface{}) bool {
@@ -76,8 +76,8 @@ func sameFd(w1, w2 io.Writer) bool {
 	if w1 == w2 {
 		return true
 	}
-	u1 := kio.Underlying(w1)
-	u2 := kio.Underlying(w2)
+	u1 := kouchio.Underlying(w1)
+	u2 := kouchio.Underlying(w2)
 	if u1 == u2 {
 		return true
 	}

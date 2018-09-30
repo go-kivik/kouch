@@ -6,22 +6,8 @@ import (
 
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch/internal/errors"
+	"github.com/go-kivik/kouch/kouchio"
 )
-
-// Underlying returns the unwrapped io.Writer, or the original if it was not
-// wrapped.
-func Underlying(w io.Writer) io.Writer {
-	if u, ok := w.(WrappedWriter); ok {
-		return Underlying(u.Underlying())
-	}
-	return w
-}
-
-// WrappedWriter represents an io.Writerr wrapped by some logic.
-type WrappedWriter interface {
-	// Underlying returns the original, unwrapped, io.WriteCloser
-	Underlying() io.Writer
-}
 
 type processorFunc func(io.Writer, interface{}) error
 
@@ -36,7 +22,7 @@ type processor struct {
 }
 
 var _ io.WriteCloser = &processor{}
-var _ WrappedWriter = &processor{}
+var _ kouchio.WrappedWriter = &processor{}
 
 func newProcessor(w io.Writer, fn processorFunc) io.WriteCloser {
 	return &processor{

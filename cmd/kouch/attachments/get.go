@@ -10,7 +10,7 @@ import (
 	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/cmd/kouch/registry"
 	"github.com/go-kivik/kouch/internal/util"
-	"github.com/go-kivik/kouch/io"
+	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -60,6 +60,6 @@ func getAttachment(ctx context.Context, o *kouch.Options) error {
 		return err
 	}
 	path := fmt.Sprintf("/%s/%s/%s", url.QueryEscape(o.Database), chttp.EncodeDocID(o.Document), url.QueryEscape(o.Filename))
-	ctx = kouch.SetOutput(ctx, io.Underlying(kouch.Output(ctx)))
+	ctx = kouch.SetOutput(ctx, kouchio.Underlying(kouch.Output(ctx)))
 	return util.ChttpDo(ctx, http.MethodGet, path, o)
 }
