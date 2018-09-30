@@ -1,4 +1,4 @@
-package io
+package outputraw
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 
 func TestRawModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
-	mode := &rawMode{}
+	mode := &RawMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
 	test.Flags(t, []string{}, cmd)
@@ -41,7 +41,7 @@ func TestRawNew(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			mode := &rawMode{}
+			mode := &RawMode{}
 			mode.AddFlags(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
