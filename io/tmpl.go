@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/go-kivik/kouch/kouchio"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 )
@@ -16,7 +17,7 @@ const (
 
 type tmplMode struct{}
 
-var _ outputMode = &tmplMode{}
+var _ kouchio.OutputMode = &tmplMode{}
 
 func (m *tmplMode) AddFlags(flags *pflag.FlagSet) {
 	flags.String(optTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")

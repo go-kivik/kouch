@@ -3,12 +3,13 @@ package io
 import (
 	"io"
 
+	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/pflag"
 )
 
 type rawMode struct{}
 
-var _ outputMode = &rawMode{}
+var _ kouchio.OutputMode = &rawMode{}
 
 func (m *rawMode) AddFlags(_ *pflag.FlagSet) {}
 
