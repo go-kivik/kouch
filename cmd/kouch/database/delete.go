@@ -37,10 +37,5 @@ func deleteDatabaseCmd(cmd *cobra.Command, _ []string) error {
 }
 
 func deleteDatabaseOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
-	o, err := util.CommonOptions(ctx, kouch.TargetDatabase, flags)
-
-	if e := o.SetParamInt(flags, kouch.FlagShards); e != nil {
-		return nil, e
-	}
-	return o, err
+	return util.CommonOptions(ctx, kouch.TargetDatabase, flags)
 }

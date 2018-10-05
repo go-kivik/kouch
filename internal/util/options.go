@@ -16,7 +16,7 @@ func CommonOptions(ctx context.Context, scope kouch.TargetScope, flags *pflag.Fl
 		return nil, err
 	}
 
-	if e := o.SetParamString(flags, kouch.FlagRev); e != nil {
+	if e := o.SetParam(flags, kouch.FlagRev); e != nil {
 		return nil, e
 	}
 	if e := setAutoRev(ctx, o, flags); e != nil {

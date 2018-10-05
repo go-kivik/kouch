@@ -40,7 +40,7 @@ func createDatabaseCmd(cmd *cobra.Command, _ []string) error {
 func createDatabaseOpts(ctx context.Context, flags *pflag.FlagSet) (*kouch.Options, error) {
 	o, err := util.CommonOptions(ctx, kouch.TargetDatabase, flags)
 
-	if e := o.SetParamInt(flags, kouch.FlagShards); e != nil {
+	if e := o.SetParam(flags, kouch.FlagShards); e != nil {
 		return nil, e
 	}
 	return o, err
