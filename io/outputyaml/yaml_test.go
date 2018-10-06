@@ -1,4 +1,4 @@
-package io
+package outputyaml
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 
 func TestYamlModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
-	mode := &yamlMode{}
+	mode := &YAMLMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
 	test.Flags(t, []string{}, cmd)
@@ -55,7 +55,7 @@ qux:
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			mode := &yamlMode{}
+			mode := &YAMLMode{}
 			mode.AddFlags(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)
