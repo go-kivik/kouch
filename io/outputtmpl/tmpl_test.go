@@ -1,4 +1,4 @@
-package io
+package outputtmpl
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 
 func TestTmplModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
-	mode := &tmplMode{}
+	mode := &TmplMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
 	test.Flags(t, []string{"template", "template-file"}, cmd)
@@ -123,12 +123,12 @@ func TestTmplOutput(t *testing.T) {
 		},
 		{
 			name:   "invalid template file",
-			args:   []string{"--template-file", "./test/template1.html"},
+			args:   []string{"--template-file", "./testdata/template1.html"},
 			newErr: `template: template1.html:1: unexpected "}" in operand`,
 		},
 		{
 			name:     "good template file",
-			args:     []string{"--template-file", "./test/template2.html"},
+			args:     []string{"--template-file", "./testdata/template2.html"},
 			input:    `{"foo":"bar", "baz":123, "qux": [1,2,3]}`,
 			expected: `bar`,
 		},
@@ -136,7 +136,7 @@ func TestTmplOutput(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			mode := &tmplMode{}
+			mode := &TmplMode{}
 			mode.AddFlags(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)

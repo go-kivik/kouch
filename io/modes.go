@@ -3,6 +3,7 @@ package io
 import (
 	"github.com/go-kivik/kouch/io/outputjson"
 	"github.com/go-kivik/kouch/io/outputraw"
+	"github.com/go-kivik/kouch/io/outputtmpl"
 	"github.com/go-kivik/kouch/kouchio"
 )
 
@@ -12,5 +13,5 @@ var outputModes = map[string]kouchio.OutputMode{
 	defaultOutputMode: &outputjson.JSONMode{},
 	"yaml":            &yamlMode{},
 	"raw":             &outputraw.RawMode{},
-	"template":        &tmplMode{},
+	"template":        &outputtmpl.TmplMode{},
 }

@@ -1,4 +1,4 @@
-package io
+package outputtmpl
 
 import (
 	"html/template"
@@ -16,16 +16,19 @@ const (
 	optTemplateFile = "template-file"
 )
 
-type tmplMode struct{}
+// TmplMode outputs based on a provided template.
+type TmplMode struct{}
 
-var _ kouchio.OutputMode = &tmplMode{}
+var _ kouchio.OutputMode = &TmplMode{}
 
-func (m *tmplMode) AddFlags(flags *pflag.FlagSet) {
+// AddFlags adds template-related flags
+func (m *TmplMode) AddFlags(flags *pflag.FlagSet) {
 	flags.String(optTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")
 	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
-func (m *tmplMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+// New returns a new template outputter.
+func (m *TmplMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 	tmpl, err := newTmpl(flags)
 	if err != nil {
 		return nil, err
