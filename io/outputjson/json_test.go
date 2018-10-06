@@ -1,4 +1,4 @@
-package io
+package outputjson
 
 import (
 	"bytes"
@@ -13,18 +13,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestYamlModeConfig(t *testing.T) {
+func TestJsonModeConfig(t *testing.T) {
 	cmd := &cobra.Command{}
-	mode := &yamlMode{}
+	mode := &JSONMode{}
 	mode.AddFlags(cmd.PersistentFlags())
 
-	test.Flags(t, []string{}, cmd)
+	test.Flags(t, []string{"json-escape-html", "json-indent", "json-prefix"}, cmd)
 }
 
-func TestYAMLOutput(t *testing.T) {
+func TestJSONOutput(t *testing.T) {
 	tests := []struct {
 		name             string
-		cmd              *cobra.Command
 		args             []string
 		flagsErr, newErr string
 		input            string
@@ -32,30 +31,54 @@ func TestYAMLOutput(t *testing.T) {
 		err              string
 	}{
 		{
-			name:     "invalid args",
-			args:     []string{"--foo"},
-			flagsErr: "unknown flag: --foo",
+			name:     "happy path",
+			input:    `{"foo":"bar", "baz":123}`,
+			expected: `{"baz":123,"foo":"bar"}`,
 		},
 		{
-			name:  "happy path",
-			input: `{"foo":"bar", "baz":123, "qux": [1,2,3]}`,
-			expected: `baz: 123
-foo: bar
-qux:
-- 1
-- 2
-- 3`,
+			name:  "indented",
+			args:  []string{"--json-indent", "\t"},
+			input: `{"foo":"bar", "baz":123}`,
+			expected: `{
+	"baz": 123,
+	"foo": "bar"
+}`,
+		},
+		{
+			name:  "prefix",
+			args:  []string{"--json-prefix", "xx"},
+			input: `{"foo":"bar", "baz":123}`,
+			expected: `{
+xx"baz": 123,
+xx"foo": "bar"
+xx}`,
+		},
+		{
+			name:     "no escape HTML",
+			input:    `{"foo": "<>"}`,
+			expected: `{"foo":"<>"}`,
+		},
+		{
+			name:     "escape HTML",
+			args:     []string{"--json-escape-html"},
+			input:    `{"foo": "<>"}`,
+			expected: `{"foo":"\u003c\u003e"}`,
 		},
 		{
 			name:  "invalid JSON input",
 			input: "oink",
 			err:   `invalid character 'o' looking for beginning of value`,
 		},
+		{
+			name:     "invalid args",
+			args:     []string{"--foo"},
+			flagsErr: "unknown flag: --foo",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			mode := &yamlMode{}
+			mode := &JSONMode{}
 			mode.AddFlags(cmd.PersistentFlags())
 
 			err := cmd.ParseFlags(test.args)

@@ -1,4 +1,4 @@
-package io
+package outputcommon
 
 import (
 	"encoding/json"
@@ -24,7 +24,8 @@ type processor struct {
 var _ io.WriteCloser = &processor{}
 var _ kouchio.WrappedWriter = &processor{}
 
-func newProcessor(w io.Writer, fn processorFunc) io.WriteCloser {
+// NewProcessor returns a new processor which invokes fn
+func NewProcessor(w io.Writer, fn processorFunc) io.WriteCloser {
 	return &processor{
 		underlying: w,
 		fn:         fn,
