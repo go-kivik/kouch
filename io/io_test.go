@@ -70,12 +70,14 @@ func TestSelectOutputProcessor(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
 			cmd := &cobra.Command{}
 			AddFlags(cmd.PersistentFlags())
 			if err := cmd.ParseFlags(test.args); err != nil {
 				t.Fatal(err)
 			}
-			result, err := selectOutputProcessor(cmd.Flags(), &bytes.Buffer{})
+			ctx = kouch.SetFlags(ctx, cmd.Flags())
+			result, err := selectOutputProcessor(ctx, &bytes.Buffer{})
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)

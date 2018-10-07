@@ -1,6 +1,7 @@
 package kouchio
 
 import (
+	"context"
 	"io"
 
 	"github.com/spf13/pflag"
@@ -12,5 +13,5 @@ type OutputMode interface {
 	AddFlags(*pflag.FlagSet)
 	// New takes flags, after command line options have been parsed, and returns
 	// a new output processor.
-	New(*pflag.FlagSet, io.Writer) (io.Writer, error)
+	New(context.Context, io.Writer) (io.Writer, error)
 }

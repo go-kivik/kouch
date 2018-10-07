@@ -1,6 +1,7 @@
 package outputtmpl
 
 import (
+	"context"
 	"html/template"
 	"io"
 	"path/filepath"
@@ -24,7 +25,8 @@ func (m *TmplMode) AddFlags(flags *pflag.FlagSet) {
 }
 
 // New returns a new template outputter.
-func (m *TmplMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *TmplMode) New(ctx context.Context, w io.Writer) (io.Writer, error) {
+	flags := kouch.Flags(ctx)
 	tmpl, err := newTmpl(flags)
 	if err != nil {
 		return nil, err

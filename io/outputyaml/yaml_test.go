@@ -2,12 +2,14 @@ package outputyaml
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"strings"
 	"testing"
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/test"
 	"github.com/go-kivik/kouch/kouchio"
 	"github.com/spf13/cobra"
@@ -54,6 +56,7 @@ qux:
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
 			cmd := &cobra.Command{}
 			mode := &YAMLMode{}
 			mode.AddFlags(cmd.PersistentFlags())
@@ -62,7 +65,8 @@ qux:
 			testy.Error(t, test.flagsErr, err)
 
 			buf := &bytes.Buffer{}
-			p, err := mode.New(cmd.Flags(), buf)
+			ctx = kouch.SetFlags(ctx, cmd.Flags())
+			p, err := mode.New(ctx, buf)
 			testy.Error(t, test.newErr, err)
 
 			defer kouchio.CloseWriter(p) // nolint: errcheck

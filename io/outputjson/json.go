@@ -1,6 +1,7 @@
 package outputjson
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 
@@ -23,7 +24,8 @@ func (m *JSONMode) AddFlags(flags *pflag.FlagSet) {
 }
 
 // New returns a new output processor.
-func (m *JSONMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *JSONMode) New(ctx context.Context, w io.Writer) (io.Writer, error) {
+	flags := kouch.Flags(ctx)
 	prefix, err := flags.GetString(kouch.FlagJSONPrefix)
 	if err != nil {
 		return nil, err

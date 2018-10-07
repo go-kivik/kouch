@@ -1,6 +1,7 @@
 package outputyaml
 
 import (
+	"context"
 	"io"
 
 	"github.com/go-kivik/kouch/io/outputcommon"
@@ -18,7 +19,7 @@ var _ kouchio.OutputMode = &YAMLMode{}
 func (m *YAMLMode) AddFlags(_ *pflag.FlagSet) {}
 
 // New returns a new YAML outputter.
-func (m *YAMLMode) New(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *YAMLMode) New(_ context.Context, w io.Writer) (io.Writer, error) {
 	return outputcommon.NewProcessor(w, func(o io.Writer, i interface{}) error {
 		return yaml.NewEncoder(o).Encode(i)
 	}), nil

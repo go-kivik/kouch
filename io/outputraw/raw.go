@@ -1,6 +1,7 @@
 package outputraw
 
 import (
+	"context"
 	"io"
 
 	"github.com/go-kivik/kouch/kouchio"
@@ -16,6 +17,6 @@ var _ kouchio.OutputMode = &RawMode{}
 func (m *RawMode) AddFlags(_ *pflag.FlagSet) {}
 
 // New returns w, unaltered.
-func (m *RawMode) New(_ *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func (m *RawMode) New(_ context.Context, w io.Writer) (io.Writer, error) {
 	return w, nil
 }
