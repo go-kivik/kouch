@@ -45,13 +45,14 @@ func AddFlags(flags *pflag.FlagSet) {
 
 // SetOutput returns a new context with the output parameters configured.
 func SetOutput(ctx context.Context, flags *pflag.FlagSet) (context.Context, error) {
+	ctx = kouch.SetFlags(ctx, flags)
 	ctx = kouch.SetOutput(ctx, os.Stdout)
 	ctx, err := setOutput(ctx, flags)
 	if err != nil {
 		return nil, err
 	}
 	if output := kouch.Output(ctx); output != nil {
-		newOutput, err := selectOutputProcessor(flags, output)
+		newOutput, err := selectOutputProcessor(ctx, output)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +122,8 @@ func open(flags *pflag.FlagSet, flagName string) (io.WriteCloser, error) {
 
 // selectOutputProcessor selects and configures the desired output processor
 // based on the flags provided in cmd.
-func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
+func selectOutputProcessor(ctx context.Context, w io.Writer) (io.Writer, error) {
+	flags := kouch.Flags(ctx)
 	name, err := flags.GetString(kouch.FlagOutputFormat)
 	if err != nil {
 		return nil, err
@@ -130,7 +132,7 @@ func selectOutputProcessor(flags *pflag.FlagSet, w io.Writer) (io.Writer, error)
 	if !ok {
 		return nil, errors.Errorf("Unrecognized output format '%s'", name)
 	}
-	return processor.New(flags, w)
+	return processor.New(ctx, w)
 }
 
 // RedirStderr redirects stderr based on configuration.

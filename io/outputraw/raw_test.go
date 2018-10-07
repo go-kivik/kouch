@@ -2,11 +2,13 @@ package outputraw
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"testing"
 
 	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/internal/test"
 	"github.com/spf13/cobra"
 )
@@ -40,6 +42,7 @@ func TestRawNew(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
 			cmd := &cobra.Command{}
 			mode := &RawMode{}
 			mode.AddFlags(cmd.PersistentFlags())
@@ -47,7 +50,8 @@ func TestRawNew(t *testing.T) {
 			err := cmd.ParseFlags(test.args)
 			testy.Error(t, test.parseErr, err)
 
-			result, err := mode.New(cmd.Flags(), &bytes.Buffer{})
+			ctx = kouch.SetFlags(ctx, cmd.Flags())
+			result, err := mode.New(ctx, &bytes.Buffer{})
 			testy.Error(t, test.err, err)
 			if d := diff.Interface(test.expected, result); d != nil {
 				t.Error(d)
