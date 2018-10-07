@@ -5,15 +5,11 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/go-kivik/kouch"
 	"github.com/go-kivik/kouch/io/outputcommon"
 	"github.com/go-kivik/kouch/kouchio"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
-)
-
-const (
-	optTemplate     = "template"
-	optTemplateFile = "template-file"
 )
 
 // TmplMode outputs based on a provided template.
@@ -23,8 +19,8 @@ var _ kouchio.OutputMode = &TmplMode{}
 
 // AddFlags adds template-related flags
 func (m *TmplMode) AddFlags(flags *pflag.FlagSet) {
-	flags.String(optTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")
-	flags.String(optTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
+	flags.String(kouch.FlagTemplate, "", "Template string to use with -o=go-template. See [http://golang.org/pkg/text/template/#pkg-overview] for format documetation.")
+	flags.String(kouch.FlagTemplateFile, "", "Template file to use with -o=go-template. Alternative to --template.")
 }
 
 // New returns a new template outputter.
@@ -39,19 +35,19 @@ func (m *TmplMode) New(flags *pflag.FlagSet, w io.Writer) (io.Writer, error) {
 }
 
 func newTmpl(flags *pflag.FlagSet) (*template.Template, error) {
-	templateString, err := flags.GetString(optTemplate)
+	templateString, err := flags.GetString(kouch.FlagTemplate)
 	if err != nil {
 		return nil, err
 	}
-	templateFile, err := flags.GetString(optTemplateFile)
+	templateFile, err := flags.GetString(kouch.FlagTemplateFile)
 	if err != nil {
 		return nil, err
 	}
 	if templateString == "" && templateFile == "" {
-		return nil, errors.Errorf("Must provide --%s or --%s option", optTemplate, optTemplateFile)
+		return nil, errors.Errorf("Must provide --%s or --%s option", kouch.FlagTemplate, kouch.FlagTemplateFile)
 	}
 	if templateString != "" && templateFile != "" {
-		return nil, errors.Errorf("Both --%s and --%s specified; must provide only one.", optTemplate, optTemplateFile)
+		return nil, errors.Errorf("Both --%s and --%s specified; must provide only one.", kouch.FlagTemplate, kouch.FlagTemplateFile)
 	}
 	if templateString != "" {
 		return template.New("").Parse(templateString)
