@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type contextKey struct {
@@ -20,6 +21,7 @@ var (
 	targetContextKey      = &contextKey{"target"}
 	inputContextKey       = &contextKey{"input"}
 	headDumpberContextKey = &contextKey{"headDumper"}
+	flagsContextKey       = &contextKey{"flags"}
 )
 
 // Conf returns the context's current configuration struct, or panics if none is
@@ -158,4 +160,15 @@ func initContext() {
 	contextMU.Lock()
 	defer contextMU.Unlock()
 	contexts = make(map[*cobra.Command]context.Context, 1)
+}
+
+// Flags returns the flags of the context.
+func Flags(ctx context.Context) *pflag.FlagSet {
+	flags, _ := ctx.Value(flagsContextKey).(*pflag.FlagSet)
+	return flags
+}
+
+// SetFlags returns a new context with Flags.
+func SetFlags(ctx context.Context, flags *pflag.FlagSet) context.Context {
+	return context.WithValue(ctx, flagsContextKey, flags)
 }
