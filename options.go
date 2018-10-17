@@ -45,55 +45,88 @@ func param(flagName string) string {
 	return strings.Replace(flagName, "-", "_", -1)
 }
 
-// SetParamBool sets the query paramater boolean value specified by flagName if
-// the provided value differs from the default. This means that values which
-// default to true are also supported, but only added to the query when the
-// user requests false.
-func (o *Options) SetParamBool(f *pflag.FlagSet, flagName string) error {
-	v, err := f.GetBool(flagName)
-	textV := fmt.Sprintf("%v", v)
-	if err == nil && textV != f.Lookup(flagName).DefValue {
-		o.Query().Add(param(flagName), textV)
+// SetParams sets parameters based on the provided flags
+func (o *Options) SetParams(f *pflag.FlagSet, flags ...string) error {
+	for _, flag := range flags {
+		if err := o.SetParam(f, flag); err != nil {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
-// SetParamStringSlice sets the query param string slice value specified by
-// flagName.
-func (o *Options) SetParamStringSlice(f *pflag.FlagSet, flagName string) error {
+// SetParam sets the named parameter
+func (o *Options) SetParam(f *pflag.FlagSet, flag string) error {
+	parser, ok := flagParsers[flag]
+	if !ok {
+		panic(fmt.Sprintf("No setter for %s flag", flag))
+	}
+	values, err := parser(f, flag)
+	if err != nil {
+		return err
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	if validator, ok := flagValidators[flag]; ok {
+		if e := validator(flag, values); e != nil {
+			return e
+		}
+	}
+	paramName := param(flag)
+	for _, value := range values {
+		o.Query().Add(paramName, value)
+	}
+	return nil
+}
+
+func parseParamBool(f *pflag.FlagSet, flag string) ([]string, error) {
+	if flag := f.Lookup(flag); flag == nil {
+		return nil, nil
+	}
+	v, err := f.GetBool(flag)
+	textV := fmt.Sprintf("%v", v)
+	if err == nil && textV != f.Lookup(flag).DefValue {
+		return []string{textV}, nil
+	}
+	return nil, err
+}
+
+func parseParamStringSlice(f *pflag.FlagSet, flagName string) ([]string, error) {
 	v, err := f.GetStringSlice(flagName)
 	if err == nil && len(v) > 0 {
 		enc, e := json.Marshal(v)
 		if e != nil {
-			return e
+			return nil, e
 		}
-		o.Query().Add(param(flagName), string(enc))
+		return []string{string(enc)}, nil
 	}
-	return err
+	return nil, err
+
 }
 
-// SetParamString sets the query parameter string value specified by flagName,
-// if it differs from the default.
-func (o *Options) SetParamString(f *pflag.FlagSet, flagName string) error {
-	if flag := f.Lookup(flagName); flag == nil {
-		return nil
-	}
-	v, err := f.GetString(flagName)
-	if err == nil && v != f.Lookup(flagName).DefValue {
-		o.Query().Add(param(flagName), v)
-	}
-	return err
+func parseParamStringArray(f *pflag.FlagSet, flag string) ([]string, error) {
+	return f.GetStringArray(flag)
 }
 
-// SetParamInt sets the query parameter string value specified by flagName,
-// if it differs from the default.
-func (o *Options) SetParamInt(f *pflag.FlagSet, flagName string) error {
-	if flag := f.Lookup(flagName); flag == nil {
-		return nil
+func parseParamString(f *pflag.FlagSet, flag string) ([]string, error) {
+	if flag := f.Lookup(flag); flag == nil {
+		return nil, nil
 	}
-	v, err := f.GetInt(flagName)
-	if err == nil && strconv.Itoa(v) != f.Lookup(flagName).DefValue {
-		o.Query().Add(param(flagName), strconv.Itoa(v))
+	v, err := f.GetString(flag)
+	if err == nil && v != f.Lookup(flag).DefValue {
+		return []string{v}, nil
 	}
-	return err
+	return nil, err
+}
+
+func parseParamInt(f *pflag.FlagSet, flag string) ([]string, error) {
+	if flag := f.Lookup(flag); flag == nil {
+		return nil, nil
+	}
+	v, err := f.GetInt(flag)
+	if err == nil && strconv.Itoa(v) != f.Lookup(flag).DefValue {
+		return []string{strconv.Itoa(v)}, nil
+	}
+	return nil, err
 }

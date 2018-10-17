@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/flimzy/diff"
 	"github.com/flimzy/testy"
 	"github.com/go-kivik/couchdb/chttp"
 	"github.com/go-kivik/kouch"
@@ -19,128 +18,92 @@ import (
 )
 
 func TestPutDocumentOpts(t *testing.T) {
-	type pdoTest struct {
-		name     string
-		conf     *kouch.Config
-		args     []string
-		expected interface{}
-		err      string
-		status   int
-	}
-	tests := []pdoTest{
-		{
-			name:   "duplicate id",
-			args:   []string{"--" + kouch.FlagDocument, "foo", "bar"},
-			err:    "Must not use --" + kouch.FlagDocument + " and pass document ID as part of the target",
-			status: chttp.ExitFailedToInitialize,
+	tests := testy.NewTable()
+
+	tests.Add("duplicate id", test.OptionsTest{
+		Args:   []string{"--" + kouch.FlagDocument, "foo", "bar"},
+		Err:    "Must not use --" + kouch.FlagDocument + " and pass document ID as part of the target",
+		Status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("id from target", test.OptionsTest{
+		Conf: &kouch.Config{
+			DefaultContext: "foo",
+			Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 		},
-		{
-			name: "id from target",
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
+		Args: []string{"--database", "bar", "123"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "foo.com",
+				Database: "bar",
+				Document: "123",
 			},
-			args: []string{"--database", "bar", "123"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "bar",
-					Document: "123",
-				},
-				Options: &chttp.Options{},
-			},
+			Options: &chttp.Options{},
 		},
-		{
-			name: "db included in target",
-			conf: &kouch.Config{
-				DefaultContext: "foo",
-				Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
-			},
-			args: []string{"/foo/123"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "foo.com",
-					Database: "foo",
-					Document: "123",
-				},
-				Options: &chttp.Options{},
-			},
+	})
+	tests.Add("db included in target", test.OptionsTest{
+		Conf: &kouch.Config{
+			DefaultContext: "foo",
+			Contexts:       []kouch.NamedContext{{Name: "foo", Context: &kouch.Context{Root: "foo.com"}}},
 		},
-		{
-			name:   "db provided twice",
-			args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
-			err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
-			status: chttp.ExitFailedToInitialize,
-		},
-		{
-			name: "full url target",
-			args: []string{"http://foo.com/foo/123"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "http://foo.com",
-					Database: "foo",
-					Document: "123",
-				},
-				Options: &chttp.Options{},
+		Args: []string{"/foo/123"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "foo.com",
+				Database: "foo",
+				Document: "123",
 			},
+			Options: &chttp.Options{},
 		},
-		{
-			name: "full commit",
-			args: []string{"http://foo.com/foo/123", "--" + kouch.FlagFullCommit},
-			expected: &kouch.Options{
-				Target: &kouch.Target{
-					Root:     "http://foo.com",
-					Database: "foo",
-					Document: "123",
-				},
-				Options: &chttp.Options{
-					FullCommit: true,
-				},
+	})
+	tests.Add("db provided twice", test.OptionsTest{
+		Args:   []string{"/foo/123/foo.txt", "--" + kouch.FlagDatabase, "foo"},
+		Err:    "Must not use --" + kouch.FlagDatabase + " and pass database as part of the target",
+		Status: chttp.ExitFailedToInitialize,
+	})
+	tests.Add("full url target", test.OptionsTest{
+		Args: []string{"http://foo.com/foo/123"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "http://foo.com",
+				Database: "foo",
+				Document: "123",
+			},
+			Options: &chttp.Options{},
+		},
+	})
+	tests.Add("full commit", test.OptionsTest{
+		Args: []string{"http://foo.com/foo/123", "--" + kouch.FlagFullCommit},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{
+				Root:     "http://foo.com",
+				Database: "foo",
+				Document: "123",
+			},
+			Options: &chttp.Options{
+				FullCommit: true,
 			},
 		},
-		{
-			name: "batch",
-			args: []string{"--" + flagBatch, "docid"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{Document: "docid"},
-				Options: &chttp.Options{
-					Query: url.Values{param(flagBatch): []string{"ok"}},
-				},
+	})
+	tests.Add("batch", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagBatch, "docid"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{Document: "docid"},
+			Options: &chttp.Options{
+				Query: url.Values{param(kouch.FlagBatch): []string{"ok"}},
 			},
 		},
-		{
-			name: "new edits",
-			args: []string{"--" + flagNewEdits + "=false", "docid"},
-			expected: &kouch.Options{
-				Target: &kouch.Target{Document: "docid"},
-				Options: &chttp.Options{
-					Query: url.Values{param(flagNewEdits): []string{"false"}},
-				},
+	})
+	tests.Add("new edits", test.OptionsTest{
+		Args: []string{"--" + kouch.FlagNewEdits + "=false", "docid"},
+		Expected: &kouch.Options{
+			Target: &kouch.Target{Document: "docid"},
+			Options: &chttp.Options{
+				Query: url.Values{param(kouch.FlagNewEdits): []string{"false"}},
 			},
 		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if test.conf == nil {
-				test.conf = &kouch.Config{}
-			}
-			cmd := putDocCmd()
-			if err := cmd.ParseFlags(test.args); err != nil {
-				t.Fatal(err)
-			}
-			ctx := kouch.GetContext(cmd)
-			ctx = kouch.SetConf(ctx, test.conf)
-			if flags := cmd.Flags().Args(); len(flags) > 0 {
-				ctx = kouch.SetTarget(ctx, flags[0])
-			}
-			kouch.SetContext(ctx, cmd)
-			opts, err := putDocumentOpts(cmd, cmd.Flags().Args())
-			testy.ExitStatusError(t, test.err, test.status, err)
-			if d := diff.Interface(test.expected, opts); d != nil {
-				t.Error(d)
-			}
-		})
-	}
+	})
+
+	tests.Run(t, test.Options(putDocCmd, putDocumentOpts))
 }
 
 func TestPutDocCmd(t *testing.T) {
