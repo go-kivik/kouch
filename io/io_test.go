@@ -47,11 +47,6 @@ func TestSelectOutputProcessor(t *testing.T) {
 		// 	args:     []string{"--json-indent", "xx"},
 		// 	expected: &errWrapper{&jsonProcessor{indent: "xx"}},
 		// },
-		{
-			name:     "raw output",
-			args:     []string{"-F", "raw"},
-			expected: &bytes.Buffer{},
-		},
 		// {
 		// 	name:     "YAML output",
 		// 	args:     []string{"-F", "yaml"},
